@@ -1,0 +1,58 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+/*
+.main-header {
+    background-color: #ed1c24 !important; 
+}
+
+    .main-header .form-control:focus {
+        box-shadow: none;
+        border-color: #ffc107;
+    }
+
+.navbar-nav .nav-link {
+    color: #333 !important;
+    font-size: 14px;
+    padding: 10px 15px !important;
+    transition: all 0.2s;
+}
+
+    .navbar-nav .nav-link:hover {
+        color: #ed1c24 !important;
+        background-color: #f8f9fa;
+    }
+
+
+.login-section .nav-link {
+    color: white !important;
+    font-size: 13px;
+    text-align: center;
+    padding: 0 !important;
+}
+
+
+.top-banner a {
+    letter-spacing: 1px;
+    font-size: 13px;
+}*/

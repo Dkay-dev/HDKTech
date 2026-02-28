@@ -1,0 +1,96 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center mt-3">
+    <h1 class="display-5 fw-bold text-uppercase">HDKTech - Linh Kiện Máy Tính & Laptop</h1>
+</div>
+
+<div class="container my-4">
+    <div class="bg-light p-3 rounded-3 shadow-sm mb-4">
+        <form asp-action="Index" class="row g-3 align-items-center">
+            <div class="col-lg-6 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="inlineFormInputGroupUsername" placeholder="Bạn cần tìm gì?">
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-5">
+                <select class="form-select" id="inlineFormSelectPref">
+                    <option selected>Tất cả danh mục</option>
+                    <option value="1">Laptop</option>
+                    <option value="2">Laptop Gaming</option>
+                    <option value="3">Main, CPU, VGA</option>
+                    <option value="4">Case, Nguồn, Tản</option>
+                    <option value="5">Ổ cứng, RAM, Thẻ nhớ</option>
+                    <option value="6">Loa, Micro, Webcam</option>
+                    <option value="7">Màn hình</option>
+                    <option value="8">Bàn phím</option>
+                    <option value="9">Chuột, Lót chuột</option>
+                    <option value="10">Tai nghe</option>
+                    <option value="11">Ghế - Bàn</option>
+                    <option value="12">Phần mềm, mạng</option>
+                    <option value="13">Handheld, Console</option>
+                    <option value="14">Phụ kiện (Hub, sạc, cáp, ..)</option>
+                    <option value="15">Dịch vụ và thông tin khác</option>
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-2">
+                <button type="submit" class="btn btn-danger w-100 fw-bold">TÌM KIẾM</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        @for (int i = 1; i <= 8; i++)
+        {
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm product-card">
+                    <div class="position-relative">
+                        <img src="https://product.hstatic.net/200000722513/product/ava_77563131fc2b48acb9a41ec545d9ed7d_master.png"
+                             class="card-img-top p-3" alt="Sản phẩm">
+                        <span class="badge bg-danger position-absolute top-0 start-0 m-2">-10%</span>
+                    </div>
+
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title fw-bold text-truncate-2" style="height: 45px;">Laptop Acer Swift X14 SFX14 72G 77F9 - Ultra 7</h6>
+
+                        <div class="mb-2">
+                            <span class="text-warning small"><i class="bi bi-star-fill"></i> 5.0</span>
+                            <span class="text-muted small">(12 đánh giá)</span>
+                        </div>
+
+                        <div class="mt-auto">
+                            <p class="text-decoration-line-through text-muted small mb-0">38.990.000₫</p>
+                            <p class="fs-5 fw-bold text-danger mb-3">35.490.000₫</p>
+                            <button class="btn btn-outline-primary w-100 btn-sm fw-bold">
+                                <i class="bi bi-cart3"></i> THÊM GIỎ HÀNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>

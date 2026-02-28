@@ -1,0 +1,113 @@
+﻿@{
+    ViewData["Title"] = "Về Chúng Tôi";
+}
+
+<div class="container py-5">
+    @* --- Phần giới thiệu chính (Hero Section) --- *@
+    <div class="row align-items-center mb-5 g-5">
+        <div class="col-lg-6">
+            @* Đổi text-primary -> text-danger *@
+            <h6 class="text-danger fw-bold text-uppercase ls-wide mb-3" style="letter-spacing: 2px;">
+                Về HDKTech
+            </h6>
+            <h1 class="display-4 fw-bold mb-4">Chúng tôi xây dựng <br /><span class="text-danger">Giá trị Công nghệ</span></h1>
+            <p class="text-muted fs-5 mb-4" style="text-align: justify;">
+                HDKTech không chỉ dừng lại ở việc cung cấp linh kiện máy tính đơn thuần. Chúng tôi định vị mình là
+                người đồng hành chuyên sâu, mang đến những giải pháp công nghệ tối ưu được "đo ni đóng giày"
+                cho từng nhu cầu cụ thể của khách hàng. Từ những hệ thống PC văn phòng đòi hỏi sự bền bỉ,
+                tiết kiệm điện năng đến những dàn máy thi đấu chuyên nghiệp, Workstation đồ họa phức tạp
+                yêu cầu hiệu suất cực hạn.
+                <br /><br />
+                Mỗi sản phẩm tại HDKTech đều trải qua quy trình kiểm định nghiêm ngặt về chất lượng và độ ổn định
+                trước khi đến tay người dùng. Chúng tôi tin rằng, một bộ máy tính tốt không chỉ nằm ở những con số
+                cấu hình, mà còn nằm ở sự tâm huyết trong từng mối nối, sự tinh tế trong cách đi dây và dịch vụ
+                hậu mãi tận tâm mà chúng tôi cam kết mang lại.
+            </p>
+            <div class="d-flex gap-3">
+                @* Đổi border-primary -> border-danger *@
+                <div class="border-start border-danger border-4 ps-3">
+                    <h5 class="fw-bold mb-0">100%</h5>
+                    <small class="text-muted">Sản phẩm chính hãng</small>
+                </div>
+                <div class="border-start border-danger border-4 ps-3">
+                    <h5 class="fw-bold mb-0">Hỗ trợ</h5>
+                    <small class="text-muted">Kỹ thuật trọn đời</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="position-relative">
+                <img src="~/images/ceo.png" class="img-fluid rounded-4 shadow-lg" alt="Founder HDKTech" asp-append-version="true">
+                @* Đổi text-primary -> text-danger *@
+                <div class="position-absolute bottom-0 start-0 m-4 p-3 bg-dark text-white rounded-3 opacity-90 shadow-sm d-none d-md-block">
+                    <small class="d-block text-danger fw-bold">Mr. Khoa Pug</small>
+                    <span>HDKTech Founder</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* --- Phần Triết lý (Founder Quote) --- *@
+    <div class="my-5 p-5 bg-dark text-white rounded-4 shadow">
+        <div class="row justify-content-center text-center">
+            <div class="col-md-8">
+                @* Đổi text-primary -> text-danger *@
+                <i class="bi bi-quote fs-1 text-danger"></i>
+                <h3 class="fw-normal fst-italic mb-4">
+                    "Tại HDKTech, chúng tôi tin rằng mỗi chiếc máy tính là một người bạn đồng hành trong sự nghiệp của bạn. Sự tỉ mỉ trong từng mối nối, từng sợi dây cáp là lời cam kết của chúng tôi."
+                </h3>
+                <div class="mt-4">
+                    <h5 class="fw-bold mb-0">Khoa Bug</h5>
+                    @* Đổi text-primary -> text-danger *@
+                    <p class="text-danger small mb-0 font-monospace">HDKTECH - TECHNOLOGY - SOLUTIONS</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* --- Phần Icon Giá Trị --- *@
+    <div class="row g-4 text-center">
+        <div class="col-md-4">
+            <div class="p-4 rounded-4 transition-hover border h-100 shadow-sm">
+                @* Đổi bg-primary -> bg-danger *@
+                <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                    <i class="bi bi-shield-lock-fill fs-2 text-danger"></i>
+                </div>
+                <h5 class="fw-bold">Tin Cậy</h5>
+                <p class="text-muted small">Mọi giao dịch tại HDKTech đều minh bạch và được bảo vệ quyền lợi tối đa.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 rounded-4 transition-hover border h-100 shadow-sm">
+                <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                    <i class="bi bi-cpu-fill fs-2 text-danger"></i>
+                </div>
+                <h5 class="fw-bold">Chuyên Môn</h5>
+                <p class="text-muted small">Đội ngũ kỹ thuật được đào tạo bài bản về các dòng linh kiện đời mới nhất.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 rounded-4 transition-hover border h-100 shadow-sm">
+                <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                    <i class="bi bi-lightning-charge-fill fs-2 text-danger"></i>
+                </div>
+                <h5 class="fw-bold">Tốc Độ</h5>
+                <p class="text-muted small">Xử lý đơn hàng nhanh chóng và hỗ trợ kỹ thuật không để bạn phải chờ đợi.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Đổi border-color khi hover sang màu đỏ (danger) */
+    .transition-hover:hover {
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        border-color: #dc3545 !important; /* Màu danger của Bootstrap */
+        box-shadow: 0 10px 20px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .ls-wide {
+        letter-spacing: 1px;
+    }
+</style>
