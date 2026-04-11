@@ -29,6 +29,14 @@ public class HDKTechContext : IdentityDbContext<NguoiDung>
     public DbSet<TinNhanChat> TinNhanChats { get; set; }
     public DbSet<YeuCauOTP> YeuCauOTPs { get; set; }
     public DbSet<HinhAnh> HinhAnhs { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<Banner> Banners { get; set; }
+    public DbSet<BannerClickEvent> BannerClickEvents { get; set; }
+    public DbSet<KhuyenMai> KhuyenMais { get; set; }
+    public DbSet<SystemLog> SystemLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

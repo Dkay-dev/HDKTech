@@ -1,0 +1,261 @@
+@using HDKTech.Areas.Admin.Controllers
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var totalRevenue = (decimal)ViewBag.TotalRevenue;
+    var totalOrders = (int)ViewBag.TotalOrders;
+    var lowStockCount = (int)ViewBag.LowStockCount;
+    var newCustomers = (int)ViewBag.NewCustomers;
+    var recentOrders = (List<HDKTech.Models.DonHang>)ViewBag.RecentOrders;
+    var dailyRevenue = (List<DailyRevenueData>)ViewBag.DailyRevenue;
+
+    // Calculate max revenue for chart scaling
+    var maxRevenue = dailyRevenue?.Max(d => d.Revenue) ?? 1;
+    var revenueChangePercent = totalRevenue > 0 ? 12.5m : 0; // Sample percentage
+    var ordersChangePercent = totalOrders > 0 ? 8m : 0;
+}
+
+<!-- Quick Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Revenue Card -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-primary">
+        <div class="flex justify-between items-start mb-4">
+            <span class="p-2 bg-primary-fixed text-on-primary-fixed-variant rounded-lg">
+                <span class="material-symbols-outlined">payments</span>
+            </span>
+            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span> +@revenueChangePercent.ToString("F1")%
+            </span>
+        </div>
+        <p class="text-sm font-medium text-zinc-500 mb-1">Tổng doanh thu</p>
+        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@totalRevenue.ToString("C0")</h3>
+    </div>
+
+    <!-- Orders Card -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start mb-4">
+            <span class="p-2 bg-surface-container text-on-surface-variant rounded-lg">
+                <span class="material-symbols-outlined">shopping_bag</span>
+            </span>
+            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span> +@ordersChangePercent.ToString("F0")%
+            </span>
+        </div>
+        <p class="text-sm font-medium text-zinc-500 mb-1">Tổng đơn hàng</p>
+        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@totalOrders.ToString("N0")</h3>
+    </div>
+
+    <!-- Low Stock Card -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start mb-4">
+            <span class="p-2 bg-error-container text-on-error-container rounded-lg">
+                <span class="material-symbols-outlined">warning</span>
+            </span>
+            <span class="text-xs font-bold text-error">Cảnh báo</span>
+        </div>
+        <p class="text-sm font-medium text-zinc-500 mb-1">Hàng sắp hết</p>
+        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@lowStockCount sản phẩm</h3>
+    </div>
+
+    <!-- New Customers Card -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start mb-4">
+            <span class="p-2 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-lg">
+                <span class="material-symbols-outlined">person_add</span>
+            </span>
+            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span> +152
+            </span>
+        </div>
+        <p class="text-sm font-medium text-zinc-500 mb-1">Khách hàng mới</p>
+        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@newCustomers.ToString("N0")</h3>
+    </div>
+</div>
+
+<!-- Main Data Visualization -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Revenue Chart Section -->
+    <div class="lg:col-span-2 bg-surface-container-low p-8 rounded-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-xl font-bold tracking-tight">Doanh thu theo ngày</h2>
+                <p class="text-sm text-zinc-500">So sánh hiệu suất hàng ngày</p>
+            </div>
+            <div class="flex bg-surface-container-highest p-1 rounded-lg">
+                <button class="px-4 py-1.5 text-xs font-bold bg-white text-primary rounded shadow-sm transition-all">Hàng ngày</button>
+                <button class="px-4 py-1.5 text-xs font-bold text-zinc-500 hover:text-primary transition-all">Hàng tháng</button>
+            </div>
+        </div>
+
+        <!-- Chart Bars -->
+        <div class="h-64 flex items-end justify-between gap-4">
+            @if (dailyRevenue != null && dailyRevenue.Count > 0)
+            {
+                @foreach (var item in dailyRevenue)
+                {
+                    var heightPercent = maxRevenue > 0 ? (item.Revenue / maxRevenue * 100) : 0;
+                    <div class="w-full bg-primary/@(25 + (int)(heightPercent / 2)) rounded-t-lg relative group" style="height: @heightPercent%;">
+                        @if (item.Date.Date == DateTime.Now.Date)
+                        {
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded whitespace-nowrap">
+                                Hôm nay: @item.Revenue.ToString("C0")
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+        <div class="flex justify-between mt-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+            @if (dailyRevenue != null)
+            {
+                @foreach (var item in dailyRevenue)
+                {
+                    <span>@item.DayName</span>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Active Campaign Card -->
+    <div class="bg-on-surface text-white p-8 rounded-xl flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+        <div>
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-widest text-primary-fixed">Chiến dịch hiện tại</span>
+            </div>
+            <h2 class="text-2xl font-bold leading-tight mb-2">Khuyến mãi Q3 Laptop</h2>
+            <p class="text-zinc-400 text-sm">Nhắm tới khách hàng doanh nghiệp với máy RTX 4090.</p>
+        </div>
+        <div class="mt-8">
+            <div class="flex justify-between text-xs font-bold mb-2">
+                <span>Mục tiêu hoàn thành</span>
+                <span>78%</span>
+            </div>
+            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div class="h-full bg-primary w-[78%] rounded-full shadow-[0_0_8px_rgba(188,0,12,0.6)]"></div>
+            </div>
+        </div>
+        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="mt-8 w-full py-3 bg-primary text-white font-bold rounded-lg text-center hover:brightness-110 transition-all active:scale-95 cursor-pointer block">
+            Xem chi tiết chiến dịch
+        </a>
+    </div>
+</div>
+
+<!-- Recent Orders Table Section -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+    <div class="p-6 flex items-center justify-between">
+        <h2 class="text-xl font-bold tracking-tight">Đơn hàng gần đây</h2>
+        <a asp-area="Admin" asp-controller="Order" asp-action="Index" class="text-sm font-bold text-tertiary flex items-center gap-1 hover:underline">
+            Xem tất cả <span class="material-symbols-outlined text-sm">arrow_outward</span>
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] border-b border-surface-container">
+                    <th class="px-6 py-4">Mã đơn</th>
+                    <th class="px-6 py-4">Khách hàng</th>
+                    <th class="px-6 py-4">Ngày</th>
+                    <th class="px-6 py-4">Trạng thái</th>
+                    <th class="px-6 py-4 text-right">Hành động</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-container">
+                @if (recentOrders != null && recentOrders.Count > 0)
+                {
+                    @foreach (var order in recentOrders)
+                    {
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="px-6 py-5 text-sm font-mono text-zinc-500">#@order.MaDonHang</td>
+                            <td class="px-6 py-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600">
+                                        @(order.NguoiDung?.UserName?.Substring(0, 2).ToUpper() ?? "NA")
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">@order.NguoiDung?.HoTen ?? "N/A"</p>
+                                        <p class="text-[10px] text-zinc-400">@order.NguoiDung?.Email ?? "N/A"</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 text-sm text-zinc-600">@order.NgayDatHang.ToString("MMM dd, yyyy")</td>
+                            <td class="px-6 py-5">
+                                @{
+                                    string statusColor = order.TrangThaiDonHang switch
+                                    {
+                                        0 => "error-container",
+                                        1 => "secondary-container",
+                                        2 => "surface-container",
+                                        _ => "surface-container"
+                                    };
+                                    string statusText = order.TrangThaiDonHang switch
+                                    {
+                                        0 => "Chờ xử lý",
+                                        1 => "Đang giao",
+                                        2 => "Đã giao",
+                                        _ => "N/A"
+                                    };
+                                }
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-@statusColor text-on-@statusColor">
+                                    @statusText
+                                </span>
+                            </td>
+                            <td class="px-6 py-5 text-right">
+                                <a asp-area="Admin" asp-controller="Order" asp-action="Details" asp-route-id="@order.MaDonHang" class="text-zinc-400 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-5 text-center text-zinc-500">Không có đơn hàng nào gần đây</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="p-4 bg-surface-container-low border-t border-surface-container text-center">
+        <a asp-area="Admin" asp-controller="Order" asp-action="Index" class="text-xs font-bold text-zinc-500 hover:text-on-surface transition-all uppercase tracking-widest">
+            Xem thêm đơn hàng
+        </a>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<style>
+    .fab-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 3.5rem;
+        height: 3.5rem;
+        background-color: #bc000c;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(188, 0, 12, 0.4);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 50;
+        border: none;
+        font-size: 1.75rem;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+    }
+
+    .fab-button:active {
+        transform: scale(0.95);
+    }
+</style>
+
+<a asp-area="Admin" asp-controller="Product" asp-action="Create" class="fab-button" title="Thêm sản phẩm mới">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">add</span>
+</a>

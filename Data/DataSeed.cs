@@ -63,11 +63,9 @@ namespace HDKTech.Areas.Identity.Data
                 var dm9 = new DanhMuc { TenDanhMuc = "Bàn phím", MoTaDanhMuc = "Chuột, bàn phím, tay cầm và các phụ kiện máy tính", BannerImageUrl = "/images/banners/category-9.jpg" };
                 var dm10 = new DanhMuc { TenDanhMuc = "Chuột + Lót chuột", MoTaDanhMuc = "Chuột gaming và phụ kiện đi kèm với độ bền cao", BannerImageUrl = "/images/banners/category-10.jpg" };
                 var dm11 = new DanhMuc { TenDanhMuc = "Tai nghe", MoTaDanhMuc = "Tai nghe gaming với âm thanh sống động", BannerImageUrl = "/images/banners/category-11.jpg" };
-                var dm12 = new DanhMuc { TenDanhMuc = "Ghế - Bàn", MoTaDanhMuc = "Bàn, ghế gaming và đồ nội thất văn phòng", BannerImageUrl = "/images/banners/category-12.jpg" };
-                var dm13 = new DanhMuc { TenDanhMuc = "Handheld, Console", MoTaDanhMuc = "Máy chơi game cầm tay và thiết bị giải trí di động" };
-                var dm14 = new DanhMuc { TenDanhMuc = "Dịch vụ và thông tin khác", MoTaDanhMuc = "Dịch vụ sửa chữa, bảo hành và tư vấn kỹ thuật" };
+                var dm12 = new DanhMuc { TenDanhMuc = "Handheld, Console", MoTaDanhMuc = "Máy chơi game cầm tay và thiết bị giải trí di động" };
 
-                context.DanhMucs.AddRange(dm1, dm2, dm3, dm4, dm5, dm6, dm7, dm8, dm9, dm10, dm11, dm12, dm13, dm14);
+                context.DanhMucs.AddRange(dm1, dm2, dm3, dm4, dm5, dm6, dm7, dm8, dm9, dm10, dm11, dm12);
                 await context.SaveChangesAsync();
 
                 // --- TẦNG 2 & 3: LÀM ĐẦY ĐỦ CỰC CHI TIẾT THEO ẢNH ---
@@ -119,17 +117,10 @@ namespace HDKTech.Areas.Identity.Data
                 await SeedSub(context, dm11, "Thương hiệu tai nghe", new[] { "HyperX", "Corsair", "Razer", "Logitech", "Steelseries" });
                 await SeedSub(context, dm11, "Kiểu tai nghe", new[] { "Over-ear", "Gaming In-ear", "Wireless" });
 
-                // 12. Ghế - Bàn
-                await SeedSub(context, dm12, "Ghế Gaming", new[] { "Ghế ASUS", "Ghế Corsair", "Ghế Warrior", "Ghế MSI" });
-                await SeedSub(context, dm12, "Bàn Gaming", new[] { "Bàn chữ Z", "Bàn chữ K", "Bàn nâng hạ" });
+                // 12. Handheld (Ảnh 3)
+                await SeedSub(context, dm12, "Handheld PC", new[] { "ROG Ally X", "MSI Claw", "Legion Go" });
+                await SeedSub(context, dm12, "Console", new[] { "Sony PS5 Slim", "Nintendo Switch OLED" });
 
-                // 13. Handheld (Ảnh 3)
-                await SeedSub(context, dm13, "Handheld PC", new[] { "ROG Ally X", "MSI Claw", "Legion Go" });
-                await SeedSub(context, dm13, "Console", new[] { "Sony PS5 Slim", "Nintendo Switch OLED" });
-
-                // 14. Dịch vụ (Ảnh 11)
-                await SeedSub(context, dm14, "Dịch vụ", new[] { "Kỹ thuật tại nhà", "Sửa chữa PC/Laptop", "Build PC theo yêu cầu" });
-                await SeedSub(context, dm14, "Chính sách", new[] { "Chính sách bảo hành", "Chính sách đổi trả", "Chính sách giao hàng" });
 
                 await context.SaveChangesAsync();
             }

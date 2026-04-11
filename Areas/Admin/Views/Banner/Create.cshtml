@@ -1,0 +1,178 @@
+@model Banner
+
+@{
+    ViewData["Title"] = "Tạo Banner Mới";
+}
+
+<div class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Tạo Banner Mới</h1>
+    <p class="text-zinc-500">Thêm một banner mới để hiển thị trên website</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Form -->
+    <div class="lg:col-span-2">
+        <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+            @Html.AntiForgeryToken()
+
+            <!-- Tên Banner -->
+            <div>
+                <label class="block text-sm font-bold text-on-surface mb-2">
+                    Tên Banner <span class="text-red-500">*</span>
+                </label>
+                <input type="text" asp-for="TenBanner" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: Laptop Gaming Series" />
+                <span asp-validation-for="TenBanner" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+
+            <!-- Ảnh Banner -->
+            <div>
+                <label class="block text-sm font-bold text-on-surface mb-2">
+                    Hình ảnh <span class="text-red-500">*</span>
+                </label>
+
+                <!-- Kéo-thả hoặc chọn file -->
+                <div class="border-2 border-dashed border-outline rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all mb-4" id="imageDropZone">
+                    <span class="material-symbols-outlined text-4xl text-zinc-400 mx-auto block mb-2">cloud_upload</span>
+                    <p class="text-sm font-medium text-zinc-600 mb-1">Kéo thả hoặc click để chọn ảnh</p>
+                    <p class="text-xs text-zinc-500">PNG, JPG tối đa 5MB</p>
+                    <input type="file" id="imageFile" name="imageFile" class="hidden" accept="image/*" />
+                </div>
+
+                <!-- Hoặc nhập URL -->
+                <div class="relative">
+                    <label class="block text-xs font-medium text-zinc-500 mb-2">Hoặc nhập URL hình ảnh:</label>
+                    <input type="url" asp-for="ImageUrl" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: https://via.placeholder.com/1200x400?text=Banner" />
+                </div>
+
+                <span asp-validation-for="ImageUrl" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+
+            <!-- Mô tả -->
+            <div>
+                <label class="block text-sm font-bold text-on-surface mb-2">Mô tả</label>
+                <textarea asp-for="MoTa" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" rows="3" placeholder="Mô tả ngắn về banner..."></textarea>
+                <span asp-validation-for="MoTa" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+
+            <!-- Link Banner -->
+            <div>
+                <label class="block text-sm font-bold text-on-surface mb-2">Link Banner</label>
+                <input type="url" asp-for="LinkBanner" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: /products/gaming-laptops" />
+                <span asp-validation-for="LinkBanner" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+
+            <!-- Loại Banner -->
+            <div>
+                <label class="block text-sm font-bold text-on-surface mb-2">Loại Banner</label>
+                <select asp-for="LoaiBanner" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">-- Chọn loại banner --</option>
+                    <option value="Main">Trang Chủ (Main)</option>
+                    <option value="Side">Sidebar</option>
+                    <option value="Bottom">Footer (Bottom)</option>
+                </select>
+                <span asp-validation-for="LoaiBanner" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+
+            <!-- Trạng thái -->
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" asp-for="IsActive" class="w-4 h-4 rounded border-outline text-primary" checked />
+                    <span class="text-sm font-medium text-on-surface">Kích hoạt ngay</span>
+                </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-4 pt-6">
+                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
+                    <span class="material-symbols-outlined inline mr-2">save</span>Tạo Banner
+                </button>
+                <a href="@Url.Action("Index")" class="px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Preview -->
+    <div>
+        <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
+            <h3 class="text-lg font-bold text-on-surface mb-4">Xem trước</h3>
+            <div class="bg-gray-100 rounded-lg overflow-hidden mb-6 h-56">
+                <img id="previewImage" src="" alt="Preview" class="w-full h-full object-cover" style="display:none;" />
+                <div id="previewPlaceholder" class="w-full h-full flex items-center justify-center text-zinc-400">
+                    <span class="material-symbols-outlined text-6xl">image</span>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-sm">
+                <div>
+                    <span class="font-medium text-zinc-600">Tên:</span>
+                    <p id="previewName" class="text-on-surface font-bold">-</p>
+                </div>
+                <div>
+                    <span class="font-medium text-zinc-600">Loại:</span>
+                    <p id="previewType" class="text-on-surface font-bold">Homepage</p>
+                </div>
+                <div>
+                    <span class="font-medium text-zinc-600">Trạng thái:</span>
+                    <p id="previewStatus" class="text-green-600 font-bold">Kích hoạt</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Image upload
+    const imageDropZone = document.getElementById('imageDropZone');
+    const imageFile = document.getElementById('imageFile');
+    const previewImage = document.getElementById('previewImage');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+
+    imageDropZone.addEventListener('click', () => imageFile.click());
+    imageDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imageDropZone.classList.add('border-primary', 'bg-primary/5');
+    });
+    imageDropZone.addEventListener('dragleave', () => {
+        imageDropZone.classList.remove('border-primary', 'bg-primary/5');
+    });
+    imageDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imageDropZone.classList.remove('border-primary', 'bg-primary/5');
+        if (e.dataTransfer.files.length) {
+            imageFile.files = e.dataTransfer.files;
+            handleImageSelect();
+        }
+    });
+
+    imageFile.addEventListener('change', handleImageSelect);
+
+    function handleImageSelect() {
+        const file = imageFile.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                previewPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Live preview updates
+    document.getElementById('TenBanner').addEventListener('input', (e) => {
+        document.getElementById('previewName').textContent = e.target.value || '-';
+    });
+
+    document.getElementById('LoaiBanner').addEventListener('change', (e) => {
+        const types = { 'Main': 'Trang Chủ', 'Side': 'Sidebar', 'Bottom': 'Footer' };
+        document.getElementById('previewType').textContent = types[e.target.value] || 'Chưa chọn';
+    });
+
+    document.getElementById('IsActive').addEventListener('change', (e) => {
+        document.getElementById('previewStatus').textContent = e.target.checked ? 'Kích hoạt' : 'Vô hiệu hóa';
+        document.getElementById('previewStatus').className = e.target.checked ? 'text-green-600 font-bold' : 'text-zinc-500 font-bold';
+    });
+</script>

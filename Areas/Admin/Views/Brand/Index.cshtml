@@ -1,0 +1,255 @@
+@{
+    ViewData["Title"] = "Quản lý Thương Hiệu";
+
+    var brands = (List<HDKTech.Models.HangSX>)ViewBag.Brands;
+    var totalCount = (int)ViewBag.TotalCount;
+    var pageNumber = (int)ViewBag.PageNumber;
+    var pageSize = (int)ViewBag.PageSize;
+    var totalPages = (int)ViewBag.TotalPages;
+    var searchTerm = (string)ViewBag.SearchTerm ?? "";
+
+    var totalBrands = (int)ViewBag.TotalBrands;
+    var totalProducts = (int)ViewBag.TotalProducts;
+    var brandsWithoutProducts = (int)ViewBag.BrandsWithoutProducts;
+}
+
+@section Styles {
+    <style>
+        .stat-card {
+            border-left: 4px solid #bc000c;
+        }
+        .btn-icon-sm {
+            padding: 0.375rem 0.75rem;
+            width: 36px;
+            height: 36px;
+        }
+    </style>
+}
+
+<div class="p-4">
+    <!-- Header Section -->
+    <section class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-3">
+            <h1 class="h3 fw-bold mb-0">Quản lý <span class="text-danger">Thương Hiệu</span></h1>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("Export", "Brand", new { area = "Admin" })" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+                    <i class="bi bi-download"></i>
+                    Xuất CSV
+                </a>
+                <a href="@Url.Action("Create", "Brand", new { area = "Admin" })" class="btn btn-sm btn-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-plus"></i>
+                    Tạo thương hiệu
+                </a>
+            </div>
+        </div>
+        <p class="text-muted small mb-0">Quản lý các thương hiệu sản phẩm. Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </section>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Brands -->
+        <div class="col-12 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
+                            <i class="bi bi-building"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Tổng thương hiệu</p>
+                    <h3 class="h4 fw-bold mb-0">@totalBrands</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Products -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light p-2 rounded text-muted">
+                            <i class="bi bi-bag"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Tổng sản phẩm</p>
+                    <h3 class="h4 fw-bold mb-0">@totalProducts</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Brands Without Products -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-warning bg-opacity-10 p-2 rounded text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark small">⚠️ @brandsWithoutProducts</span>
+                    </div>
+                    <p class="text-muted small mb-1">Thương hiệu trống</p>
+                    <h3 class="h4 fw-bold mb-0">@brandsWithoutProducts</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index", "Brand", new { area = "Admin" })" class="d-flex gap-2">
+                <div class="flex-grow-1 position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm tên thương hiệu..." class="form-control ps-5" />
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-search"></i>
+                    Tìm kiếm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Brands Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex align-items-center justify-content-between border-0">
+            <h5 class="mb-0 fw-bold">Danh sách thương hiệu</h5>
+            <span class="text-muted small">Tổng: <strong>@totalCount</strong> thương hiệu</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr class="text-uppercase small fw-bold text-muted">
+                        <th>Tên Thương Hiệu</th>
+                        <th>Mô Tả</th>
+                        <th class="text-center">Sản Phẩm</th>
+                        <th class="text-center" style="width: 130px;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (brands != null && brands.Count > 0)
+                    {
+                        @foreach (var brand in brands)
+                        {
+                            var productCount = brand.SanPhams?.Count ?? 0;
+
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                        <div>
+                                            <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="text-danger fw-bold text-decoration-none">
+                                                @brand.TenHangSX
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted" title="@(brand.MoTa ?? "")">@((brand.MoTa?.Length > 50 ? brand.MoTa.Substring(0, 50) + "..." : brand.MoTa) ?? "-")</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @(productCount > 0 ? "bg-info" : "bg-light text-muted")">
+                                        @productCount
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-brand-id="@brand.MaHangSX" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <div class="d-flex flex-column align-items-center gap-2">
+                                    <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
+                                    <p class="fw-medium">Không có thương hiệu nào</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer bg-light d-flex align-items-center justify-content-between border-top">
+                <div class="small text-muted">
+                    Hiển thị <strong>@((pageNumber - 1) * pageSize + 1)</strong> đến <strong>@Math.Min(pageNumber * pageSize, totalCount)</strong> trong <strong>@totalCount</strong> thương hiệu
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    @if (pageNumber > 1)
+                    {
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = pageNumber - 1, searchTerm })" class="btn btn-outline-secondary" title="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
+                    {
+                        @if (i == pageNumber)
+                        {
+                            <button type="button" class="btn btn-danger">@i</button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = i, searchTerm })" class="btn btn-outline-secondary">@i</a>
+                        }
+                    }
+
+                    @if (pageNumber < totalPages)
+                    {
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = pageNumber + 1, searchTerm })" class="btn btn-outline-secondary" title="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const brandId = this.dataset.brandId;
+                if (confirm('Bạn có chắc muốn xóa thương hiệu này?')) {
+                    fetch('@Url.Action("Delete", "Brand", new { area = "Admin" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ brandId: brandId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    </script>
+}

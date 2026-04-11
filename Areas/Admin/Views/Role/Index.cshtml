@@ -1,0 +1,256 @@
+@{
+    ViewData["Title"] = "Quản lý Vai Trò";
+
+    var roles = (List<HDKTech.Models.Role>)ViewBag.Roles ?? new List<HDKTech.Models.Role>();
+    var totalCount = (int?)ViewBag.TotalCount ?? 0;
+    var pageNumber = (int?)ViewBag.PageNumber ?? 1;
+    var pageSize = (int?)ViewBag.PageSize ?? 20;
+    var totalPages = (int?)ViewBag.TotalPages ?? 1;
+    var searchTerm = (string)ViewBag.SearchTerm ?? "";
+
+    var totalRoles = (int?)ViewBag.TotalRoles ?? 0;
+    var totalPermissions = (int?)ViewBag.TotalPermissions ?? 0;
+    var activeRoles = (int?)ViewBag.ActiveRoles ?? 0;
+}
+
+@section Styles {
+    <style>
+        .stat-card {
+            border-left: 4px solid #bc000c;
+        }
+        .btn-icon-sm {
+            padding: 0.375rem 0.75rem;
+            width: 36px;
+            height: 36px;
+        }
+    </style>
+}
+
+<div class="p-4">
+    <!-- Header Section -->
+    <section class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-3">
+            <h1 class="h3 fw-bold mb-0">Quản lý <span class="text-danger">Vai Trò</span></h1>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("Create", "Role", new { area = "Admin" })" class="btn btn-sm btn-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-plus"></i>
+                    Tạo vai trò
+                </a>
+            </div>
+        </div>
+        <p class="text-muted small mb-0">Quản lý các vai trò và phân quyền. Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </section>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Roles -->
+        <div class="col-12 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Tổng vai trò</p>
+                    <h3 class="h4 fw-bold mb-0">@totalRoles</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Roles -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light p-2 rounded text-muted">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Vai trò hoạt động</p>
+                    <h3 class="h4 fw-bold mb-0">@activeRoles</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Permissions -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 p-2 rounded text-info">
+                            <i class="bi bi-check2-all"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Tổng quyền hạn</p>
+                    <h3 class="h4 fw-bold mb-0">@totalPermissions</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index", "Role", new { area = "Admin" })" class="d-flex gap-2">
+                <div class="flex-grow-1 position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm tên vai trò..." class="form-control ps-5" />
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-search"></i>
+                    Tìm kiếm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Roles Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex align-items-center justify-content-between border-0">
+            <h5 class="mb-0 fw-bold">Danh sách vai trò</h5>
+            <span class="text-muted small">Tổng: <strong>@totalCount</strong> vai trò</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr class="text-uppercase small fw-bold text-muted">
+                        <th>Tên Vai Trò</th>
+                        <th>Mô Tả</th>
+                        <th class="text-center">Quyền</th>
+                        <th class="text-center">Trạng Thái</th>
+                        <th class="text-center" style="width: 130px;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (roles != null && roles.Count > 0)
+                    {
+                        @foreach (var role in roles)
+                        {
+                            var permissionCount = role.RolePermissions?.Count ?? 0;
+
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-shield-lock"></i>
+                                        </div>
+                                        <div>
+                                            <a href="@Url.Action("Details", "Role", new { area = "Admin", id = role.RoleId })" class="text-danger fw-bold text-decoration-none">
+                                                @role.RoleName
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted" title="@(role.Description ?? "")">@((role.Description?.Length > 50 ? role.Description.Substring(0, 50) + "..." : role.Description) ?? "-")</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">
+                                        @permissionCount
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @(role.IsActive ? "bg-success" : "bg-danger")">
+                                        @(role.IsActive ? "Hoạt động" : "Vô hiệu")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", "Role", new { area = "Admin", id = role.RoleId })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "Role", new { area = "Admin", id = role.RoleId })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-role-id="@role.RoleId" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="d-flex flex-column align-items-center gap-2">
+                                    <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
+                                    <p class="fw-medium">Không có vai trò nào</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer bg-light d-flex align-items-center justify-content-between border-top">
+                <div class="small text-muted">
+                    Hiển thị <strong>@((pageNumber - 1) * pageSize + 1)</strong> đến <strong>@Math.Min(pageNumber * pageSize, totalCount)</strong> trong <strong>@totalCount</strong> vai trò
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    @if (pageNumber > 1)
+                    {
+                        <a href="@Url.Action("Index", "Role", new { area = "Admin", pageNumber = pageNumber - 1, searchTerm })" class="btn btn-outline-secondary" title="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
+                    {
+                        @if (i == pageNumber)
+                        {
+                            <button type="button" class="btn btn-danger">@i</button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Role", new { area = "Admin", pageNumber = i, searchTerm })" class="btn btn-outline-secondary">@i</a>
+                        }
+                    }
+
+                    @if (pageNumber < totalPages)
+                    {
+                        <a href="@Url.Action("Index", "Role", new { area = "Admin", pageNumber = pageNumber + 1, searchTerm })" class="btn btn-outline-secondary" title="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const roleId = this.dataset.roleId;
+                if (confirm('Bạn có chắc muốn xóa vai trò này?')) {
+                    fetch('@Url.Action("Delete", "Role", new { area = "Admin" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ roleId: roleId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    </script>
+}

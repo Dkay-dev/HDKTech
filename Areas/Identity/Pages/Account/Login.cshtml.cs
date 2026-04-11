@@ -84,7 +84,10 @@ namespace HDKTech.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("Người dùng đã đăng nhập.");
-                    return LocalRedirect(returnUrl);
+
+                    // Always redirect to Home (/) for all users, regardless of admin role
+                    // Admin users will see sidebar and can access admin functions from there
+                    return LocalRedirect("~/");
                 }
                 if (result.RequiresTwoFactor)
                 {

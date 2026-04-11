@@ -1,0 +1,184 @@
+@model IEnumerable<KhuyenMai>
+
+@{
+    ViewData["Title"] = "Quản lý Khuyến mãi";
+}
+
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+    <div class="space-y-2">
+        <h1 class="text-4xl font-extrabold tracking-tight text-on-surface">Quản lý Khuyến mãi</h1>
+        <p class="text-zinc-500 max-w-2xl font-body">Quản lý các chiến dịch khuyến mãi, theo dõi lượt sử dụng và hiệu suất của các mã giảm giá.</p>
+    </div>
+    <a href="@Url.Action("Create")" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:bg-primary-container transition-all active:scale-95 group">
+        <span class="material-symbols-outlined">add_circle</span>
+        Thêm Khuyến mãi Mới
+    </a>
+</div>
+
+
+<!-- Quick Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-transparent hover:border-outline-variant/20 transition-all group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-3 bg-red-50 text-red-700 rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+            </div>
+        </div>
+        <p class="text-sm font-medium text-zinc-500">Tổng số chiến dịch</p>
+        <h3 class="text-3xl font-black text-on-surface">@Model.Count()</h3>
+    </div>
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-transparent hover:border-outline-variant/20 transition-all group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-3 bg-green-50 text-green-700 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+            </div>
+        </div>
+        <p class="text-sm font-medium text-zinc-500">Đang chạy</p>
+        <h3 class="text-3xl font-black text-on-surface">@Model.Count(k => k.TrangThai == "Running")</h3>
+    </div>
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-transparent hover:border-outline-variant/20 transition-all group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-3 bg-amber-50 text-amber-700 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">schedule</span>
+            </div>
+        </div>
+        <p class="text-sm font-medium text-zinc-500">Sắp diễn ra</p>
+        <h3 class="text-3xl font-black text-on-surface">@Model.Count(k => k.TrangThai == "Scheduled")</h3>
+    </div>
+</div>
+
+<!-- Section: Active Promotions Table -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-transparent overflow-hidden">
+    <div class="px-8 py-6 border-b border-surface-container flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="w-1.5 h-8 bg-tertiary rounded-full"></span>
+            <h2 class="text-xl font-bold tracking-tight">Chiến dịch khuyến mãi</h2>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-on-surface transition-colors">Export CSV</button>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-6xl text-zinc-300 mx-auto block mb-4">local_offer</span>
+            <p class="text-zinc-500 font-medium">Không có chiến dịch nào. <a href="@Url.Action("Create")" class="text-primary hover:underline font-bold">Tạo chiến dịch mới</a></p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low/50">
+                        <th class="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Tên chiến dịch</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Thời gian</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Giảm giá</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Trạng thái</th>
+                        <th class="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-surface-container">
+                    @foreach (var promo in Model.OrderByDescending(p => p.NgayTao))
+                    {
+                        <tr class="hover:bg-surface-container-low/30 transition-colors">
+                            <td class="px-8 py-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded bg-red-50 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">percent</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm text-on-surface">@promo.TenChienDich</p>
+                                        <p class="text-[10px] text-zinc-500">@promo.DanhMucAp</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-5">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium text-on-surface">@promo.NgayBatDau.ToString("dd/MM") - @promo.NgayKetThuc.ToString("dd/MM")</span>
+                                    <span class="text-[10px] text-zinc-400">
+                                        @{
+                                            var remaining = (promo.NgayKetThuc - DateTime.Now).TotalDays;
+                                            string remainingText = "Không xác định";
+                                            if (remaining < 0)
+                                            {
+                                                remainingText = "Đã kết thúc";
+                                            }
+                                            else if (remaining > 1)
+                                            {
+                                                remainingText = $"Còn {remaining:0} ngày";
+                                            }
+                                            else if (remaining > 0)
+                                            {
+                                                remainingText = "Còn <1 ngày";
+                                            }
+                                            else
+                                            {
+                                                remainingText = "Hôm nay kết thúc";
+                                            }
+                                        }
+                                        @remainingText
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-5">
+                                @if (promo.LoaiKhuyenMai == "Percentage")
+                                {
+                                    <span class="px-2.5 py-1 bg-red-100 text-red-700 text-[10px] font-black rounded-md">@promo.GiaTri% OFF</span>
+                                }
+                                else if (promo.LoaiKhuyenMai == "FixedAmount")
+                                {
+                                    <span class="px-2.5 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-md">@promo.GiaTri.ToString("#,##0")₫</span>
+                                }
+                                else
+                                {
+                                    <span class="px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-md">Miễn phí vận chuyển</span>
+                                }
+                            </td>
+                            <td class="px-6 py-5">
+                                <div class="flex items-center gap-2">
+                                    @switch (promo.TrangThai)
+                                    {
+                                        case "Running":
+                                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                            <span class="text-xs font-bold text-on-surface">Đang chạy</span>
+                                            break;
+                                        case "Scheduled":
+                                            <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                            <span class="text-xs font-bold text-on-surface">Sắp diễn ra</span>
+                                            break;
+                                        case "Ended":
+                                            <span class="w-2 h-2 bg-zinc-400 rounded-full"></span>
+                                            <span class="text-xs font-bold text-zinc-500">Kết thúc</span>
+                                            break;
+                                        default:
+                                            <span class="text-xs font-bold text-on-surface">@promo.TrangThai</span>
+                                            break;
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-8 py-5 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="@Url.Action("Details", new { id = promo.MaKhuyenMai })" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-zinc-500 transition-colors" title="Chi tiết">
+                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                                    </a>
+                                    <a href="@Url.Action("Edit", new { id = promo.MaKhuyenMai })" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-zinc-500 transition-colors" title="Chỉnh sửa">
+                                        <span class="material-symbols-outlined text-lg">edit_note</span>
+                                    </a>
+                                    <form method="post" action="@Url.Action("Delete", new { id = promo.MaKhuyenMai })" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-500 hover:text-red-600 transition-colors" onclick="return confirm('Bạn chắc chắn muốn xóa chiến dịch này?')" title="Xóa">
+                                            <span class="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,333 @@
+@{
+    ViewData["Title"] = "Chi tiết Đơn Hàng";
+    var order = (HDKTech.Models.DonHang)ViewBag.Order;
+
+    var statusName = order.TrangThaiDonHang switch
+    {
+        0 => "Chờ xác nhận",
+        1 => "Đang xử lý",
+        2 => "Đang giao",
+        3 => "Đã giao",
+        4 => "Đã hủy",
+        _ => "Không xác định"
+    };
+
+    var statusColor = order.TrangThaiDonHang switch
+    {
+        0 => "error",
+        1 => "outline",
+        2 => "secondary",
+        3 => "tertiary",
+        4 => "zinc-400",
+        _ => "outline"
+    };
+}
+
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <a href="@Url.Action("Index", "Order", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                    Quay lại
+                </a>
+            </div>
+            <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Đơn Hàng <span class="text-primary">@order.MaDonHangChuoi</span></h1>
+        </div>
+        <div>
+            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-@statusColor text-white" style="background-color: @(order.TrangThaiDonHang == 0 ? "#ba1a1a" : order.TrangThaiDonHang == 1 ? "#946e69" : order.TrangThaiDonHang == 2 ? "#b22a22" : order.TrangThaiDonHang == 3 ? "#006195" : "#a1a1a1");">
+                @statusName
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Order Information Card -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm border-l-4 border-primary">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    Thông tin đơn hàng
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mã Đơn Hàng</p>
+                        <p class="text-sm font-bold text-on-surface">@order.MaDonHangChuoi</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Ngày Đặt</p>
+                        <p class="text-sm font-bold text-on-surface">@order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Trạng Thái</p>
+                        <p class="text-sm font-bold text-on-surface">@statusName</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Tổng Giá Trị</p>
+                        <p class="text-sm font-bold text-primary">@order.TongTien.ToString("C0")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Information -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm border-l-4 border-secondary-container">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    Thông tin giao hàng
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Người Nhận</p>
+                        <p class="text-sm font-bold text-on-surface">@order.TenNguoiNhan</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Số Điện Thoại</p>
+                        <p class="text-sm font-bold text-on-surface">@order.SoDienThoaiNhan</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Địa Chỉ Giao Hàng</p>
+                        <p class="text-sm font-bold text-on-surface">@order.DiaChiGiaoHang</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Phí Vận Chuyển</p>
+                        <p class="text-sm font-bold text-on-surface">@order.PhiVanChuyen.ToString("C0")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-surface-container">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined">shopping_bag</span>
+                        Chi tiết sản phẩm
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-b border-surface-container bg-surface-container-low">
+                                <th class="px-6 py-4">Sản Phẩm</th>
+                                <th class="px-6 py-4">Giá</th>
+                                <th class="px-6 py-4 text-center">Số Lượng</th>
+                                <th class="px-6 py-4 text-right">Tổng Cộng</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-surface-container">
+                            @if (order.ChiTietDonHangs != null && order.ChiTietDonHangs.Count > 0)
+                            {
+                                @foreach (var item in order.ChiTietDonHangs)
+                                {
+                                    <tr class="hover:bg-surface-container-low transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                @if (item.SanPham?.HinhAnhs?.FirstOrDefault() != null)
+                                                {
+                                                    <img src="@item.SanPham.HinhAnhs.FirstOrDefault().Url" alt="@item.SanPham.TenSanPham" class="w-12 h-12 rounded object-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center">
+                                                        <span class="material-symbols-outlined text-zinc-400">image</span>
+                                                    </div>
+                                                }
+                                                <div>
+                                                    <p class="text-sm font-semibold text-on-surface">@item.SanPham?.TenSanPham</p>
+                                                    <p class="text-xs text-zinc-500">SKU: @item.SanPham?.MaSanPham</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-bold text-on-surface">
+                                            @item.GiaBanLucMua.ToString("C0")
+                                        </td>
+                                        <td class="px-6 py-4 text-center text-sm font-bold text-on-surface">
+                                            @item.SoLuong
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-sm font-bold text-primary">
+                                            @(item.GiaBanLucMua * item.SoLuong).ToString("C0")
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="px-6 py-6 border-t border-surface-container bg-surface-container-low space-y-3">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-zinc-600">Tổng sản phẩm:</span>
+                        <span class="font-bold text-on-surface">@order.ChiTietDonHangs?.Sum(x => x.SoLuong) ?? 0 sản phẩm</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-zinc-600">Tiền hàng:</span>
+                        <span class="font-bold text-on-surface">@(order.TongTien - order.PhiVanChuyen).ToString("C0")</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-zinc-600">Phí vận chuyển:</span>
+                        <span class="font-bold text-on-surface">@order.PhiVanChuyen.ToString("C0")</span>
+                    </div>
+                    <div class="flex justify-between items-center text-base border-t border-surface-container pt-3 mt-3">
+                        <span class="font-bold text-on-surface">Tổng cộng:</span>
+                        <span class="font-extrabold text-primary text-lg">@order.TongTien.ToString("C0")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Customer Information -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">person</span>
+                    Khách Hàng
+                </h2>
+                @if (order.NguoiDung != null)
+                {
+                    <div class="space-y-3">
+                            <div class="flex items-center gap-3 mb-4">
+                                @if (order.NguoiDung != null)
+                                {
+                                    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                                        @(order.NguoiDung.HoTen.FirstOrDefault().ToString().ToUpper())
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="w-12 h-12 rounded-full bg-zinc-300 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-zinc-600">person</span>
+                                    </div>
+                                }
+                                <div>
+                                    <p class="font-bold text-on-surface">@order.NguoiDung?.HoTen</p>
+                                    <p class="text-xs text-zinc-500">ID: @order.NguoiDung?.Id</p>
+                                </div>
+                            </div>
+                        <div>
+                            <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Email</p>
+                            <p class="text-sm text-on-surface">@order.NguoiDung.Email</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Số Điện Thoại</p>
+                            <p class="text-sm text-on-surface">@order.NguoiDung.PhoneNumber</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-zinc-500">Khách hàng không xác định</p>
+                }
+            </div>
+
+            <!-- Status Management -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">update</span>
+                    Cập nhật trạng thái
+                </h2>
+                <div class="space-y-2">
+                    <button type="button" class="w-full px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded font-bold text-sm transition-colors status-btn" data-status="0" @(order.TrangThaiDonHang == 0 ? "disabled" : "")>
+                        <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">schedule</span>
+                        Chờ xác nhận
+                    </button>
+                    <button type="button" class="w-full px-4 py-2 bg-outline/10 hover:bg-outline/20 text-on-surface-variant rounded font-bold text-sm transition-colors status-btn" data-status="1" @(order.TrangThaiDonHang == 1 ? "disabled" : "")>
+                        <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">hourglass_bottom</span>
+                        Đang xử lý
+                    </button>
+                    <button type="button" class="w-full px-4 py-2 bg-secondary-container/20 hover:bg-secondary-container/30 text-on-secondary rounded font-bold text-sm transition-colors status-btn" data-status="2" @(order.TrangThaiDonHang == 2 ? "disabled" : "")>
+                        <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">local_shipping</span>
+                        Đang giao
+                    </button>
+                    <button type="button" class="w-full px-4 py-2 bg-tertiary/10 hover:bg-tertiary/20 text-tertiary rounded font-bold text-sm transition-colors status-btn" data-status="3" @(order.TrangThaiDonHang == 3 ? "disabled" : "")>
+                        <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">check_circle</span>
+                        Đã giao
+                    </button>
+                    @if (order.TrangThaiDonHang != 3 && order.TrangThaiDonHang != 4)
+                    {
+                        <button type="button" class="w-full px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded font-bold text-sm transition-colors" id="cancelBtn">
+                            <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">close</span>
+                            Hủy đơn hàng
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">event_note</span>
+                    Lịch sử
+                </h2>
+                <div class="text-center py-8 text-zinc-500">
+                    <span class="material-symbols-outlined text-4xl opacity-30 block mb-2">history</span>
+                    <p class="text-sm">Chưa có dữ liệu lịch sử</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const status = this.dataset.status;
+                const orderId = @order.MaDonHang;
+
+                fetch('@Url.Action("UpdateStatus", "Order", new { area = "Admin" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ orderId: orderId, newStatus: status })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi');
+                });
+            });
+        });
+
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
+                    const orderId = @order.MaDonHang;
+
+                    fetch('@Url.Action("CancelOrder", "Order", new { area = "Admin" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ orderId: orderId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Đã xảy ra lỗi');
+                    });
+                }
+            });
+        }
+    </script>
+}

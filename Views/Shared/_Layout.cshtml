@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
 </head>
 <body style="background-color: #f5f5f5;">
 
@@ -23,7 +24,7 @@
                 <div class="hdk-tier1-left d-flex align-items-center gap-4 flex-shrink-0">
 
                     <!-- LOGO -->
-                    <a asp-controller="Home" asp-action="Index" class="text-decoration-none d-flex align-items-center">
+                    <a href="/" class="text-decoration-none d-flex align-items-center">
                         <div class="hdk-logo">
                             <span class="hdk-logo-hdk">HDK</span><span class="hdk-logo-tech">Tech</span>
                         </div>
@@ -31,20 +32,25 @@
 
                     <!-- NAVIGATION LINKS (Desktop only) -->
                     <div class="hdk-nav-links d-none d-lg-flex gap-4 align-items-center ms-2">
-                        <a asp-controller="Home" asp-action="About" title="Về chúng tôi" class="nav-link-item">Về chúng tôi</a>
-                        <a asp-controller="Home" asp-action="Privacy" title="Chính sách" class="nav-link-item">Chính sách</a>
-                        <a asp-controller="Home" asp-action="Hotline" title="Liên hệ" class="nav-link-item">Liên hệ</a>
+                        <a asp-area="" asp-controller="Home" asp-action="About" title="Về chúng tôi" class="nav-link-item">Về chúng tôi</a>
+                        <a asp-area="" asp-controller="Home" asp-action="Privacy" title="Chính sách" class="nav-link-item">Chính sách</a>
+                        <a asp-area="" asp-controller="Home" asp-action="Hotline" title="Liên hệ" class="nav-link-item">Liên hệ</a>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <div class="col-auto">
+                                <button class="btn btn-outline-light btn-sm hdk-sidebar-toggle" id="sidebarToggle" title="Mở quản trị">
+                                    <i class="bi bi-sliders"></i>
+                                    <span class="ms-1 d-none d-lg-inline">Quản trị</span>
+                                </button>
+                            </div>
+                        }
                     </div>
                 </div>
 
                 <!-- ═══ RIGHT SECTION: Hotline + Auth + Cart ═══ -->
                 <div class="hdk-tier1-right d-flex align-items-center gap-3 flex-shrink-0">
 
-                    <!-- HOTLINE BUTTON -->
-                    <a href="tel:1900123456" class="hdk-hotline-btn d-none d-lg-inline-flex align-items-center flex-shrink-0">
-                        <i class="bi bi-telephone-fill"></i>
-                        <span class="ms-2 fw-bold">1900.123.456</span>
-                    </a>
+                    
 
                     <!-- AUTH LINKS -->
                     <div class="hdk-auth-links d-none d-lg-flex gap-0 align-items-center flex-shrink-0">
@@ -52,7 +58,7 @@
                     </div>
 
                     <!-- CART ICON -->
-                    <a asp-controller="Cart" asp-action="Index" class="hdk-cart-container d-inline-flex align-items-center justify-content-center position-relative flex-shrink-0">
+                    <a asp-area="" asp-controller="Cart" asp-action="Index" class="hdk-cart-container d-inline-flex align-items-center justify-content-center position-relative flex-shrink-0">
                         <i class="bi bi-bag-fill hdk-cart-icon"></i>
                         <span id="cartBadge" class="hdk-cart-badge">0</span>
                     </a>
@@ -67,19 +73,17 @@
             <!-- MOBILE MENU (Collapsed) -->
             <div class="collapse d-lg-none" id="mobileMenu">
                 <div class="pb-3 border-top border-dark-subtle">
-                    <a asp-controller="Home" asp-action="About" class="d-block text-white text-decoration-none small py-2">Về chúng tôi</a>
-                    <a asp-controller="Home" asp-action="Privacy" class="d-block text-white text-decoration-none small py-2">Chính sách</a>
-                    <a asp-controller="Home" asp-action="Hotline" class="d-block text-white text-decoration-none small py-2">Liên hệ</a>
-                    <a href="tel:1900123456" class="d-block hdk-hotline-btn mt-3 justify-content-center w-100">
-                        <i class="bi bi-telephone-fill"></i> 1900.123.456
-                    </a>
+                    <a asp-area="" asp-controller="Home" asp-action="About" class="d-block text-white text-decoration-none small py-2">Về chúng tôi</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="d-block text-white text-decoration-none small py-2">Chính sách</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Hotline" class="d-block text-white text-decoration-none small py-2">Liên hệ</a>
+
                 </div>
             </div>
         </div>
     </header>
 
     <!-- ╔════════════════════════════════════════════════════════════════╗ -->
-    <!-- ║ HEADER TIER 2: Category Menu | Search Bar                     ║ -->
+    <!-- ║ HEADER TIER 2: Category Menu | Search Bar | Admin Menu        ║ -->
     <!-- ║ Color: #252525 (Dark Gray)                                    ║ -->
     <!-- ╚════════════════════════════════════════════════════════════════╝ -->
     <header class="hdk-tier2-header sticky-top" style="top: 73px;">
@@ -102,7 +106,7 @@
 
                 <!-- ═══ SEARCH BAR ═══ -->
                 <div class="col">
-                    <form asp-controller="Product" asp-action="Search" method="get" class="w-100">
+                    <form asp-area="" asp-controller="Product" asp-action="Search" method="get" class="w-100">
                         <div class="hdk-search-container">
                             <input type="text" 
                                    class="hdk-search-input" 
@@ -115,6 +119,9 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- ═══ ADMIN MENU TOGGLE (Sidebar) ═══ -->
+                
             </div>
         </div>
     </header>
@@ -123,6 +130,71 @@
     <!-- Toast Container (Notifications) -->
     <!-- ═════════════════════════════════════════════════════════════════ -->
     <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1040;"></div>
+
+    <!-- ═════════════════════════════════════════════════════════════════ -->
+    <!-- ADMIN SIDEBAR (Visible only for admin users) -->
+    <!-- ═════════════════════════════════════════════════════════════════ -->
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="hdk-admin-sidebar" id="adminSidebar">
+            <!-- Sidebar Header -->
+            <div class="hdk-sidebar-header">
+                <h6 class="mb-0">Quản trị</h6>
+                <button class="hdk-sidebar-close" id="sidebarClose" title="Đóng">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="hdk-sidebar-menu">
+                <!-- ADMIN FUNCTIONS -->
+                <div class="hdk-sidebar-section">
+                    <div class="hdk-sidebar-section-title">Quản lý</div>
+                    <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Product" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-laptop"></i>
+                        <span>Sản phẩm</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Category" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-list"></i>
+                        <span>Danh mục</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Brand" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-building"></i>
+                        <span>Thương hiệu</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Banner" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-images"></i>
+                        <span>Banner</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Order" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-cart-check"></i>
+                        <span>Đơn hàng</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="KhuyenMai" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-tag"></i>
+                        <span>Khuyến mãi</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Role" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Phân quyền</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="SystemLog" asp-action="Index" class="hdk-sidebar-item">
+                        <i class="bi bi-terminal"></i>
+                        <span>Nhật ký Hệ thống</span>
+                    </a>
+                </div>
+
+          
+            </nav>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div class="hdk-sidebar-overlay" id="sidebarOverlay"></div>
+    }
 
     <!-- ═════════════════════════════════════════════════════════════════ -->
     <!-- MAIN CONTENT AREA -->
@@ -432,19 +504,19 @@
                 <!-- Column 2: About -->
                 <div class="footer-column footer-about">
                     <h5>Về chúng tôi</h5>
-                    <a asp-controller="Home" asp-action="About" class="footer-column-link">Giới thiệu công ty</a>
-                    <a asp-controller="Home" asp-action="Privacy" class="footer-column-link">Tin tức</a>
+                    <a asp-area="" asp-controller="Home" asp-action="About" class="footer-column-link">Giới thiệu công ty</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-column-link">Tin tức</a>
                     <a href="#" class="footer-column-link">Tuyển dụng</a>
-                    <a asp-controller="Home" asp-action="Hotline" class="footer-column-link">Liên hệ</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Hotline" class="footer-column-link">Liên hệ</a>
                 </div>
 
                 <!-- Column 3: Support -->
                 <div class="footer-column footer-support">
                     <h5>Hỗ trợ khách hàng</h5>
-                    <a asp-controller="Home" asp-action="Privacy" class="footer-column-link">Chính sách bảo hành</a>
-                    <a asp-controller="Home" asp-action="Privacy" class="footer-column-link">Chính sách đổi trả</a>
-                    <a asp-controller="Home" asp-action="Privacy" class="footer-column-link">Hướng dẫn mua hàng</a>
-                    <a asp-controller="Home" asp-action="Privacy" class="footer-column-link">Phương thức thanh toán</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-column-link">Chính sách bảo hành</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-column-link">Chính sách đổi trả</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-column-link">Hướng dẫn mua hàng</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-column-link">Phương thức thanh toán</a>
                 </div>
 
                 <!-- Column 4: Contact Info -->
@@ -483,7 +555,7 @@
             <!-- Bottom Footer -->
             <div class="footer-bottom">
                 <p class="footer-copyright">
-                    &copy; 2026 <a asp-controller="Home" asp-action="Index">HDKTech</a>. Tất cả các quyền được bảo lưu.
+                    &copy; 2026 <a asp-area="" asp-controller="Home" asp-action="Index">HDKTech</a>. Tất cả các quyền được bảo lưu.
                 </p>
                 <p class="footer-credit">
                     Powered by HDKTech | Thiết kế & Phát triển bởi <a href="#" style="color: var(--hdk-red); text-decoration: none;">HDKTech Team</a>
@@ -499,6 +571,49 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/image-fallback.js"></script>
     <script src="~/js/cart.js"></script>
+
+    <!-- Admin Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarClose = document.getElementById('sidebarClose');
+            const adminSidebar = document.getElementById('adminSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    adminSidebar.classList.toggle('active');
+                    sidebarOverlay.classList.toggle('active');
+                });
+            }
+
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    adminSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    adminSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                });
+            }
+
+            // Close sidebar when clicking on a menu item
+            const sidebarItems = document.querySelectorAll('.hdk-sidebar-item');
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    adminSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                });
+            });
+        });
+    </script>
+
     @RenderSection("Scripts", required: false)
 </body>
 </html>

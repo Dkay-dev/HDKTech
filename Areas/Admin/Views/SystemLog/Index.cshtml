@@ -1,0 +1,320 @@
+@{
+    ViewData["Title"] = "Nhật ký Hệ thống";
+    var logs = (List<HDKTech.Models.SystemLog>)ViewBag.Logs ?? new List<HDKTech.Models.SystemLog>();
+    var totalLogs = (int)ViewBag.TotalLogs;
+    var stats = ((int, int, int, int, int))ViewBag.TodayStats;
+    var percentIncrease = (int)ViewBag.PercentIncrease;
+    var currentPage = (int)ViewBag.CurrentPage;
+    var totalPages = (int)ViewBag.TotalPages;
+    var totalCount = (int)ViewBag.TotalCount;
+    var modules = (List<string>)ViewBag.Modules ?? new List<string>();
+    var actionTypes = (List<string>)ViewBag.ActionTypes ?? new List<string>();
+}
+
+@section Styles {
+    <style>
+        .action-badge-create {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .action-badge-update {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .action-badge-delete {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-badge-login {
+            background-color: #fef3c7;
+            color: #78350f;
+        }
+
+        .action-badge-logout {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+        }
+    </style>
+}
+
+<!-- Header Section -->
+<div class="mb-4">
+    <h2 class="h3 fw-bold mb-2">Nhật ký Hệ thống</h2>
+    <p class="text-muted">Theo dõi toàn bộ các hoạt động và thay đổi dữ liệu trên hệ thống HDKTech.</p>
+</div>
+
+<!-- Quick Stats: Asymmetric Layout -->
+<div class="row g-3 mb-4">
+    <!-- Total Logs Card -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-start justify-content-between">
+                <div>
+                    <p class="small fw-bold text-muted mb-3">Tổng Logs</p>
+                    <h3 class="display-6 fw-bold mb-3">@(totalLogs > 1000000 ? (totalLogs / 1000000.0).ToString("F1") + "M+" : totalLogs.ToString("N0"))</h3>
+                    <p class="small text-success fw-bold">
+                        <i class="bi bi-graph-up"></i>
+                        +@percentIncrease% so với tháng trước
+                    </p>
+                </div>
+                <div class="bg-light p-3 rounded text-danger">
+                    <i class="bi bi-clock-history" style="font-size: 1.5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Actions Card -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm border-start border-5 border-danger h-100">
+            <div class="card-body">
+                <p class="small fw-bold text-muted mb-3">Hôm nay</p>
+                <h3 class="h2 fw-bold mb-4">@stats.Item1.ToString("N0")</h3>
+                <div class="d-flex gap-1">
+                    <div style="height: 4px; flex: 1; background-color: #bc000c; border-radius: 2px;"></div>
+                    <div style="height: 4px; flex: 1; background-color: #bc000c; opacity: 0.4; border-radius: 2px;"></div>
+                    <div style="height: 4px; flex: 1; background-color: #bc000c; opacity: 0.2; border-radius: 2px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Alerts Card -->
+    <div class="col-12 col-lg-3">
+        <div class="card border-0 shadow-sm bg-warning bg-opacity-10">
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-shield-exclamation text-warning"></i>
+                        <p class="small fw-bold text-muted mb-0">Cảnh báo bảo mật</p>
+                    </div>
+                    <h3 class="h2 fw-bold mb-0">24 Critical</h3>
+                </div>
+                <button class="btn btn-warning btn-sm w-100 mt-3 fw-bold">Xem chi tiết</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Search -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <!-- Search -->
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold">Tìm kiếm</label>
+                <input name="search" class="form-control form-control-sm" placeholder="Lọc theo mô tả..." value="@ViewBag.SearchText" />
+            </div>
+
+            <!-- Action Type -->
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold">Hành động</label>
+                <select name="actionType" class="form-select form-select-sm">
+                    <option value="">Tất cả hành động</option>
+                    @foreach (var type in actionTypes)
+                    {
+                        <option value="@type" selected="@(ViewBag.SelectedActionType == type)">@type</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Module -->
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold">Phần hành</label>
+                <select name="module" class="form-select form-select-sm">
+                    <option value="">Tất cả phần hành</option>
+                    @foreach (var mod in modules)
+                    {
+                        <option value="@mod" selected="@(ViewBag.SelectedModule == mod)">@mod</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Search Button -->
+            <div class="col-12 col-md-2 d-flex gap-2 align-items-end">
+                <button type="submit" class="btn btn-danger btn-sm w-100">
+                    <i class="bi bi-search"></i>
+                    Lọc
+                </button>
+                <a href="@Url.Action("Index", "SystemLog")" class="btn btn-outline-secondary btn-sm">
+                    Đặt lại
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        @if (logs.Any())
+        {
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="small fw-bold text-muted">Thời gian</th>
+                        <th class="small fw-bold text-muted">Người thực hiện</th>
+                        <th class="small fw-bold text-muted">Hành động</th>
+                        <th class="small fw-bold text-muted">Phần hành</th>
+                        <th class="small fw-bold text-muted">Chi tiết</th>
+                        <th class="text-end small fw-bold text-muted"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in logs)
+                    {
+                        <tr data-log-id="@log.Id">
+                            <td>
+                                <p class="small fw-semibold mb-0">@log.Timestamp.ToString("HH:mm:ss")</p>
+                                <p class="small text-muted mb-0">@log.Timestamp.ToString("dd/MM/yyyy")</p>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar bg-danger text-white @(log.Username.Length > 0 ? "bg-info" : "bg-light")">
+                                        @if (log.Username.Length > 0)
+                                        {
+                                            @log.Username.Substring(0, Math.Min(2, log.Username.Length)).ToUpper()
+                                        }
+                                    </div>
+                                    <p class="small fw-medium mb-0">@log.Username</p>
+                                </div>
+                            </td>
+                            <td>
+                                @{
+                                    var actionClass = log.ActionType switch
+                                    {
+                                        "Create" => "action-badge-create",
+                                        "Update" => "action-badge-update",
+                                        "Delete" => "action-badge-delete",
+                                        "Login" => "action-badge-login",
+                                        "Logout" => "action-badge-logout",
+                                        _ => "bg-light text-muted"
+                                    };
+                                }
+                                <span class="badge @actionClass small">@log.ActionType</span>
+                            </td>
+                            <td>
+                                <p class="small fw-bold mb-0">@log.Module</p>
+                            </td>
+                            <td>
+                                <p class="small text-muted mb-0 text-truncate" title="@log.Description">@log.Description</p>
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-link text-secondary" 
+                                    onclick="showLogDetails(@log.Id)" title="Chi tiết">
+                                    <i class="bi bi-info-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="p-5 text-center">
+                <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted fw-medium mt-3">Không có nhật ký nào để hiển thị</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Pagination -->
+@if (logs.Any())
+{
+    <div class="mt-4 p-3 bg-light rounded d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <p class="small text-muted mb-0">
+            Hiển thị <span class="fw-bold">@((currentPage - 1) * 10 + 1)</span> - <span class="fw-bold">@Math.Min(currentPage * 10, totalCount)</span> 
+            trong số <span class="fw-bold">@totalCount.ToString("N0")</span> nhật ký
+        </p>
+
+        <div class="btn-group btn-group-sm">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Index", "SystemLog", new { page = currentPage - 1, search = ViewBag.SearchText, actionType = ViewBag.SelectedActionType, module = ViewBag.SelectedModule })" 
+                    class="btn btn-outline-secondary">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            }
+            else
+            {
+                <button disabled class="btn btn-outline-secondary opacity-50">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            }
+
+            @for (int i = 1; i <= totalPages && i <= 5; i++)
+            {
+                @if (i == currentPage)
+                {
+                    <button class="btn btn-danger">@i</button>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "SystemLog", new { page = i, search = ViewBag.SearchText, actionType = ViewBag.SelectedActionType, module = ViewBag.SelectedModule })" 
+                        class="btn btn-outline-secondary">@i</a>
+                }
+            }
+
+            @if (totalPages > 5)
+            {
+                <span class="btn btn-outline-secondary disabled">...</span>
+                <a href="@Url.Action("Index", "SystemLog", new { page = totalPages })" class="btn btn-outline-secondary">@totalPages</a>
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Index", "SystemLog", new { page = currentPage + 1, search = ViewBag.SearchText, actionType = ViewBag.SelectedActionType, module = ViewBag.SelectedModule })" 
+                    class="btn btn-outline-secondary">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            }
+            else
+            {
+                <button disabled class="btn btn-outline-secondary opacity-50">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            }
+        </div>
+
+        <a href="@Url.Action("Export", "SystemLog")" class="small fw-bold text-danger text-decoration-none">
+            <i class="bi bi-download"></i>
+            Export CSV
+        </a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function showLogDetails(logId) {
+            console.log('Show details for log:', logId);
+            alert('Chi tiết log ID: ' + logId);
+        }
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(function() {
+            fetch('@Url.Action("GetStats", "SystemLog", new { area = "Admin" })')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Stats updated:', data.data);
+                    }
+                });
+        }, 30000);
+    </script>
+}

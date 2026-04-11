@@ -1,0 +1,191 @@
+@{
+    ViewData["Title"] = "Chi tiết Thương Hiệu";
+    var brand = (HDKTech.Models.HangSX)ViewBag.Brand;
+}
+
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                    Quay lại
+                </a>
+            </div>
+            <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Thương Hiệu: <span class="text-primary">@brand.TenHangSX</span></h1>
+        </div>
+        <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="px-4 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm flex items-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-lg">edit</span>
+            Chỉnh sửa
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Brand Info -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm border-l-4 border-primary">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    Thông tin thương hiệu
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mã Thương Hiệu</p>
+                        <p class="text-sm font-bold text-on-surface">#@brand.MaHangSX</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Tên Thương Hiệu</p>
+                        <p class="text-sm font-bold text-on-surface">@brand.TenHangSX</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mô Tả</p>
+                        <p class="text-sm text-on-surface">@(brand.MoTa ?? "Chưa có mô tả")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products -->
+            @if (brand.SanPhams != null && brand.SanPhams.Count > 0)
+            {
+                <div class="bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-surface-container">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined">shopping_bag</span>
+                            Sản phẩm (@brand.SanPhams.Count)
+                        </h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-b border-surface-container bg-surface-container-low">
+                                    <th class="px-6 py-4">Tên Sản Phẩm</th>
+                                    <th class="px-6 py-4">Giá</th>
+                                    <th class="px-6 py-4 text-center">Kho</th>
+                                    <th class="px-6 py-4 text-center">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-surface-container">
+                                @foreach (var product in brand.SanPhams.Take(10))
+                                {
+                                    <tr class="hover:bg-surface-container-low transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                @if (product.HinhAnhs?.FirstOrDefault() != null)
+                                                {
+                                                    <img src="@product.HinhAnhs.FirstOrDefault().Url" alt="@product.TenSanPham" class="w-10 h-10 rounded object-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center">
+                                                        <span class="material-symbols-outlined text-zinc-400">image</span>
+                                                    </div>
+                                                }
+                                                <p class="text-sm font-semibold text-on-surface">@product.TenSanPham</p>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-bold text-primary">@product.Gia.ToString("C0")</td>
+                                        <td class="px-6 py-4 text-center">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold @(product.KhoHangs?.Sum(k => k.SoLuong) > 0 ? "bg-tertiary-fixed/30 text-on-tertiary" : "bg-error-container/30 text-on-error-container")">
+                                                @(product.KhoHangs?.Sum(k => k.SoLuong) ?? 0)
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <a href="@Url.Action("Details", "Product", new { area = "Admin", id = product.MaSanPham })" class="text-primary hover:underline text-xs font-medium">
+                                                Xem →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (brand.SanPhams.Count > 10)
+                    {
+                        <div class="px-6 py-4 border-t border-surface-container text-center bg-surface-container-low">
+                            <p class="text-xs text-zinc-500">Hiển thị 10 trong @brand.SanPhams.Count sản phẩm</p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Stats -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Thống kê
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Sản phẩm</p>
+                        <p class="text-2xl font-bold text-on-surface">@(brand.SanPhams?.Count ?? 0)</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Tổng hàng tồn kho</p>
+                        <p class="text-2xl font-bold text-on-surface">@(brand.SanPhams?.Sum(p => p.KhoHangs?.Sum(k => k.SoLuong) ?? 0) ?? 0)</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Giá trị hàng tồn kho</p>
+                        <p class="text-2xl font-bold text-primary">
+                            @{
+                                var inventory = brand.SanPhams?.Sum(p => p.Gia * (p.KhoHangs?.Sum(k => k.SoLuong) ?? 0)) ?? 0;
+                                <text>@inventory.ToString("C0")</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">build</span>
+                    Hành động
+                </h2>
+                <div class="space-y-2">
+                    <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="w-full px-4 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">edit</span>
+                        Chỉnh sửa
+                    </a>
+                    <button type="button" id="deleteBtn" class="w-full px-4 py-2.5 bg-error hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">delete</span>
+                        Xóa thương hiệu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('deleteBtn').addEventListener('click', function() {
+            if (confirm('Bạn có chắc muốn xóa thương hiệu này? Thương hiệu phải không có sản phẩm.')) {
+                fetch('@Url.Action("Delete", "Brand", new { area = "Admin" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ brandId: @brand.MaHangSX })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '@Url.Action("Index", "Brand", new { area = "Admin" })';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi');
+                });
+            }
+        });
+    </script>
+}

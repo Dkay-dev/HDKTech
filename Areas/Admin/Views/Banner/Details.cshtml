@@ -1,0 +1,108 @@
+@model Banner
+
+@{
+    ViewData["Title"] = $"Chi tiết - {Model.TenBanner}";
+}
+
+<div class="mb-8">
+    <a href="@Url.Action("Index")" class="inline-flex items-center gap-2 text-primary hover:underline mb-4">
+        <span class="material-symbols-outlined">arrow_back</span>Quay lại
+    </a>
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">@Model.TenBanner</h1>
+    <p class="text-zinc-500">Chi tiết banner</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Ảnh Banner -->
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="h-96 bg-gray-100">
+                <img src="@Model.ImageUrl" alt="@Model.TenBanner" class="w-full h-full object-cover" />
+            </div>
+        </div>
+
+        <!-- Thông tin chi tiết -->
+        <div class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+            <div>
+                <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Tên Banner</h3>
+                <p class="text-lg font-bold text-on-surface">@Model.TenBanner</p>
+            </div>
+
+            <div class="border-t border-surface-container pt-6">
+                <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Mô tả</h3>
+                <p class="text-on-surface">@Model.MoTa</p>
+            </div>
+
+            <div class="border-t border-surface-container pt-6">
+                <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Link Banner</h3>
+                <p class="text-on-surface font-mono">@Model.LinkBanner</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 border-t border-surface-container pt-6">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Loại Banner</h3>
+                    <p class="text-on-surface">
+                        @switch (Model.LoaiBanner)
+                        {
+                            case "Main":
+                                <span>Trang Chủ</span>
+                                break;
+                            case "Side":
+                                <span>Sidebar</span>
+                                break;
+                            case "Bottom":
+                                <span>Footer</span>
+                                break;
+                            default:
+                                <span>@Model.LoaiBanner</span>
+                                break;
+                        }
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Thứ tự hiển thị</h3>
+                    <p class="text-on-surface">@Model.ThuTuHienThi</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 border-t border-surface-container pt-6">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Trạng thái</h3>
+                    <span class="px-3 py-1 @(Model.IsActive ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500") text-sm font-bold rounded-full">
+                        @(Model.IsActive ? "Kích hoạt" : "Vô hiệu hóa")
+                    </span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Ngày tạo</h3>
+                    <p class="text-on-surface">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+
+            @if (Model.NgayCapNhat.HasValue)
+            {
+                <div class="border-t border-surface-container pt-6">
+                    <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Ngày cập nhật</h3>
+                    <p class="text-on-surface">@Model.NgayCapNhat.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div>
+        <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24 space-y-3">
+            <a href="@Url.Action("Edit", new { id = Model.MaBanner })" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
+                <span class="material-symbols-outlined">edit</span>Chỉnh sửa
+            </a>
+            <form method="post" action="@Url.Action("Delete", new { id = Model.MaBanner })" style="display:contents;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-red-300 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all" onclick="return confirm('Bạn chắc chắn muốn xóa banner này?')">
+                    <span class="material-symbols-outlined">delete</span>Xóa
+                </button>
+            </form>
+            <a href="@Url.Action("Index")" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all">
+                <span class="material-symbols-outlined">arrow_back</span>Quay lại
+            </a>
+        </div>
+    </div>
+</div>

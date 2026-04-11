@@ -1,0 +1,342 @@
+@{
+    ViewData["Title"] = "Quản lý Đơn Hàng";
+
+    var orders = (List<HDKTech.Models.DonHang>)ViewBag.Orders;
+    var totalCount = (int)ViewBag.TotalCount;
+    var pageNumber = (int)ViewBag.PageNumber;
+    var pageSize = (int)ViewBag.PageSize;
+    var totalPages = (int)ViewBag.TotalPages;
+    var searchTerm = (string)ViewBag.SearchTerm ?? "";
+    var statusFilter = (int)ViewBag.StatusFilter;
+    var sortBy = (string)ViewBag.SortBy ?? "date";
+
+    var pendingCount = (int)ViewBag.PendingCount;
+    var processingCount = (int)ViewBag.ProcessingCount;
+    var shippingCount = (int)ViewBag.ShippingCount;
+    var deliveredCount = (int)ViewBag.DeliveredCount;
+    var cancelledCount = (int)ViewBag.CancelledCount;
+
+    var todayOrderCount = (int)ViewBag.TodayOrderCount;
+    var todayRevenue = (decimal)ViewBag.TodayRevenue;
+}
+
+@section Styles {
+    <style>
+        .stat-card {
+            border-left: 4px solid #bc000c;
+        }
+        .btn-icon-sm {
+            padding: 0.375rem 0.75rem;
+            width: 36px;
+            height: 36px;
+        }
+    </style>
+}
+
+<div class="p-4">
+    <!-- Header Section -->
+    <section class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-3">
+            <h1 class="h3 fw-bold mb-0">Quản lý <span class="text-danger">Đơn Hàng</span></h1>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("Export", "Order", new { area = "Admin" })" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+                    <i class="bi bi-download"></i>
+                    Xuất CSV
+                </a>
+            </div>
+        </div>
+        <p class="text-muted small mb-0">Quản lý và theo dõi tất cả các đơn hàng. Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </section>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-2 mb-4">
+        <!-- Today Orders -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-auto">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
+                        <span class="badge bg-danger small">Hôm nay</span>
+                    </div>
+                    <p class="text-muted small mb-1">Đơn hàng</p>
+                    <h4 class="fw-bold mb-0">@todayOrderCount</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today Revenue -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">Doanh thu hôm nay</p>
+                    <h4 class="fw-bold mb-0">@todayRevenue.ToString("C0")</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Orders -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="bg-warning bg-opacity-10 p-2 rounded text-warning">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark small">@pendingCount</span>
+                    </div>
+                    <p class="text-muted small mb-1">Chờ xác nhận</p>
+                    <h4 class="fw-bold mb-0">@pendingCount</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Orders -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="bg-light p-2 rounded text-muted">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <span class="badge bg-secondary small">@processingCount</span>
+                    </div>
+                    <p class="text-muted small mb-1">Đang xử lý</p>
+                    <h4 class="fw-bold mb-0">@processingCount</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivered Orders -->
+        <div class="col-12 col-sm-6 col-lg-3 col-xl-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="bg-success bg-opacity-10 p-2 rounded text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <span class="badge bg-success small">@deliveredCount</span>
+                    </div>
+                    <p class="text-muted small mb-1">Đã giao</p>
+                    <h4 class="fw-bold mb-0">@deliveredCount</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index", "Order", new { area = "Admin" })" class="row g-2">
+                <!-- Search Input -->
+                <div class="col-12 col-md-4 position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="z-index: 10;"></i>
+                    <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm mã đơn, tên khách..." class="form-control ps-5" />
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-12 col-md-3">
+                    <select name="statusFilter" class="form-select form-select-sm">
+                        <option value="-1">Tất cả trạng thái</option>
+                        <option value="0" selected="@(statusFilter == 0)">Chờ xác nhận (@pendingCount)</option>
+                        <option value="1" selected="@(statusFilter == 1)">Đang xử lý (@processingCount)</option>
+                        <option value="2" selected="@(statusFilter == 2)">Đang giao (@shippingCount)</option>
+                        <option value="3" selected="@(statusFilter == 3)">Đã giao (@deliveredCount)</option>
+                        <option value="4" selected="@(statusFilter == 4)">Đã hủy (@cancelledCount)</option>
+                    </select>
+                </div>
+
+                <!-- Sort -->
+                <div class="col-12 col-md-3">
+                    <select name="sortBy" class="form-select form-select-sm">
+                        <option value="date" selected="@(sortBy == "date")">Mới nhất</option>
+                        <option value="amount_high" selected="@(sortBy == "amount_high")">Giá cao nhất</option>
+                        <option value="amount_low" selected="@(sortBy == "amount_low")">Giá thấp nhất</option>
+                        <option value="customer" selected="@(sortBy == "customer")">Tên khách hàng</option>
+                    </select>
+                </div>
+
+                <!-- Search Button -->
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-search"></i>
+                        Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex align-items-center justify-content-between border-0">
+            <h5 class="mb-0 fw-bold">Danh sách đơn hàng</h5>
+            <span class="text-muted small">Tổng: <strong>@totalCount</strong> đơn</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr class="text-uppercase small fw-bold text-muted">
+                        <th>Mã Đơn Hàng</th>
+                        <th>Khách Hàng</th>
+                        <th>Số Điện Thoại</th>
+                        <th>Ngày Đặt</th>
+                        <th class="text-end">Tổng Tiền</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-center" style="width: 100px;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (orders != null && orders.Count > 0)
+                    {
+                        @foreach (var order in orders)
+                        {
+                            var statusBadgeClass = order.TrangThaiDonHang switch
+                            {
+                                0 => "bg-warning",
+                                1 => "bg-info",
+                                2 => "bg-primary",
+                                3 => "bg-success",
+                                4 => "bg-secondary",
+                                _ => "bg-light"
+                            };
+
+                            var statusName = order.TrangThaiDonHang switch
+                            {
+                                0 => "Chờ xác nhận",
+                                1 => "Đang xử lý",
+                                2 => "Đang giao",
+                                3 => "Đã giao",
+                                4 => "Đã hủy",
+                                _ => "Không xác định"
+                            };
+
+                            <tr>
+                                <td>
+                                    <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.MaDonHang })" class="text-danger fw-bold text-decoration-none">
+                                        @order.MaDonHangChuoi
+                                    </a>
+                                </td>
+                                <td>
+                                    <div>
+                                        <p class="small fw-semibold mb-0">@(order.NguoiDung?.HoTen ?? order.TenNguoiNhan)</p>
+                                        <p class="small text-muted mb-0">@(order.NguoiDung?.Email ?? "-")</p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>@order.SoDienThoaiNhan</small>
+                                </td>
+                                <td>
+                                    <small>@order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")</small>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold">@order.TongTien.ToString("C0")</span>
+                                </td>
+                                <td>
+                                    <span class="badge @statusBadgeClass small">
+                                        @statusName
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.MaDonHang })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm cancel-btn" data-order-id="@order.MaDonHang" title="Hủy đơn hàng" @(order.TrangThaiDonHang == 3 || order.TrangThaiDonHang == 4 ? "disabled" : "")>
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <div class="d-flex flex-column align-items-center gap-2">
+                                    <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
+                                    <p class="fw-medium">Không có đơn hàng nào</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer bg-light d-flex align-items-center justify-content-between border-top">
+                <div class="small text-muted">
+                    Hiển thị <strong>@((pageNumber - 1) * pageSize + 1)</strong> đến <strong>@Math.Min(pageNumber * pageSize, totalCount)</strong> trong <strong>@totalCount</strong> đơn
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    @if (pageNumber > 1)
+                    {
+                        <a href="@Url.Action("Index", "Order", new { area = "Admin", pageNumber = pageNumber - 1, searchTerm, statusFilter, sortBy })" class="btn btn-outline-secondary" title="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
+                    {
+                        @if (i == pageNumber)
+                        {
+                            <button type="button" class="btn btn-danger">@i</button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Order", new { area = "Admin", pageNumber = i, searchTerm, statusFilter, sortBy })" class="btn btn-outline-secondary">@i</a>
+                        }
+                    }
+
+                    @if (pageNumber < totalPages)
+                    {
+                        <a href="@Url.Action("Index", "Order", new { area = "Admin", pageNumber = pageNumber + 1, searchTerm, statusFilter, sortBy })" class="btn btn-outline-secondary" title="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.cancel-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.dataset.orderId;
+                if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
+                    fetch('@Url.Action("CancelOrder", "Order", new { area = "Admin" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ orderId: orderId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    </script>
+}
+}

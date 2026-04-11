@@ -1,0 +1,133 @@
+@model List<BannerClickEvent>
+@{
+    ViewData["Title"] = "Click Events";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var banner = ViewBag.Banner as Banner;
+    var currentPage = (int)ViewBag.Page;
+    var pageSize = (int)ViewBag.PageSize;
+    var totalPages = (int)ViewBag.TotalPages;
+    var totalItems = (int)ViewBag.TotalItems;
+}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">📋 Click Events: @banner?.TenBanner</h1>
+            <p class="text-muted">Tổng @totalItems clicks</p>
+        </div>
+        <div>
+            <a href="/Admin/BannerAnalytics/Details/@banner?.MaBanner" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Click Events Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h5 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list"></i> Danh sách Click Events (Trang @currentPage/@totalPages)
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">Thời Gian</th>
+                                <th class="text-start">IP Address</th>
+                                <th class="text-start">User Agent</th>
+                                <th class="text-start">Referer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var click in Model)
+                            {
+                                <tr>
+                                    <td class="text-start">
+                                        <small>@click.ClickedAt.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                                    </td>
+                                    <td class="text-start">
+                                        <code>@click.UserIpAddress</code>
+                                    </td>
+                                    <td class="text-start">
+                                        <small title="@click.UserAgent" class="text-truncate d-inline-block" style="max-width: 300px;">
+                                            @click.UserAgent
+                                        </small>
+                                    </td>
+                                    <td class="text-start">
+                                        <small title="@click.Referer" class="text-truncate d-inline-block" style="max-width: 200px;">
+                                            @click.Referer
+                                        </small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (totalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            @if (currentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1&pageSize=@pageSize">Đầu</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(currentPage - 1)&pageSize=@pageSize">Trước</a>
+                                </li>
+                            }
+
+                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                            {
+                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i&pageSize=@pageSize">@i</a>
+                                </li>
+                            }
+
+                            @if (currentPage < totalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(currentPage + 1)&pageSize=@pageSize">Sau</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@totalPages&pageSize=@pageSize">Cuối</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Không có click event nào để hiển thị
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    code {
+        background-color: #f3f4f6;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.85rem;
+    }
+</style>

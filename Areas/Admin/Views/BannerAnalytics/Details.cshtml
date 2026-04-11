@@ -1,0 +1,222 @@
+@model BannerAnalytics
+@{
+    ViewData["Title"] = "Chi tiết Banner Analytics";
+    var banner = ViewBag.Banner as Banner;
+}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">📊 Chi tiết Analytics: @Model.BannerName</h1>
+            <p class="text-muted">@banner?.TenBanner | @banner?.LoaiBanner</p>
+        </div>
+        <div>
+            <a href="/Admin/BannerAnalytics" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-danger shadow h-100">
+                <div class="card-body">
+                    <div class="text-danger small font-weight-bold text-uppercase mb-1">
+                        Tổng Clicks
+                    </div>
+                    <div class="h3 mb-0 text-dark">
+                        @Model.TotalClicks.ToString("N0")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info shadow h-100">
+                <div class="card-body">
+                    <div class="text-info small font-weight-bold text-uppercase mb-1">
+                        Clicks Hôm Nay
+                    </div>
+                    <div class="h3 mb-0 text-dark">
+                        @Model.ClicksToday
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success shadow h-100">
+                <div class="card-body">
+                    <div class="text-success small font-weight-bold text-uppercase mb-1">
+                        30 Ngày Qua
+                    </div>
+                    <div class="h3 mb-0 text-dark">
+                        @Model.ClicksLast30Days
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning shadow h-100">
+                <div class="card-body">
+                    <div class="text-warning small font-weight-bold text-uppercase mb-1">
+                        Unique IPs
+                    </div>
+                    <div class="h3 mb-0 text-dark">
+                        @Model.UniqueIpAddresses
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banner Info Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h5 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-info-circle"></i> Thông tin Banner
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <strong>Tên Banner:</strong> @banner?.TenBanner
+                    </p>
+                    <p>
+                        <strong>Loại:</strong> 
+                        <span class="badge bg-info">@banner?.LoaiBanner</span>
+                    </p>
+                    <p>
+                        <strong>Trạng thái:</strong>
+                        <span class="badge @(banner?.IsActive == true ? "bg-success" : "bg-danger")">
+                            @(banner?.IsActive == true ? "Hoạt động" : "Không hoạt động")
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Link:</strong>
+                        <a href="@banner?.LinkBanner" target="_blank" class="text-truncate">
+                            @banner?.LinkBanner
+                        </a>
+                    </p>
+                    <p>
+                        <strong>Ảnh:</strong>
+                        @if (!string.IsNullOrEmpty(banner?.ImageUrl))
+                        {
+                            <img src="@banner.ImageUrl" alt="@banner.TenBanner" style="max-width: 200px; border-radius: 5px;">
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Info -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h5 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-calendar"></i> Dòng thời gian
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <strong>Click đầu tiên:</strong>
+                        @if (Model.FirstClickDate.HasValue)
+                        {
+                            <span>@Model.FirstClickDate?.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Chưa có click</span>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Click gần nhất:</strong>
+                        @if (Model.LastClickDate.HasValue)
+                        {
+                            <span>@Model.LastClickDate?.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Chưa có click</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Report -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h5 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-calendar-range"></i> Báo cáo theo khoảng thời gian
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/Admin/BannerAnalytics/DateRange" class="row g-3">
+                <input type="hidden" name="bannerId" value="@Model.BannerId" />
+                
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Ngày bắt đầu:</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Ngày kết thúc:</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" required>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Tạo báo cáo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="/Admin/BannerAnalytics/Clicks/@Model.BannerId" class="btn btn-info">
+                <i class="bi bi-list"></i> Xem tất cả Click Events
+            </a>
+            <a href="/Admin/BannerAnalytics/Export/@Model.BannerId" class="btn btn-success">
+                <i class="bi bi-download"></i> Xuất CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-left-danger {
+        border-left: 0.25rem solid #ef4444 !important;
+    }
+
+    .border-left-info {
+        border-left: 0.25rem solid #3b82f6 !important;
+    }
+
+    .border-left-success {
+        border-left: 0.25rem solid #10b981 !important;
+    }
+
+    .border-left-warning {
+        border-left: 0.25rem solid #f59e0b !important;
+    }
+
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+</style>

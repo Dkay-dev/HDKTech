@@ -1,0 +1,170 @@
+@using HDKTech.Models
+@using HDKTech.Utils
+@model IEnumerable<SanPham>
+
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+}
+
+@section Styles {
+    <style>
+        /* Hạ size chữ tổng thể của bảng để chứa được nhiều data hơn */
+        table {
+            font-size: 13px;
+        }
+        /* Ép tên sản phẩm không được rớt dòng quá nhiều gây nát layout */
+        .product-name-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+            max-width: 250px;
+        }
+        /* Thu nhỏ badge một chút cho cân đối */
+        .badge-sm {
+            font-size: 10px;
+            padding: 2px 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        /* Cố định độ rộng các cột ít dữ liệu */
+        .col-width-sm { width: 80px; }
+        .col-width-md { width: 120px; }
+        .btn-icon {
+            padding: 0.375rem 0.75rem;
+        }
+    </style>
+}
+
+<div class="mb-4 d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Product Inventory</h1>
+        <p class="text-muted small mb-0">Quản lý kho hàng chuyên sâu HDKTech.</p>
+    </div>
+    <a asp-area="Admin" asp-controller="Product" asp-action="Create" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-plus-circle"></i>
+        <span>Thêm sản phẩm mới</span>
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show small mb-4" role="alert">
+        <strong>Thành công!</strong> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-light d-flex align-items-center justify-content-between border-bottom-0">
+        <h5 class="mb-0 fw-bold text-uppercase small">Danh sách hệ thống</h5>
+        <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-link text-secondary" title="Lọc">
+                <i class="bi bi-funnel"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-secondary" title="Tải xuống">
+                <i class="bi bi-download"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+                <tr class="text-uppercase fw-bold small text-muted">
+                    <th>Sản phẩm</th>
+                    <th>Danh mục</th>
+                    <th>Hãng</th>
+                    <th>Giá bán</th>
+                    <th class="text-center col-width-sm">Kho</th>
+                    <th class="text-center col-width-md">Trạng thái</th>
+                    <th class="text-end" style="width: 120px;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Any() == true)
+                {
+                    @foreach (var product in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="flex-shrink-0">
+                                        @if (product.HinhAnhs?.FirstOrDefault() != null)
+                                        {
+                                            <img src="@ImageHelper.GetImagePath(product.HinhAnhs.FirstOrDefault().Url)" 
+                                                 alt="@product.TenSanPham" class="rounded-2" style="width: 44px; height: 44px; object-fit: cover; border: 1px solid #dee2e6;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-2 d-flex align-items-center justify-content-center bg-light" style="width: 44px; height: 44px; border: 1px solid #dee2e6;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <p class="mb-1 fw-bold product-name-clamp" title="@product.TenSanPham">@product.TenSanPham</p>
+                                        <small class="text-danger fw-bold font-monospace">#@product.MaSanPham</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info badge-sm">
+                                    @product.DanhMuc?.TenDanhMuc
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">@product.HangSX?.TenHangSX</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold">₫@product.Gia.ToString("N0")</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold @(product.KhoHangs?.FirstOrDefault()?.SoLuong > 10 ? "text-success" : product.KhoHangs?.FirstOrDefault()?.SoLuong > 0 ? "text-warning" : "text-danger")">
+                                    @(product.KhoHangs?.FirstOrDefault()?.SoLuong ?? 0)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (product.TrangThaiSanPham == 1)
+                                {
+                                    <span class="badge bg-success badge-sm">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger badge-sm">Ngừng</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-area="Admin" asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham" 
+                                       class="btn btn-outline-primary btn-icon" title="Sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@product.MaSanPham" method="POST"
+                                          style="display:inline;" onsubmit="return confirm('Xóa vĩnh viễn sản phẩm này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger btn-icon" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-footer bg-light d-flex align-items-center justify-content-between border-top">
+        <small class="text-muted">
+            Showing <span class="fw-bold">@Model?.Count()</span> 
+            of <span class="fw-bold">@ViewBag.TotalCount</span> units
+        </small>
+        <div class="btn-group btn-group-sm" role="group">
+             <button type="button" class="btn btn-danger disabled">1</button>
+             <button type="button" class="btn btn-outline-secondary">2</button>
+        </div>
+    </div>
+</div>

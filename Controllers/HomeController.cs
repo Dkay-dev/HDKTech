@@ -9,19 +9,25 @@ namespace HDKTech.Controllers
     {
         private readonly ProductRepository _productRepo;
         private readonly CategoryRepository _categoryRepo;
+        private readonly BannerRepository _bannerRepo;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger, ProductRepository productRepo, CategoryRepository categoryRepo)
+        public HomeController(ILogger<HomeController> logger, ProductRepository productRepo, CategoryRepository categoryRepo, BannerRepository bannerRepo)
         {
             _logger = logger;
             _productRepo = productRepo;
             _categoryRepo = categoryRepo;
+            _bannerRepo = bannerRepo;
         }
 
         public async Task<IActionResult> Index()
         {
+            
             var danhSachSanPham = await _productRepo.GetAllWithImagesAsync();
             var categories = await _categoryRepo.GetAllAsync();
+
+            // 🆕 Lấy banners hoạt động
+            var activeBanners = await _bannerRepo.GetActiveBannersAsync();
 
             // Tạo ViewModel chứa các section khác nhau
             var viewModel = new HomeIndexViewModel
@@ -52,6 +58,22 @@ namespace HDKTech.Controllers
                 Categories = categories
                     .Where(c => c.MaDanhMucCha == null)
                     .OrderBy(c => c.MaDanhMuc)
+                    .ToList(),
+
+                // 🆕 Banners by type
+                MainBanners = activeBanners
+                    .Where(b => b.LoaiBanner == "Main")
+                    .OrderBy(b => b.ThuTuHienThi)
+                    .ToList(),
+
+                SideBanners = activeBanners
+                    .Where(b => b.LoaiBanner == "Side")
+                    .OrderBy(b => b.ThuTuHienThi)
+                    .ToList(),
+
+                BottomBanners = activeBanners
+                    .Where(b => b.LoaiBanner == "Bottom")
+                    .OrderBy(b => b.ThuTuHienThi)
                     .ToList()
             };
 

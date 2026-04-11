@@ -1,0 +1,159 @@
+@model HDKTech.Models.Role
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Vai Trò";
+    var permissions = (List<HDKTech.Models.Permission>)ViewBag.Permissions ?? new List<HDKTech.Models.Permission>();
+    var selectedPermissionIds = (List<int>)ViewBag.SelectedPermissionIds ?? new List<int>();
+    var groupedPermissions = permissions.GroupBy(p => p.Module).OrderBy(g => g.Key).ToList();
+}
+
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-10">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="@Url.Action("Index", "Role", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+                <span class="material-symbols-outlined">chevron_left</span>
+                Quay lại
+            </a>
+        </div>
+        <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Chỉnh sửa Vai Trò</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form -->
+        <div class="lg:col-span-2">
+            <form asp-action="Edit" asp-controller="Role" asp-area="Admin" method="post" class="space-y-6">
+                <input type="hidden" asp-for="RoleId" />
+
+                <!-- Tên Vai Trò -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="RoleName" class="block text-sm font-bold text-on-surface mb-2">Tên Vai Trò <span class="text-error">*</span></label>
+                    <input type="text" asp-for="RoleName" placeholder="Nhập tên vai trò" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
+                    <span asp-validation-for="RoleName" class="text-xs text-error mt-1 block"></span>
+                </div>
+
+                <!-- Mô Tả -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="Description" class="block text-sm font-bold text-on-surface mb-2">Mô Tả</label>
+                    <textarea asp-for="Description" placeholder="Nhập mô tả vai trò" rows="4" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Trạng Thái -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="IsActive" class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" asp-for="IsActive" class="w-5 h-5 rounded border-surface-container-high focus:ring-2 focus:ring-primary/40" />
+                        <span class="text-sm font-bold text-on-surface">Kích hoạt vai trò</span>
+                    </label>
+                </div>
+
+                <!-- Quyền Hạn -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label class="block text-sm font-bold text-on-surface mb-4">Quyền Hạn</label>
+                    <div class="space-y-6">
+                        @foreach (var moduleGroup in groupedPermissions)
+                        {
+                            <div>
+                                <h3 class="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+                                    <span class="material-symbols-outlined">folder</span>
+                                    @moduleGroup.Key
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                                    @foreach (var permission in moduleGroup)
+                                    {
+                                        var isSelected = selectedPermissionIds.Contains(permission.PermissionId);
+                                        <label class="flex items-center gap-3 cursor-pointer p-3 border border-surface-container-high rounded-lg hover:bg-surface-container transition-colors @(isSelected ? "bg-primary-fixed/10 border-primary" : "")">
+                                            <input type="checkbox" name="selectedPermissions" value="@permission.PermissionId" checked="@isSelected" class="w-4 h-4 rounded border-surface-container-high focus:ring-2 focus:ring-primary/40" />
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-on-surface">@permission.PermissionName</p>
+                                                <p class="text-xs text-zinc-500">@permission.Action</p>
+                                            </div>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                    <button type="submit" class="px-6 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined">check</span>
+                        Cập nhật
+                    </button>
+                    <a href="@Url.Action("Index", "Role", new { area = "Admin" })" class="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined">close</span>
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="space-y-6">
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    Thông tin
+                </h2>
+                <div class="space-y-3 text-sm text-zinc-600">
+                    <div>
+                        <p class="font-bold text-on-surface mb-1">Mã Vai Trò</p>
+                        <p class="text-primary">#@Model?.RoleId</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-on-surface mb-1">Trạng thái</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold @(Model?.IsActive ?? false ? "bg-tertiary-fixed/30 text-on-tertiary" : "bg-error-container/30 text-on-error-container")">
+                            @(Model?.IsActive ?? false ? "Hoạt động" : "Vô hiệu")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-primary/10 p-6 rounded-lg border-l-4 border-primary">
+                <p class="text-sm text-on-surface">
+                    <span class="font-bold">💡 Tip:</span> Hãy cập nhật quyền hạn một cách cẩn thận để đảm bảo bảo mật
+                </p>
+            </div>
+
+            <!-- Permissions Summary -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">verified_user</span>
+                    Quyền Hiện Tại
+                </h2>
+                <p class="text-sm text-zinc-600 mb-4">Đã chọn: <strong>@selectedPermissionIds.Count</strong> quyền</p>
+                <div class="space-y-2">
+                    @{
+                        var selectedModules = selectedPermissionIds
+                            .Select(id => permissions.FirstOrDefault(p => p.PermissionId == id))
+                            .Where(p => p != null)
+                            .GroupBy(p => p.Module)
+                            .OrderBy(g => g.Key)
+                            .ToList();
+                    }
+                    @if (selectedModules.Count > 0)
+                    {
+                        @foreach (var module in selectedModules)
+                        {
+                            <div>
+                                <p class="text-xs font-bold text-on-surface">📦 @module.Key</p>
+                                <p class="text-xs text-zinc-500 ml-2">@module.Count() quyền</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-xs text-zinc-500">Chưa chọn quyền nào</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

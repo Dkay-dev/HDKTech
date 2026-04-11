@@ -1,0 +1,113 @@
+@model HDKTech.Models.DanhMuc
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Danh Mục";
+    var parentCategories = (List<HDKTech.Models.DanhMuc>)ViewBag.ParentCategories ?? new List<HDKTech.Models.DanhMuc>();
+}
+
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-10">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+                <span class="material-symbols-outlined">chevron_left</span>
+                Quay lại
+            </a>
+        </div>
+        <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Chỉnh sửa Danh Mục</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form -->
+        <div class="lg:col-span-2">
+            <form asp-action="Edit" asp-controller="Category" asp-area="Admin" method="post" class="space-y-6">
+                <input type="hidden" asp-for="MaDanhMuc" />
+
+                <!-- Tên Danh Mục -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="TenDanhMuc" class="block text-sm font-bold text-on-surface mb-2">Tên Danh Mục <span class="text-error">*</span></label>
+                    <input type="text" asp-for="TenDanhMuc" placeholder="Nhập tên danh mục" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
+                    <span asp-validation-for="TenDanhMuc" class="text-xs text-error mt-1 block"></span>
+                </div>
+
+                <!-- Mô Tả -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="MoTaDanhMuc" class="block text-sm font-bold text-on-surface mb-2">Mô Tả</label>
+                    <textarea asp-for="MoTaDanhMuc" placeholder="Nhập mô tả danh mục" rows="5" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none resize-none"></textarea>
+                    <span asp-validation-for="MoTaDanhMuc" class="text-xs text-error mt-1 block"></span>
+                </div>
+
+                <!-- Banner Image URL -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="BannerImageUrl" class="block text-sm font-bold text-on-surface mb-2">Banner Image URL</label>
+                    <input type="url" asp-for="BannerImageUrl" placeholder="https://..." class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
+                    <span asp-validation-for="BannerImageUrl" class="text-xs text-error mt-1 block"></span>
+                    @if (!string.IsNullOrEmpty(Model?.BannerImageUrl))
+                    {
+                        <img src="@Model.BannerImageUrl" alt="Preview" class="mt-4 w-full h-40 object-cover rounded-lg" />
+                    }
+                </div>
+
+                <!-- Danh Mục Cha -->
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <label asp-for="MaDanhMucCha" class="block text-sm font-bold text-on-surface mb-2">Danh Mục Cha (Nếu là danh mục con)</label>
+                    <select asp-for="MaDanhMucCha" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none">
+                        <option value="">-- Không chọn (Danh mục chính) --</option>
+                        @foreach (var parent in parentCategories)
+                        {
+                            <option value="@parent.MaDanhMuc" selected="@(Model?.MaDanhMucCha == parent.MaDanhMuc)">@parent.TenDanhMuc</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                    <button type="submit" class="px-6 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined">check</span>
+                        Cập nhật
+                    </button>
+                    <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined">close</span>
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="space-y-6">
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    Thông tin
+                </h2>
+                <div class="space-y-3 text-sm text-zinc-600">
+                    <div>
+                        <p class="font-bold text-on-surface mb-1">Mã Danh Mục</p>
+                        <p class="text-primary">#@Model?.MaDanhMuc</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-on-surface mb-1">Ngôn ngữ</p>
+                        <p>Tiếng Việt</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-on-surface mb-1">Trạng thái</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-tertiary-fixed/30 text-on-tertiary">Hoạt động</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-primary/10 p-6 rounded-lg border-l-4 border-primary">
+                <p class="text-sm text-on-surface">
+                    <span class="font-bold">💡 Tip:</span> Bạn có thể cập nhật bất kỳ thông tin nào về danh mục từ đây
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

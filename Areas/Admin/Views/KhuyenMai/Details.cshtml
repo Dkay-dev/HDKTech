@@ -1,0 +1,240 @@
+@model KhuyenMai
+
+@{
+    ViewData["Title"] = "Chi tiết Khuyến mãi";
+    var discount = Model.LoaiKhuyenMai == "Percentage" ? $"{Model.GiaTri}%" : $"₫{Model.GiaTri:N0}";
+    var statusText = Model.TrangThai == "Running" ? "Đang chạy" : (Model.TrangThai == "Scheduled" ? "Sắp diễn ra" : "Đã kết thúc");
+    var statusColor = Model.TrangThai == "Running" ? "text-green-600 bg-green-50" : (Model.TrangThai == "Scheduled" ? "text-amber-600 bg-amber-50" : "text-zinc-600 bg-zinc-100");
+    var daysLeft = (Model.NgayKetThuc - DateTime.Now).TotalDays;
+}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div>
+        <h1 class="text-4xl font-extrabold tracking-tight text-on-surface">@Model.TenChienDich</h1>
+        <p class="text-on-surface-variant mt-2">Chi tiết đầy đủ về chương trình khuyến mãi</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="@Url.Action("Edit", new { id = Model.MaKhuyenMai })" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
+            <span class="material-symbols-outlined">edit</span>
+            Chỉnh sửa
+        </a>
+        <a href="@Url.Action("Index")" class="inline-flex items-center gap-2 px-6 py-3 bg-surface-container text-on-surface rounded-lg font-bold hover:bg-surface-container-high transition-all">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Left: Main Info -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Status Card -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-on-surface">Trạng thái</h3>
+                <span class="px-3 py-1.5 @statusColor text-xs font-bold rounded-full uppercase">@statusText</span>
+            </div>
+            @if (Model.TrangThai == "Running")
+            {
+                <div class="p-4 bg-green-50/50 rounded-lg border border-green-200 mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-green-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        <span class="font-semibold text-green-700">Khuyến mãi đang hoạt động</span>
+                    </div>
+                    <p class="text-sm text-green-600">Sẽ kết thúc sau <span class="font-bold">@Math.Ceiling(daysLeft) ngày</span></p>
+                </div>
+            }
+            else if (Model.TrangThai == "Scheduled")
+            {
+                <div class="p-4 bg-amber-50/50 rounded-lg border border-amber-200 mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-amber-600" style="font-variation-settings: 'FILL' 1;">schedule</span>
+                        <span class="font-semibold text-amber-700">Khuyến mãi sắp diễn ra</span>
+                    </div>
+                    <p class="text-sm text-amber-600">Sẽ bắt đầu sau <span class="font-bold">@Math.Ceiling((Model.NgayBatDau - DateTime.Now).TotalDays) ngày</span></p>
+                </div>
+            }
+            else
+            {
+                <div class="p-4 bg-zinc-100/50 rounded-lg border border-zinc-300 mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-zinc-600" style="font-variation-settings: 'FILL' 1;">event_available</span>
+                        <span class="font-semibold text-zinc-700">Khuyến mãi đã kết thúc</span>
+                    </div>
+                    <p class="text-sm text-zinc-600">Kết thúc vào @Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            }
+        </div>
+
+        <!-- Details Grid -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+            <h3 class="text-lg font-bold text-on-surface mb-4">Thông tin chi tiết</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Discount Value -->
+                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-primary">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Mức giảm giá</p>
+                    <p class="text-3xl font-extrabold text-primary">@discount</p>
+                    <p class="text-xs text-on-surface-variant mt-2">@(Model.LoaiKhuyenMai == "Percentage" ? "Phần trăm giảm" : "Số tiền giảm")</p>
+                </div>
+
+                <!-- Campaign Code -->
+                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-tertiary">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Mã chiến dịch</p>
+                    <p class="text-2xl font-extrabold text-tertiary font-mono">@Model.MaKhuyenMai</p>
+                    <p class="text-xs text-on-surface-variant mt-2">Dùng mã này khi tạo đơn hàng</p>
+                </div>
+
+                <!-- Start Date -->
+                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-secondary">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Ngày bắt đầu</p>
+                    <p class="text-lg font-bold text-on-surface">@Model.NgayBatDau.ToString("dd/MM/yyyy")</p>
+                    <p class="text-xs text-on-surface-variant mt-2">@Model.NgayBatDau.ToString("HH:mm:ss")</p>
+                </div>
+
+                <!-- End Date -->
+                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-error">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Ngày kết thúc</p>
+                    <p class="text-lg font-bold text-on-surface">@Model.NgayKetThuc.ToString("dd/MM/yyyy")</p>
+                    <p class="text-xs text-on-surface-variant mt-2">@Model.NgayKetThuc.ToString("HH:mm:ss")</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+            <h3 class="text-lg font-bold text-on-surface mb-4">Mô tả</h3>
+            <p class="text-on-surface-variant leading-relaxed whitespace-pre-wrap">@Model.MoTa</p>
+        </div>
+
+        <!-- Usage Stats -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+            <h3 class="text-lg font-bold text-on-surface mb-4">Thống kê sử dụng</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Số lần sử dụng</p>
+                    <p class="text-2xl font-extrabold text-primary">@Model.SoLuongSuDung</p>
+                </div>
+                <div class="p-4 bg-tertiary/5 rounded-lg border border-tertiary/20">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Giá trị khuyến mãi</p>
+                    <p class="text-2xl font-extrabold text-tertiary">@(Model.LoaiKhuyenMai == "Percentage" ? Model.GiaTri + "%" : "₫" + Model.GiaTri.ToString("N0"))</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Quick Info Sidebar -->
+    <div class="lg:col-span-1">
+        <!-- Quick Info Card -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 sticky top-24 space-y-4">
+            <div class="flex items-center gap-2 pb-4 border-b border-outline-variant/20">
+                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">info</span>
+                <h4 class="font-bold text-on-surface">Thông tin nhanh</h4>
+            </div>
+
+            <!-- Loại khuyến mãi -->
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Loại khuyến mãi</p>
+                <p class="text-sm font-semibold text-on-surface">@(Model.LoaiKhuyenMai == "Percentage" ? "Giảm theo %" : "Giảm tiền cố định")</p>
+            </div>
+
+            <!-- Duration -->
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Thời gian chạy</p>
+                <p class="text-sm font-semibold text-on-surface">@((Model.NgayKetThuc - Model.NgayBatDau).TotalDays.ToString("F0")) ngày</p>
+            </div>
+
+            <!-- Created Date -->
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Ngày tạo</p>
+                <p class="text-sm font-semibold text-on-surface">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+
+            <!-- Updated Date -->
+            @if (Model.NgayCapNhat.HasValue)
+            {
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Cập nhật lần cuối</p>
+                    <p class="text-sm font-semibold text-on-surface">@Model.NgayCapNhat.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="pt-4 border-t border-outline-variant/20 space-y-2">
+                <a href="@Url.Action("Edit", new { id = Model.MaKhuyenMai })" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Chỉnh sửa
+                </a>
+                <form method="post" action="@Url.Action("Delete", new { id = Model.MaKhuyenMai })" onsubmit="return confirm('Bạn chắc chắn muốn xóa khuyến mãi này?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-error/10 text-error rounded-lg font-semibold hover:bg-error/20 transition-all active:scale-95">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                        Xóa
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+    <h3 class="text-lg font-bold text-on-surface mb-6">Dòng thời gian</h3>
+    <div class="relative space-y-8">
+        @if (Model.TrangThai == "Scheduled")
+        {
+            <!-- Upcoming -->
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-amber-500 z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-amber-500 to-transparent"></div>
+                </div>
+                <div class="pb-8">
+                    <p class="font-bold text-on-surface">Sắp bắt đầu</p>
+                    <p class="text-sm text-on-surface-variant">@Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Started -->
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-green-500 z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-green-500 to-gray-300"></div>
+                </div>
+                <div class="pb-8">
+                    <p class="font-bold text-on-surface">Đã bắt đầu</p>
+                    <p class="text-sm text-on-surface-variant">@Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        }
+
+        <!-- Current/Ended -->
+        @if (Model.TrangThai == "Running")
+        {
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-primary animate-pulse z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-primary to-primary/20"></div>
+                </div>
+                <div class="pb-8">
+                    <p class="font-bold text-primary">Đang chạy</p>
+                    <p class="text-sm text-on-surface-variant">Hôm nay</p>
+                </div>
+            </div>
+        }
+
+        <!-- End -->
+        <div class="flex gap-4">
+            <div class="flex flex-col items-center">
+                <div class="w-4 h-4 rounded-full @(Model.TrangThai == "Ended" ? "bg-error" : "bg-gray-300") z-10 relative"></div>
+            </div>
+            <div>
+                <p class="font-bold @(Model.TrangThai == "Ended" ? "text-error" : "text-on-surface-variant")">@(Model.TrangThai == "Ended" ? "Đã kết thúc" : "Sẽ kết thúc")</p>
+                <p class="text-sm text-on-surface-variant">@Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+    </div>
+</div>

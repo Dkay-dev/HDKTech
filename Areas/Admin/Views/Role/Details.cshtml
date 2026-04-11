@@ -1,0 +1,186 @@
+@{
+    ViewData["Title"] = "Chi tiết Vai Trò";
+    var role = (HDKTech.Models.Role)ViewBag.Role;
+    var allPermissions = (List<HDKTech.Models.Permission>)ViewBag.AllPermissions;
+    var rolePermissionIds = (List<int>)ViewBag.RolePermissionIds;
+}
+
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <a href="@Url.Action("Index", "Role", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                    Quay lại
+                </a>
+            </div>
+            <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Vai Trò: <span class="text-primary">@role.RoleName</span></h1>
+        </div>
+        <a href="@Url.Action("Edit", "Role", new { area = "Admin", id = role.RoleId })" class="px-4 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm flex items-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-lg">edit</span>
+            Chỉnh sửa
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Role Info -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm border-l-4 border-primary">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    Thông tin vai trò
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mã Vai Trò</p>
+                        <p class="text-sm font-bold text-on-surface">#@role.RoleId</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Tên Vai Trò</p>
+                        <p class="text-sm font-bold text-on-surface">@role.RoleName</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mô Tả</p>
+                        <p class="text-sm text-on-surface">@(role.Description ?? "Chưa có mô tả")</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Trạng Thái</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold @(role.IsActive ? "bg-tertiary-fixed/30 text-on-tertiary" : "bg-error-container/30 text-on-error-container")">
+                            @(role.IsActive ? "Hoạt động" : "Vô hiệu")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions -->
+            @if (role.RolePermissions != null && role.RolePermissions.Count > 0)
+            {
+                <div class="bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-surface-container">
+                        <h2 class="text-lg font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined">verified_user</span>
+                            Quyền hạn (@role.RolePermissions.Count)
+                        </h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                        @foreach (var rp in role.RolePermissions)
+                        {
+                            var permission = rp.Permission;
+                            <div class="p-4 border border-surface-container rounded-lg hover:bg-surface-container-low transition-colors">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h3 class="font-bold text-on-surface">@permission.PermissionName</h3>
+                                        <p class="text-xs text-zinc-500">@permission.Module - @permission.Action</p>
+                                    </div>
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-primary-fixed/30 text-on-primary">
+                                        ✓
+                                    </span>
+                                </div>
+                                <p class="text-xs text-zinc-600">@(permission.Description ?? "")</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                    <p class="text-zinc-500 text-center py-8">Vai trò này chưa có quyền hạn nào</p>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Stats -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Thống kê
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Quyền hạn</p>
+                        <p class="text-2xl font-bold text-on-surface">@(role.RolePermissions?.Count ?? 0)</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">Tạo lúc</p>
+                        <p class="text-sm text-on-surface">@role.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Summary -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">category</span>
+                    Phân loại quyền
+                </h2>
+                <div class="space-y-2 text-sm">
+                    @{
+                        var modules = role.RolePermissions?
+                            .GroupBy(rp => rp.Permission.Module)
+                            .OrderBy(g => g.Key)
+                            .ToList() ?? new List<IGrouping<string, HDKTech.Models.RolePermission>>();
+                    }
+                    @foreach (var module in modules)
+                    {
+                        <div>
+                            <p class="font-bold text-on-surface">📦 @module.Key</p>
+                            <p class="text-xs text-zinc-500 ml-4">@module.Count() quyền</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined">build</span>
+                    Hành động
+                </h2>
+                <div class="space-y-2">
+                    <a href="@Url.Action("Edit", "Role", new { area = "Admin", id = role.RoleId })" class="w-full px-4 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">edit</span>
+                        Chỉnh sửa
+                    </a>
+                    <button type="button" id="deleteBtn" class="w-full px-4 py-2.5 bg-error hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">delete</span>
+                        Xóa vai trò
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('deleteBtn').addEventListener('click', function() {
+            if (confirm('Bạn có chắc muốn xóa vai trò này?')) {
+                fetch('@Url.Action("Delete", "Role", new { area = "Admin" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ roleId: @role.RoleId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '@Url.Action("Index", "Role", new { area = "Admin" })';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi');
+                });
+            }
+        });
+    </script>
+}

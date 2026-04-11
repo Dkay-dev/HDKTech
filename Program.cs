@@ -8,6 +8,8 @@ using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 
+using HDKTech.Utilities;
+
 namespace HDKTech
 {
     public class Program
@@ -20,7 +22,15 @@ namespace HDKTech
             builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
 
             builder.Services
-                 .AddIdentity<NguoiDung, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true) 
+                 .AddIdentity<NguoiDung, IdentityRole>(options => 
+                 {
+                     options.SignIn.RequireConfirmedAccount = false;
+                     options.Password.RequireDigit = false;
+                     options.Password.RequiredLength = 4;
+                     options.Password.RequireNonAlphanumeric = false;
+                     options.Password.RequireUppercase = false;
+                     options.Password.RequireLowercase = false;
+                 }) 
                  .AddEntityFrameworkStores<HDKTechContext>()
                  .AddDefaultUI()
                  .AddDefaultTokenProviders();
@@ -31,6 +41,14 @@ namespace HDKTech
             builder.Services.AddScoped<ProductRepository>();
             builder.Services.AddScoped<CategoryRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+            // Đăng ký Admin Repositories
+            builder.Services.AddScoped<IAdminProductRepository, AdminProductRepository>();
+            builder.Services.AddScoped<BannerRepository>();
+            builder.Services.AddScoped<BannerClickEventRepository>();
+            builder.Services.AddScoped<KhuyenMaiRepository>();
+            builder.Services.AddScoped<ISystemLogRepository, SystemLogRepository>();
+            builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
             // Đăng ký Cart Service (Session) - 7 ngày để giỏ hàng không bị mất
             builder.Services.AddSession(options =>
@@ -47,6 +65,14 @@ namespace HDKTech
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
+
+            // Initialize LoggingHelper
+            using (var scope = app.Services.CreateScope())
+            {
+                var logService = scope.ServiceProvider.GetRequiredService<ISystemLogService>();
+                LoggingHelper.Initialize(logService);
+            }
+
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<HDKTechContext>();
@@ -55,6 +81,7 @@ namespace HDKTech
 
                 await DataSeed.KhoiTaoDuLieuMacDinh(scope.ServiceProvider);
                 await DataSeedProductsOptimized.SeedProducts(scope.ServiceProvider);
+                await BannerSeeder.SeedBannersAsync(context);
             }
 
             // Configure the HTTP request pipeline.
@@ -74,6 +101,15 @@ namespace HDKTech
             app.UseAuthentication();
             app.UseAuthorization();
 
+            // 1. Route cho các Area (Admin,...)
+            // TUYỆT ĐỐI KHÔNG để {controller=Product} ở đây. 
+            // Hãy để trống controller để nó không tự động gán Product vào URL khi bạn đăng nhập.
+            app.MapControllerRoute(
+                name: "MyAreas",
+                pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
+
+            // 2. Route mặc định (Homepage)
+            // Đây là route quan trọng nhất cho Logo và Đăng nhập.
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");

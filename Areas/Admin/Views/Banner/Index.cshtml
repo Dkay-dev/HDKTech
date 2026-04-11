@@ -1,0 +1,204 @@
+@model IEnumerable<Banner>
+
+@{
+    ViewData["Title"] = "Quản lý Banner";
+}
+
+@section Styles {
+    <style>
+        .banner-item {
+            transition: all 0.2s ease;
+        }
+        .banner-item:hover {
+            transform: translateY(-2px);
+        }
+        .banner-img-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+        .banner-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .stat-card-hover:hover {
+            border-color: #bc000c;
+        }
+    </style>
+}
+
+<!-- Header Section -->
+<div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-4 gap-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Quản lý Banner</h1>
+        <p class="text-muted small">Quản lý các banner hiển thị trên trang web, điều chỉnh thứ tự hiển thị và kích hoạt/vô hiệu hóa banner.</p>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-2">
+        <i class="bi bi-plus-circle"></i>
+        Thêm Banner Mới
+    </a>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm stat-card-hover">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-danger bg-opacity-10 p-3 rounded text-danger">
+                        <i class="bi bi-images" style="font-size: 1.25rem;"></i>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1">Tổng số Banner</p>
+                <h3 class="h4 fw-bold mb-0">@Model.Count()</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm stat-card-hover">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success bg-opacity-10 p-3 rounded text-success">
+                        <i class="bi bi-check-circle" style="font-size: 1.25rem;"></i>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1">Banner Hoạt động</p>
+                <h3 class="h4 fw-bold mb-0">@Model.Count(b => b.IsActive)</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm stat-card-hover">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-info bg-opacity-10 p-3 rounded text-info">
+                        <i class="bi bi-tag" style="font-size: 1.25rem;"></i>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1">Loại Banner</p>
+                <h3 class="h4 fw-bold mb-0">@Model.Select(b => b.LoaiBanner).Distinct().Count()</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách Banner -->
+<div class="mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <div class="bg-danger rounded-pill" style="width: 6px; height: 32px;"></div>
+            <h2 class="h5 fw-bold mb-0">Danh sách Banner</h2>
+        </div>
+        @if (Model.Any())
+        {
+            <a class="text-danger text-decoration-none small fw-bold" href="#">Xem tất cả</a>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card border border-2 border-dashed border-light text-center p-5">
+            <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+            <p class="text-muted fw-medium mt-3 mb-0">Không có banner nào. <a href="@Url.Action("Create")" class="text-danger fw-bold text-decoration-none">Tạo banner mới</a></p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var banner in Model.OrderBy(b => b.ThuTuHienThi))
+            {
+                <!-- Banner Item -->
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card border-0 shadow-sm banner-item h-100">
+                        <div class="banner-img-container position-relative">
+                            <img src="@banner.ImageUrl" alt="@banner.TenBanner" class="card-img-top" />
+                            <div class="position-absolute top-2 start-2">
+                                <span class="badge bg-dark bg-opacity-75 small">ORDER: @banner.ThuTuHienThi</span>
+                            </div>
+                            <div class="position-absolute top-2 end-2">
+                                <a href="@Url.Action("Edit", new { id = banner.MaBanner })" class="btn btn-sm btn-light">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title text-truncate mb-0 small fw-bold">@banner.TenBanner</h5>
+                                <span class="badge @(banner.IsActive ? "bg-success" : "bg-secondary") small">
+                                    @(banner.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@banner.MoTa</p>
+                            <div class="d-flex align-items-center justify-content-between mt-3">
+                                <div class="d-flex gap-2">
+                                    <a href="@Url.Action("Details", new { id = banner.MaBanner })" class="btn btn-sm btn-link text-muted" title="Chi tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <form method="post" action="@Url.Action("Delete", new { id = banner.MaBanner })" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-link text-danger" onclick="return confirm('Bạn chắc chắn muốn xóa banner này?')" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input banner-toggle" type="checkbox" role="switch" data-banner-id="@banner.MaBanner" @(banner.IsActive ? "checked" : "") />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <!-- Add Placeholder -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a href="@Url.Action("Create")" class="card border-2 border-dashed border-light h-100 text-decoration-none d-flex flex-column align-items-center justify-content-center p-4 text-muted hover-border-primary">
+                    <i class="bi bi-plus-square" style="font-size: 2rem;"></i>
+                    <p class="small fw-bold text-uppercase tracking-in mt-2 mb-0">Thêm Banner</p>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Toggle Banner Active Status
+        document.querySelectorAll('.banner-toggle').forEach(toggle => {
+            toggle.addEventListener('change', async function() {
+                const bannerId = this.getAttribute('data-banner-id');
+                const isActive = this.checked;
+                const button = this;
+
+                try {
+                    const response = await fetch('@Url.Action("ToggleActive")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            id: parseInt(bannerId), 
+                            isActive: isActive 
+                        })
+                    });
+
+                    if (!response.ok) {
+                        button.checked = !isActive;
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-danger alert-dismissible fade show';
+                        alert.innerHTML = 'Lỗi khi cập nhật trạng thái<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        document.body.insertBefore(alert, document.body.firstChild);
+                    } else {
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success alert-dismissible fade show';
+                        alert.innerHTML = `Banner ${isActive ? 'đã kích hoạt' : 'đã vô hiệu hóa'}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                        document.body.insertBefore(alert, document.body.firstChild);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    button.checked = !isActive;
+                }
+            });
+        });
+    </script>
+}
