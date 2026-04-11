@@ -1,0 +1,151 @@
+@model HDKTech.Models.DonHang
+
+@{
+    ViewData["Title"] = $"Chi Tiết Đơn Hàng {Model?.MaDonHangChuoi}";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <a asp-action="MyOrders" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Quay Lại
+            </a>
+
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4 class="mb-0">
+                                <i class="bi bi-receipt"></i> Đơn Hàng #@Model.MaDonHangChuoi
+                            </h4>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            @switch (Model.TrangThaiDonHang)
+                            {
+                                case 0:
+                                    <span class="badge bg-warning text-dark fs-6">Chờ Xác Nhận</span>
+                                    break;
+                                case 1:
+                                    <span class="badge bg-info fs-6">Đang Xử Lý</span>
+                                    break;
+                                case 2:
+                                    <span class="badge bg-primary fs-6">Đang Giao</span>
+                                    break;
+                                case 3:
+                                    <span class="badge bg-success fs-6">Đã Giao</span>
+                                    break;
+                                case 4:
+                                    <span class="badge bg-danger fs-6">Đã Hủy</span>
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Thông tin đơn hàng -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-calendar3"></i> Thông Tin Đơn Hàng
+                            </h6>
+                            <p class="mb-2">
+                                <strong>Ngày Đặt:</strong> @Model.NgayDatHang.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                            <p class="mb-2">
+                                <strong>Tổng Tiền:</strong>
+                                <span class="text-danger fs-5">@Model.TongTien.ToString("C0").Replace("₫", "").Trim()₫</span>
+                            </p>
+                            @if (Model.PhiVanChuyen > 0)
+                            {
+                                <p class="mb-0">
+                                    <strong>Phí Vận Chuyển:</strong>
+                                    <span>@Model.PhiVanChuyen.ToString("C0").Replace("₫", "").Trim()₫</span>
+                                </p>
+                            }
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-truck"></i> Thông Tin Giao Hàng
+                            </h6>
+                            <p class="mb-2">
+                                <strong>Người Nhận:</strong> @Model.TenNguoiNhan
+                            </p>
+                            <p class="mb-2">
+                                <strong>Số Điện Thoại:</strong> @Model.SoDienThoaiNhan
+                            </p>
+                            <p class="mb-0">
+                                <strong>Địa Chỉ:</strong> @Model.DiaChiGiaoHang
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <!-- Danh sách sản phẩm -->
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-box-seam"></i> Chi Tiết Sản Phẩm
+                    </h6>
+
+                    @if (Model.ChiTietDonHangs != null && Model.ChiTietDonHangs.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản Phẩm</th>
+                                        <th class="text-center">Số Lượng</th>
+                                        <th class="text-end">Giá</th>
+                                        <th class="text-end">Thành Tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.ChiTietDonHangs)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (item.SanPham != null)
+                                                {
+                                                    <strong>@item.SanPham.TenSanPham</strong>
+                                                }
+                                                else
+                                                {
+                                                    <em class="text-muted">Sản phẩm không còn tồn tại</em>
+                                                }
+                                            </td>
+                                            <td class="text-center">@item.SoLuong</td>
+                                            <td class="text-end">@item.GiaBanLucMua.ToString("C0").Replace("₫", "").Trim()₫</td>
+                                            <td class="text-end">
+                                                <strong>@(item.SoLuong * item.GiaBanLucMua).ToString("C0").Replace("₫", "").Trim()₫</strong>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Không có sản phẩm nào trong đơn hàng này.</p>
+                    }
+                </div>
+
+                <div class="card-footer bg-light">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-shop"></i> Tiếp Tục Mua Sắm
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a asp-action="MyOrders" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-list"></i> Xem Tất Cả Đơn Hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

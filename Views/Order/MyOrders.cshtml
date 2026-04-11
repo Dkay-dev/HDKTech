@@ -1,0 +1,99 @@
+@model IEnumerable<HDKTech.Models.DonHang>
+
+@{
+    ViewData["Title"] = "Đơn Hàng Của Tôi";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="bi bi-bag-check"></i> Đơn Hàng Của Tôi
+            </h1>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Chưa có đơn hàng nào.</strong>
+                    <a asp-controller="Home" asp-action="Index" class="alert-link">Tiếp tục mua sắm</a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã Đơn Hàng</th>
+                                <th>Ngày Đặt</th>
+                                <th>Trạng Thái</th>
+                                <th>Tổng Tiền</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@order.MaDonHangChuoi</strong>
+                                    </td>
+                                    <td>
+                                        @order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td>
+                                        @switch (order.TrangThaiDonHang)
+                                        {
+                                            case 0:
+                                                <span class="badge bg-warning text-dark">Chờ Xác Nhận</span>
+                                                break;
+                                            case 1:
+                                                <span class="badge bg-info">Đang Xử Lý</span>
+                                                break;
+                                            case 2:
+                                                <span class="badge bg-primary">Đang Giao</span>
+                                                break;
+                                            case 3:
+                                                <span class="badge bg-success">Đã Giao</span>
+                                                break;
+                                            case 4:
+                                                <span class="badge bg-danger">Đã Hủy</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">Không Xác Định</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger">
+                                            @order.TongTien.ToString("C0").Replace("₫", "").Trim()₫
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-maDonHang="@order.MaDonHangChuoi" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Xem Chi Tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="mt-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay Lại Trang Chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>

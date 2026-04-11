@@ -17,8 +17,23 @@ namespace HDKTech.Repositories
             // Tính tổng tiền
             var tongTien = items.Sum(x => x.Price * x.Quantity);
 
-            // Tạo mã đơn hàng: #HDKxxxxxxxxx (HDK + timestamp)
-            var maDonHangChuoi = $"HDK{DateTime.Now:yyyyMMddHHmmss}";
+            // Tạo mã đơn hàng: HDK + timestamp + random 4 digits
+            // Ví dụ: HDK20260410180530_4821
+            var maDonHangChuoi = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
+
+            // Đảm bảo mã đơn hàng unique (retries 3 lần nếu trùng)
+            var retries = 3;
+            while (retries-- > 0)
+            {
+                var existingOrder = await _context.Set<DonHang>()
+                    .FirstOrDefaultAsync(x => x.MaDonHangChuoi == maDonHangChuoi);
+
+                if (existingOrder == null)
+                    break; // Mã unique, dùng được
+
+                // Nếu trùng, tạo mã mới
+                maDonHangChuoi = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
+            }
 
             var donHang = new DonHang
             {
