@@ -136,7 +136,6 @@ namespace HDKTech.Controllers
         }
 
         // GET: /Checkout/Success
-        [AllowAnonymous]
         public async Task<IActionResult> Success(string maDonHang)
         {
             if (string.IsNullOrEmpty(maDonHang))
@@ -148,6 +147,15 @@ namespace HDKTech.Controllers
             if (donHang == null)
             {
                 TempData["Error"] = "Không tìm thấy đơn hàng.";
+                return RedirectToAction("Index", "Home");
+            }
+
+            // ✅ Security Check: Verify user owns this order
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null || donHang.MaNguoiDung != user.Id)
+            {
+                _logger.LogWarning($"Unauthorized access attempt to order {maDonHang} by user {user?.Id}");
+                TempData["Error"] = "Bạn không có quyền xem đơn hàng này.";
                 return RedirectToAction("Index", "Home");
             }
 

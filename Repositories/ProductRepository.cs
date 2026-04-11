@@ -157,5 +157,48 @@ namespace HDKTech.Repositories
 
             return cpuLines.ToList();
         }
+
+        // ✅ NEW: Các method specialized để tránh N+1 query ở HomeController
+
+        /// <summary>
+        /// Lấy 5 sản phẩm Flash Sale (có discount cao nhất)
+        /// TRONG SQL, không load tất cả rồi filter ở C#
+        /// </summary>
+        public async Task<List<SanPham>> GetFlashSaleProductsAsync(int limit = 5)
+        {
+            return await _dbSet
+                .Where(p => p.PhanTramGiamGia > 0)
+                .Include(p => p.HinhAnhs)
+                .Include(p => p.HangSX)
+                .OrderByDescending(p => p.PhanTramGiamGia)
+                .Take(limit)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Lấy 8 sản phẩm Top Sellers (bán chạy nhất)
+        /// </summary>
+        public async Task<List<SanPham>> GetTopSellerProductsAsync(int limit = 8)
+        {
+            return await _dbSet
+                .Include(p => p.HinhAnhs)
+                .Include(p => p.HangSX)
+                .OrderByDescending(p => p.MaSanPham) // TODO: Thay bằng trường "DaBan" nếu có
+                .Take(limit)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Lấy 6 sản phẩm mới nhất
+        /// </summary>
+        public async Task<List<SanPham>> GetNewProductsAsync(int limit = 6)
+        {
+            return await _dbSet
+                .Include(p => p.HinhAnhs)
+                .Include(p => p.HangSX)
+                .OrderByDescending(p => p.ThoiGianTaoSP)
+                .Take(limit)
+                .ToListAsync();
+        }
     }
 }
