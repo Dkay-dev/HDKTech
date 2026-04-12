@@ -15,18 +15,25 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using HDKTech.Models;
+using HDKTech.Services;
 
 namespace HDKTech.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
         private readonly SignInManager<AppUser> _signInManager;
-        private readonly ILogger<LoginModel> _logger;
+        private readonly ILogger<LoginModel>    _logger;
+        // ── Giai đoạn 4: Audit log cho sự kiện đăng nhập / bị khoá ──────
+        private readonly ISystemLogService      _logService;
 
-        public LoginModel(SignInManager<AppUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<AppUser> signInManager,
+            ILogger<LoginModel>    logger,
+            ISystemLogService      logService)
         {
             _signInManager = signInManager;
-            _logger = logger;
+            _logger        = logger;
+            _logService    = logService;
         }
 
         [BindProperty]
@@ -78,28 +85,47 @@ namespace HDKTech.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                // Điều này không tính các lần đăng nhập thất bại vào mục đích khóa tài khoản
-                // Để bật tính năng khóa tài khoản khi nhập sai mật khẩu, hãy đặt lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                // ── Giai đoạn 4: Brute-force — lockoutOnFailure: true ────────
+                // Sau 5 lần sai liên tiếp, tài khoản bị khoá 15 phút (cấu hình ở Program.cs).
+                var result = await _signInManager.PasswordSignInAsync(
+                    Input.Email, Input.Password, Input.RememberMe,
+                    lockoutOnFailure: true);
+
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("Người dùng đã đăng nhập.");
+                    _logger.LogInformation("Người dùng {Email} đã đăng nhập thành công.", Input.Email);
 
-                    // Always redirect to Home (/) for all users, regardless of admin role
-                    // Admin users will see sidebar and can access admin functions from there
+                    // Ghi Audit Log đăng nhập thành công
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+                    var ua = HttpContext.Request.Headers["User-Agent"].ToString();
+                    await _logService.LogLoginAsync(Input.Email, ip, ua);
+
                     return LocalRedirect("~/");
                 }
                 if (result.RequiresTwoFactor)
                 {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnImageUrl = returnImageUrl, RememberMe = Input.RememberMe });
+                    return RedirectToPage("./LoginWith2fa",
+                        new { ReturnImageUrl = returnImageUrl, RememberMe = Input.RememberMe });
                 }
                 if (result.IsLockedOut)
                 {
-                    _logger.LogWarning("Tài khoản người dùng đã bị khóa.");
+                    _logger.LogWarning("Tài khoản {Email} đã bị khoá do nhập sai nhiều lần.", Input.Email);
+
+                    // ── Giai đoạn 4: Audit Log — ghi nhận sự kiện Lockout ────
+                    await _logService.LogActionAsync(
+                        username:    Input.Email,
+                        actionType:  "Lockout",
+                        module:      "Security",
+                        description: $"Tài khoản '{Input.Email}' bị khoá tạm thời 15 phút do nhập sai mật khẩu quá 5 lần.",
+                        userRole:    "Unknown"
+                    );
+
                     return RedirectToPage("./Lockout");
                 }
                 else
                 {
+                    // Ghi log đăng nhập thất bại (không đủ nghiêm trọng để ghi audit)
+                    _logger.LogWarning("Đăng nhập thất bại cho {Email}.", Input.Email);
                     ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không hợp lệ.");
                     return Page();
                 }

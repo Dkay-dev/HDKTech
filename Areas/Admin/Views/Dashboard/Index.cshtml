@@ -291,9 +291,22 @@
                     </h6>
                     <small class="text-muted">Đơn đã giao thành công · Cache 5 phút</small>
                 </div>
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
-                    Tổng: @((Model.DailyRevenue.Sum(d => d.Revenue) / 1_000_000m).ToString("F1"))M ₫
-                </span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
+                        Tổng: @((Model.DailyRevenue.Sum(d => d.Revenue) / 1_000_000m).ToString("F1"))M ₫
+                    </span>
+                    @* ── GĐ3: Quick Action — Tải báo cáo doanh thu ── *@
+                    <a asp-area="Admin"
+                       asp-controller="Reports"
+                       asp-action="ExportRevenue"
+                       asp-route-start="@DateTime.Now.AddDays(-6).ToString("yyyy-MM-dd")"
+                       asp-route-end="@DateTime.Now.ToString("yyyy-MM-dd")"
+                       class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                       title="Tải báo cáo doanh thu 7 ngày vừa qua">
+                        <i class="bi bi-file-earmark-arrow-down"></i>
+                        <span class="d-none d-xl-inline">Tải báo cáo</span>
+                    </a>
+                </div>
             </div>
             <div class="card-body pt-2">
                 <canvas id="revenueChart" style="max-height:250px"></canvas>
@@ -699,64 +712,35 @@
     gradient.addColorStop(1, 'rgba(13,110,253,0.01)');
 
     new Chart(ctx, {
-        type: 'line',   // ← Giai đoạn 2: Line Chart thay vì Bar Chart
+        type: 'line',
         data: {
-            labels,
+            labels: labels,
             datasets: [{
-                label      : 'Doanh thu (₫)',
-                data       : revenues,
-                fill       : true,
-                backgroundColor : gradient,
-                borderColor     : 'rgba(13,110,253,1)',
-                borderWidth     : 2.5,
-                pointRadius     : 4,
-                pointHoverRadius: 7,
-                pointBackgroundColor: revenues.map((v, i) =>
-                    i === revenues.length - 1
-                        ? 'rgba(13,110,253,1)'
-                        : 'rgba(255,255,255,1)'
-                ),
-                pointBorderColor: 'rgba(13,110,253,1)',
-                pointBorderWidth: 2,
-                tension: 0.35
+                label: 'Doanh thu (₫)',
+                data: revenues,
+                borderColor: '#0d6efd',
+                borderWidth: 2,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#0d6efd',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            interaction: { mode: 'index', intersect: false },
+            maintainAspectRatio: false,
             plugins: {
-                legend : { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(13,110,253,.9)',
-                    titleColor     : '#fff',
-                    bodyColor      : '#fff',
-                    callbacks: {
-                        label: ctx => {
-                            const val = ctx.parsed.y;
-                            return ' ' + new Intl.NumberFormat('vi-VN', {
-                                style: 'currency', currency: 'VND'
-                            }).format(val);
-                        }
-                    }
-                }
+                legend: { display: false }
             },
             scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 11 } }
-                },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,.05)' },
                     ticks: {
-                        font    : { size: 11 },
-                        callback: val => {
-                            if (val >= 1_000_000)
-                                return (val / 1_000_000).toFixed(1) + 'M ₫';
-                            if (val >= 1_000)
-                                return (val / 1_000).toFixed(0) + 'K ₫';
-                            return val + ' ₫';
+                        callback: function(value) {
+                            return (value / 1000000).toFixed(1) + 'M ₫';
                         }
                     }
                 }

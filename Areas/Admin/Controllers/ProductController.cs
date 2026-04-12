@@ -110,6 +110,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // GET: /admin/product/create
         // ──────────────────────────────────────────────────────────────
         [HttpGet("create")]
+        [Authorize(Policy = "Product.Create")]   // ← GĐ4: Granular Security
         public async Task<IActionResult> Create()
         {
             await LoadDropdowns();
@@ -118,6 +119,7 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // POST: /admin/product/create
         [HttpPost("create")]
+        [Authorize(Policy = "Product.Create")]   // ← GĐ4: Granular Security
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product, IList<IFormFile> images, int stockQuantity = 0)
         {
@@ -173,6 +175,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/product/edit/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpPost("edit/{id:int}")]
+        [Authorize(Policy = "Product.Update")]   // ← GĐ4: Granular Security
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Product product, IList<IFormFile> images)
         {
@@ -275,6 +278,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/product/delete/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpPost("delete/{id:int}")]
+        [Authorize(Policy = "Product.Delete")]   // ← GĐ4: Granular Security
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
@@ -306,6 +310,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/product/update-stock/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpPost("update-stock/{id:int}")]
+        [Authorize(Policy = "Inventory.Update")]  // ← GĐ4: Granular Security
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStock(int id, int quantity)
         {

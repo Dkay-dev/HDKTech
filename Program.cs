@@ -24,15 +24,23 @@ namespace HDKTech
             builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
 
             builder.Services
-                 .AddIdentity<AppUser, IdentityRole>(options => 
+                 .AddIdentity<AppUser, IdentityRole>(options =>
                  {
+                     // ── Password Policy ───────────────────────────────────────
                      options.SignIn.RequireConfirmedAccount = false;
-                     options.Password.RequireDigit = false;
-                     options.Password.RequiredLength = 4;
+                     options.Password.RequireDigit           = false;
+                     options.Password.RequiredLength         = 4;
                      options.Password.RequireNonAlphanumeric = false;
-                     options.Password.RequireUppercase = false;
-                     options.Password.RequireLowercase = false;
-                 }) 
+                     options.Password.RequireUppercase       = false;
+                     options.Password.RequireLowercase       = false;
+
+                     // ── Giai đoạn 4: Brute-force Protection — Account Lockout ─
+                     // Khoá tài khoản 15 phút sau 5 lần nhập sai liên tiếp.
+                     // LockoutEnabled mặc định = true cho mọi user mới đăng ký.
+                     options.Lockout.AllowedForNewUsers      = true;
+                     options.Lockout.MaxFailedAccessAttempts = 5;
+                     options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+                 })
                  .AddEntityFrameworkStores<HDKTechContext>()
                  .AddDefaultUI()
                  .AddDefaultTokenProviders();
@@ -61,6 +69,9 @@ namespace HDKTech
             // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────
             builder.Services.AddScoped<IInventoryService, InventoryService>();
 
+            // ── Giai đoạn 3: Smart Reporting ─────────────────────────────────
+            builder.Services.AddScoped<IReportService, ReportService>();
+
             // ── Giai đoạn 1: Granular Security — PermissionHandler ───────────
             // Kích hoạt custom AuthorizationHandler dùng bảng RolePermissions
             builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
@@ -79,6 +90,8 @@ namespace HDKTech
                 options.AddPolicy("Product.Delete", p => p.AddRequirements(new PermissionRequirement("Product", "Delete")));
                 // Inventory
                 options.AddPolicy("Inventory.Update", p => p.AddRequirements(new PermissionRequirement("Inventory", "Update")));
+                // ── Giai đoạn 3: Smart Reporting ──────────────────────────────
+                options.AddPolicy("Report.Export", p => p.AddRequirements(new PermissionRequirement("Report", "Export")));
             });
 
             // Register Cart Service (Session) - 7 days
