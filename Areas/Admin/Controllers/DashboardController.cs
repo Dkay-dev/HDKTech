@@ -2,9 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
+using HDKTech.Areas.Admin.Models;
 using Microsoft.EntityFrameworkCore;
-
-using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -23,80 +22,85 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         /// <summary>
-        /// Display admin dashboard with key metrics and analytics
+        /// Dashboard với số liệu kinh doanh thực tế.
         /// GET: /admin/dashboard
         /// </summary>
-        [HttpGet]
-        [Route("")]
-        [Route("index")]
+        [HttpGet("")]
+        [HttpGet("index")]
         public async Task<IActionResult> Index()
         {
             try
             {
-                // Get total revenue (sum of all orders)
+                // ── Doanh thu: chỉ tính đơn hàng Status == 3 (Đã giao) ──
                 var totalRevenue = await _context.Orders
                     .AsNoTracking()
-                    .SumAsync(o => o.TotalAmount);
+                    .Where(o => o.Status == 3)
+                    .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
-                // Get total orders count
-                var totalOrders = await _context.Orders
-                    .AsNoTracking()
+                // ── Tổng đơn hàng ──────────────────────────────────────
+                var totalOrders = await _context.Orders.AsNoTracking().CountAsync();
+
+                // ── Đơn chờ xử lý (Status 0 + 1) ──────────────────────
+                var pendingOrders = await _context.Orders.AsNoTracking()
+                    .CountAsync(o => o.Status == 0 || o.Status == 1);
+
+                // ── Tồn kho thấp (< 10) ────────────────────────────────
+                var lowStockCount = await _context.Inventories.AsNoTracking()
+                    .Where(i => i.Quantity < 10)
                     .CountAsync();
 
-                // Get low stock products (quantity < 10)
-                var lowStockCount = await _context.Inventories
-                    .AsNoTracking()
-                    .Where(k => k.Quantity < 10)
-                    .CountAsync();
-
-                // Get new customers (registered in last 30 days)
+                // ── Khách hàng mới (30 ngày) ───────────────────────────
                 var thirtyDaysAgo = DateTime.Now.AddDays(-30);
-                var newCustomers = await _context.Users
-                    .AsNoTracking()
+                var newCustomers = await _context.Users.AsNoTracking()
                     .OfType<AppUser>()
                     .Where(u => u.CreatedAt >= thirtyDaysAgo)
                     .CountAsync();
 
-                // Get recent orders (last 5)
-                var recentOrders = await _context.Orders
-                    .AsNoTracking()
+                // ── Khuyến mãi đang chạy ───────────────────────────────
+                var now = DateTime.Now;
+                var activePromotions = await _context.Promotions.AsNoTracking()
+                    .CountAsync(p => p.IsActive && p.StartDate <= now && p.EndDate >= now);
+
+                // ── 5 đơn hàng gần nhất ────────────────────────────────
+                var recentOrders = await _context.Orders.AsNoTracking()
                     .Include(o => o.User)
                     .OrderByDescending(o => o.OrderDate)
                     .Take(5)
                     .ToListAsync();
 
-                // Daily revenue for the last 7 days
+                // ── Doanh thu 7 ngày (chỉ đơn Status==3) ──────────────
                 var dailyRevenueData = new List<DailyRevenueData>();
                 for (int i = 6; i >= 0; i--)
                 {
-                    var date = DateTime.Now.AddDays(-i);
+                    var date    = DateTime.Now.AddDays(-i);
                     var dateOnly = date.Date;
-                    var revenue = await _context.Orders
-                        .AsNoTracking()
-                        .Where(o => o.OrderDate.Date == dateOnly)
-                        .SumAsync(o => o.TotalAmount);
+                    var revenue = await _context.Orders.AsNoTracking()
+                        .Where(o => o.Status == 3 && o.OrderDate.Date == dateOnly)
+                        .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
                     dailyRevenueData.Add(new DailyRevenueData
                     {
-                        Date = dateOnly,
+                        Date    = dateOnly,
                         DayName = date.ToString("ddd"),
                         Revenue = revenue
                     });
                 }
 
-                ViewBag.TotalRevenue = totalRevenue;
-                ViewBag.TotalOrders = totalOrders;
-                ViewBag.LowStockCount = lowStockCount;
-                ViewBag.NewCustomers = newCustomers;
-                ViewBag.RecentOrders = recentOrders;
-                ViewBag.DailyRevenue = dailyRevenueData;
+                ViewBag.TotalRevenue      = totalRevenue;
+                ViewBag.TotalOrders       = totalOrders;
+                ViewBag.PendingOrders     = pendingOrders;
+                ViewBag.LowStockCount     = lowStockCount;
+                ViewBag.NewCustomers      = newCustomers;
+                ViewBag.ActivePromotions  = activePromotions;
+                ViewBag.RecentOrders      = recentOrders;
+                ViewBag.DailyRevenue      = dailyRevenueData;
 
                 return View();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading dashboard");
-                TempData["Error"] = "Lỗi khi tải dashboard";
+                _logger.LogError(ex, "Lỗi tải dashboard");
+                TempData["Error"] = "Lỗi khi tải dashboard.";
                 return View();
             }
         }

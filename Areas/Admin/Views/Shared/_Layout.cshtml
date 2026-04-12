@@ -105,8 +105,8 @@
                 @if (User.IsInRole("Admin"))
                 {
                     <li class="nav-item">
-                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "KhuyenMai" ? "active" : "")"
-                           href="/admin/khuyenmai">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Promotion" ? "active" : "")"
+                           href="/admin/promotion">
                             <i class="bi bi-percent me-2"></i> Khuyến mãi
                         </a>
                     </li>
