@@ -1,4 +1,4 @@
-@model HDKTech.Models.HomeIndexViewModel
+﻿@model HDKTech.Models.HomeIndexViewModel
 @using HDKTech.Utils
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @{
@@ -19,17 +19,21 @@
                 @foreach (var banner in Model.MainBanners)
                 {
                     <div class="carousel-item @(Model.MainBanners.IndexOf(banner) == 0 ? "active" : "")">
-                        <a href="@banner.LinkBanner" class="banner-link" target="@(banner.LinkBanner?.StartsWith("http") == true ? "_blank" : "_self")" onclick="trackBannerClick(@banner.MaBanner)">
+                        <a href="@banner.LinkUrl" class="banner-link" target="@(banner.LinkUrl?.StartsWith("http") == true ? "_blank" : "_self")" onclick="trackBannerClick(@banner.
+
+
+
+)">
                             @* CHỈNH SỬA TẠI ĐÂY: 
                                 - Đổi height: 400px thành 75vh (chiếm 75% chiều cao màn hình) hoặc 600px
                                 - Thêm d-block w-100 để đảm bảo ảnh phủ kín ngang
                             *@
-                            <img src="@banner.ImageUrl" alt="@banner.TenBanner" class="d-block w-100" 
+                            <img src="@banner.ImageUrl" alt="@banner.Title" class="d-block w-100" 
                                  style="height: 75vh; min-height: 500px; object-fit: cover;">
                             
                             <div class="carousel-caption d-md-block" style="bottom: 20%; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); border-radius: 15px; padding: 20px;">
-                                <h2 class="fw-bold display-4" style="text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">@banner.TenBanner</h2>
-                                <p class="lead fs-4" style="text-shadow: 1px 1px 5px rgba(0,0,0,0.6);">@banner.MoTa</p>
+                                <h2 class="fw-bold display-4" style="text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">@banner.Title</h2>
+                                <p class="lead fs-4" style="text-shadow: 1px 1px 5px rgba(0,0,0,0.6);">@banner.Description</p>
                             </div>
                         </a>
                     </div>
@@ -81,22 +85,22 @@ git
                 @* Lấy các danh mục chính (Tầng 1 - Parent) để hiển thị ra icon tròn.
                    Nếu bạn muốn hiện cả các nhóm con, chỉ cần bỏ điều kiện .Where đi.
                 *@
-                @foreach (var category in Model.Categories.Where(m => m.MaDanhMucCha == null).Take(14))
+                @foreach (var category in Model.Categories.Where(m => m.ParentCategoryId == null).Take(14))
                 {
-                    // Link lấy tương tự sidebar: Controller="Category", Action="Index", Route-id="MaDanhMuc"
+                    // Link lấy tương tự sidebar: Controller="Category", Action="Index", Route-id="Id"
                     <div class="col-4 col-md-3 col-lg-2">
-                        <a asp-controller="Category" asp-action="Index" asp-route-id="@category.MaDanhMuc"
+                        <a asp-controller="Category" asp-action="Index" asp-route-id="@category.Id"
                                class="text-decoration-none category-item-modern">
             
                             <div class="category-icon-wrapper shadow-sm mb-3">
-                                @* Đường dẫn ảnh: /images/banners/category-{MaDanhMuc}.jpg *@
-                                <img src="/images/banners/category-@(category.MaDanhMuc).jpg"
-                                     alt="@category.TenDanhMuc"
+                                @* Đường dẫn ảnh: /images/banners/category-{Id}.jpg *@
+                                <img src="/images/banners/category-@(category.Id).jpg"
+                                     alt="@category.Name"
                                      onerror="this.src='/images/banners/category-1.jpg'"
                                      class="img-fluid p-3 category-img-render">
                             </div>
             
-                            <h6 class="category-name-modern text-center">@category.TenDanhMuc</h6>
+                            <h6 class="category-name-modern text-center">@category.Name</h6>
                         </a>
                     </div>
                 }
@@ -127,28 +131,28 @@ git
                         <div class="product-card-wrapper">
                             <div class="product-card">
                                 <div class="product-image-container">
-                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham" class="product-image-link">
+                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="product-image-link">
                                         @{
-                                            var imgUrl = Url.Content("/images/products/" + (product.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url ?? product.HinhAnhs?.FirstOrDefault()?.Url ?? "no-image.png"));
+                                            var imgUrl = Url.Content("/images/products/" + (product.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl ?? product.Images?.FirstOrDefault()?.ImageUrl ?? "no-image.png"));
                                         }
-                                        <img src="@imgUrl" alt="@product.TenSanPham" class="product-image" onerror="this.src='/images/products/no-image.png'" />
+                                        <img src="@imgUrl" alt="@product.Name" class="product-image" onerror="this.src='/images/products/no-image.png'" />
                                     </a>
 
-                                    @if (product.PhanTramGiamGia > 0)
+                                    @if (product.DiscountPercent > 0)
                                     {
-                                        <span class="product-badge-discount">-@product.PhanTramGiamGia%</span>
+                                        <span class="product-badge-discount">-@product.DiscountPercent%</span>
                                     }
                                     <span class="product-badge-new">MỚI</span>
 
-                                    <button type="button" class="product-add-btn" onclick="addToCartAjax(@product.MaSanPham, '@product.TenSanPham')">
+                                    <button type="button" class="product-add-btn" onclick="addToCartAjax(@product.Id, '@product.Name')">
                                         <i class="bi bi-cart-plus"></i> Thêm Giỏ
                                     </button>
                                 </div>
 
                                 <div class="product-info">
                                     <h5 class="product-name">
-                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham">
-                                            @product.TenSanPham
+                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id">
+                                            @product.Name
                                         </a>
                                     </h5>
 
@@ -165,11 +169,11 @@ git
                                     </div>
 
                                     <div class="product-price-group">
-                                        @if (product.GiaNiemYet.HasValue && product.GiaNiemYet > product.Gia)
+                                        @if (product.ListPrice.HasValue && product.ListPrice > product.Price)
                                         {
-                                            <span class="product-price-old">@product.GiaNiemYet.Value.ToString("#,##0")₫</span>
+                                            <span class="product-price-old">@product.ListPrice.Value.ToString("#,##0")₫</span>
                                         }
-                                        <span class="product-price-current">@product.Gia.ToString("#,##0")₫</span>
+                                        <span class="product-price-current">@product.Price.ToString("#,##0")₫</span>
                                     </div>
 
                                     <!-- Installment button -->
@@ -201,28 +205,28 @@ git
                         <div class="product-card-wrapper">
                             <div class="product-card">
                                 <div class="product-image-container">
-                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham" class="product-image-link">
+                                    <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="product-image-link">
                                         @{
-                                            var imgUrl = Url.Content("/images/products/" + (product.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url ?? product.HinhAnhs?.FirstOrDefault()?.Url ?? "no-image.png"));
+                                            var imgUrl = Url.Content("/images/products/" + (product.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl ?? product.Images?.FirstOrDefault()?.ImageUrl ?? "no-image.png"));
                                         }
-                                        <img src="@imgUrl" alt="@product.TenSanPham" class="product-image" onerror="this.src='/images/products/no-image.png'" />
+                                        <img src="@imgUrl" alt="@product.Name" class="product-image" onerror="this.src='/images/products/no-image.png'" />
                                     </a>
 
-                                    @if (product.PhanTramGiamGia > 0)
+                                    @if (product.DiscountPercent > 0)
                                     {
-                                        <span class="product-badge-discount">-@product.PhanTramGiamGia%</span>
+                                        <span class="product-badge-discount">-@product.DiscountPercent%</span>
                                     }
                                     <span class="product-badge-new">MỚI</span>
 
-                                    <button type="button" class="product-add-btn" onclick="addToCartAjax(@product.MaSanPham, '@product.TenSanPham')">
+                                    <button type="button" class="product-add-btn" onclick="addToCartAjax(@product.Id, '@product.Name')">
                                         <i class="bi bi-cart-plus"></i> Thêm Giỏ
                                     </button>
                                 </div>
 
                                 <div class="product-info">
                                     <h5 class="product-name">
-                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham">
-                                            @product.TenSanPham
+                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id">
+                                            @product.Name
                                         </a>
                                     </h5>
 
@@ -239,11 +243,11 @@ git
                                     </div>
 
                                     <div class="product-price-group">
-                                        @if (product.GiaNiemYet.HasValue && product.GiaNiemYet > product.Gia)
+                                        @if (product.ListPrice.HasValue && product.ListPrice > product.Price)
                                         {
-                                            <span class="product-price-old">@product.GiaNiemYet.Value.ToString("#,##0")₫</span>
+                                            <span class="product-price-old">@product.ListPrice.Value.ToString("#,##0")₫</span>
                                         }
-                                        <span class="product-price-current">@product.Gia.ToString("#,##0")₫</span>
+                                        <span class="product-price-current">@product.Price.ToString("#,##0")₫</span>
                                     </div>
 
                                     <!-- Installment button -->
@@ -302,3 +306,4 @@ git
         };
     }
 }
+

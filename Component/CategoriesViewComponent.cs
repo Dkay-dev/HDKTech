@@ -1,4 +1,4 @@
-using HDKTech.Areas.Identity.Data;
+﻿using HDKTech.Areas.Identity.Data;
 using HDKTech.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ namespace HDKTech.Repositories.Component
         {
             // Lấy TOÀN BỘ danh mục về máy khách (Client-side)
             // Việc lọc Cha/Con/Cháu sẽ để cho file View (.cshtml) xử lý bằng Model.Where
-            var allCategories = await _DbContext.DanhMucs.ToListAsync();
+            var allCategories = await _DbContext.Categories.ToListAsync();
 
             return View(allCategories);
         }

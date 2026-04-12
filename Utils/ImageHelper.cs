@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace HDKTech.Utils
@@ -11,36 +11,36 @@ namespace HDKTech.Utils
     {
         /// <summary>
         /// Trả về đường dẫn đầy đủ tới ảnh product trong /images/products.
-        /// - Nếu imageUrl null/empty => "/images/products/no-image.png"
-        /// - Nếu đã là đường dẫn tuyệt đối hoặc URL đầy đủ => chuẩn hoá extension -> .jpg
+        /// - Nếu ImageUrl null/empty => "/images/products/no-image.png"
+        /// - Nếu đã là đường dẫn tuyệt đối hoặc ImageUrl đầy đủ => chuẩn hoá extension -> .jpg
         /// - Nếu là "folder/file.ext" => "/images/products/folder/file.jpg"
         /// - Nếu chỉ "file.ext" + có categoryFolder => "/images/products/{categoryFolder}/{file}.jpg"
         /// </summary>
-        public static string GetImagePath(string? imageUrl, string? categoryFolder = null)
+        public static string GetImagePath(string? ImageUrl, string? categoryFolder = null)
         {
             const string fallback = "/images/products/no-image.png";
 
-            if (string.IsNullOrWhiteSpace(imageUrl))
+            if (string.IsNullOrWhiteSpace(ImageUrl))
                 return fallback;
 
-            imageUrl = imageUrl.Trim();
+            ImageUrl = ImageUrl.Trim();
 
-            // Nếu đã là URL tuyệt đối hoặc bắt đầu bằng /images/
+            // Nếu đã là ImageUrl tuyệt đối hoặc bắt đầu bằng /images/
             // => chuẩn hoá extension -> .jpg
-            if (imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
-                imageUrl.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
+            if (ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
+                ImageUrl.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
             {
                 // Bỏ extension cũ, thêm .jpg
                 var withoutExt = System.IO.Path.Combine(
-                    System.IO.Path.GetDirectoryName(imageUrl) ?? string.Empty,
-                    System.IO.Path.GetFileNameWithoutExtension(imageUrl)
+                    System.IO.Path.GetDirectoryName(ImageUrl) ?? string.Empty,
+                    System.IO.Path.GetFileNameWithoutExtension(ImageUrl)
                 ).Replace("\\", "/");
 
                 return withoutExt + ".jpg";
             }
 
-            // imageUrl kiểu "folder/file.jpg" hoặc "file.jpg"
-            var cleaned = imageUrl.Replace('\\', '/').TrimStart('/');
+            // ImageUrl kiểu "folder/file.jpg" hoặc "file.jpg"
+            var cleaned = ImageUrl.Replace('\\', '/').TrimStart('/');
 
             // Kiểm tra xem có folder không
             if (cleaned.Contains("/"))
@@ -72,7 +72,7 @@ namespace HDKTech.Utils
 
         /// <summary>
         /// Map danh mục tiếng Việt -> tên folder ảnh
-        /// Dùng cho khi cần convert DanhMuc.TenDanhMuc -> folder name
+        /// Dùng cho khi cần convert Category.Name -> folder name
         /// </summary>
         public static string MapCategoryToFolder(string? categoryName)
         {

@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using HDKTech.Models;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -13,13 +15,13 @@ namespace HDKTech.Controllers
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ICartService _cartService;
-        private readonly UserManager<NguoiDung> _userManager;
+        private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<CheckoutController> _logger;
 
         public CheckoutController(
             IOrderRepository orderRepository,
             ICartService cartService,
-            UserManager<NguoiDung> userManager,
+            UserManager<AppUser> userManager,
             ILogger<CheckoutController> logger)
         {
             _orderRepository = orderRepository;
@@ -52,14 +54,14 @@ namespace HDKTech.Controllers
             // Tạo ViewModel với thông tin user auto-filled
             var viewModel = new CheckoutViewModel
             {
-                TenNguoiNhan = user.HoTen ?? "",
+                RecipientName = user.FullName ?? "",
                 Email = user.Email ?? "",
                 SoDienThoai = user.PhoneNumber ?? "",
-                DiaChiGiaoHang = "", // Không có DiaChi trong NguoiDung
+                ShippingAddress = "", // Không có DiaChi trong AppUser
                 Items = cart.Items,
-                TongTien = (decimal)cart.Items.Sum(x => x.Price * x.Quantity),
-                SoSanPham = cart.Items.Count,
-                PhiVanChuyen = 0 // Có thể tính động dựa trên địa chỉ
+                TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity),
+                SoProduct = cart.Items.Count,
+                ShippingFee = 0 // Có thể tính động dựa trên địa chỉ
             };
 
             return View(viewModel);
@@ -91,36 +93,36 @@ namespace HDKTech.Controllers
             {
                 // Nếu validate fail, trả lại form với dữ liệu cart
                 model.Items = cart.Items;
-                model.TongTien = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                model.SoSanPham = cart.Items.Count;
+                model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
+                model.SoProduct = cart.Items.Count;
                 return View(model);
             }
 
             try
             {
                 // Tạo đơn hàng
-                var donHang = await _orderRepository.CreateOrderAsync(
+                var Order = await _orderRepository.CreateOrderAsync(
                     userId: user.Id,
-                    tenNguoiNhan: model.TenNguoiNhan,
+                    RecipientName: model.RecipientName,
                     soDienThoai: model.SoDienThoai,
-                    diaChiGiaoHang: model.DiaChiGiaoHang,
+                    ShippingAddress: model.ShippingAddress,
                     items: cart.Items,
-                    phiVanChuyen: model.PhiVanChuyen
+                    ShippingFee: model.ShippingFee
                 );
 
                 // Cập nhật thông tin user
-                user.HoTen = model.TenNguoiNhan;
+                user.FullName = model.RecipientName;
                 user.PhoneNumber = model.SoDienThoai;
-                // user.DiaChi = model.DiaChiGiaoHang; // Không có property này
+                // user.DiaChi = model.ShippingAddress; // Không có property này
                 await _userManager.UpdateAsync(user);
 
                 // Xóa giỏ hàng
                 await _cartService.ClearCartAsync();
 
-                _logger.LogInformation($"Đơn hàng #{donHang.MaDonHangChuoi} được tạo thành công bởi user {user.Id}");
+                _logger.LogInformation($"Đơn hàng #{Order.OrderCode} được tạo thành công bởi user {user.Id}");
 
                 // Chuyển sang trang success
-                return RedirectToAction("Success", new { maDonHang = donHang.MaDonHangChuoi });
+                return RedirectToAction("Success", new { maOrder = Order.OrderCode });
             }
             catch (Exception ex)
             {
@@ -129,22 +131,22 @@ namespace HDKTech.Controllers
 
                 // Trả lại form
                 model.Items = cart.Items;
-                model.TongTien = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                model.SoSanPham = cart.Items.Count;
+                model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
+                model.SoProduct = cart.Items.Count;
                 return View(model);
             }
         }
 
         // GET: /Checkout/Success
-        public async Task<IActionResult> Success(string maDonHang)
+        public async Task<IActionResult> Success(string maOrder)
         {
-            if (string.IsNullOrEmpty(maDonHang))
+            if (string.IsNullOrEmpty(maOrder))
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var donHang = await _orderRepository.GetOrderByMaDonHangAsync(maDonHang);
-            if (donHang == null)
+            var Order = await _orderRepository.GetOrderByMaDonHangAsync(maOrder);
+            if (Order == null)
             {
                 TempData["Error"] = "Không tìm thấy đơn hàng.";
                 return RedirectToAction("Index", "Home");
@@ -152,14 +154,16 @@ namespace HDKTech.Controllers
 
             // ✅ Security Check: Verify user owns this order
             var user = await _userManager.GetUserAsync(User);
-            if (user == null || donHang.MaNguoiDung != user.Id)
+            if (user == null || Order.UserId != user.Id)
             {
-                _logger.LogWarning($"Unauthorized access attempt to order {maDonHang} by user {user?.Id}");
+                _logger.LogWarning($"Unauthorized access attempt to order {maOrder} by user {user?.Id}");
                 TempData["Error"] = "Bạn không có quyền xem đơn hàng này.";
                 return RedirectToAction("Index", "Home");
             }
 
-            return View(donHang);
+            return View(Order);
         }
     }
 }
+
+

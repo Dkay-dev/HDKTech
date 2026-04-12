@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model RegisterModel
 @{
     ViewData["Title"] = "Đăng ký";
@@ -9,7 +9,7 @@
 
 
     <div class="card shadow-sm p-4" style="width: 100%; max-width: 450px; border-radius: 10px;">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+        <form id="registerForm" asp-route-returnImageUrl="@Model.ReturnImageUrl" method="post">
            
             <h1 class="h3 mb-3 fw-bold text-center">@ViewData["Title"]</h1>
             <hr />
@@ -17,9 +17,9 @@
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
 
             <div class="form-floating mb-3">
-                <input asp-for="Input.HoTen" class="form-control" aria-required="true" placeholder="Nguyễn Văn A" />
-                <label asp-for="Input.HoTen">Họ và tên</label>
-                <span asp-validation-for="Input.HoTen" class="text-danger"></span>
+                <input asp-for="Input.FullName" class="form-control" aria-required="true" placeholder="Nguyễn Văn A" />
+                <label asp-for="Input.FullName">Họ và tên</label>
+                <span asp-validation-for="Input.FullName" class="text-danger"></span>
             </div>
 
             <div class="form-floating mb-3">
@@ -44,7 +44,7 @@
 
             <div class="text-center small">
                 <p class="mb-0 text-muted">
-                    Đã có tài khoản? <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none fw-bold">Đăng nhập tại đây</a>
+                    Đã có tài khoản? <a asp-page="./Login" asp-route-returnImageUrl="@Model.ReturnImageUrl" class="text-decoration-none fw-bold">Đăng nhập tại đây</a>
                 </p>
             </div>
         </form>
@@ -54,3 +54,4 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
+

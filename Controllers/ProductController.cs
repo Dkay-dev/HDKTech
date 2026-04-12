@@ -1,6 +1,8 @@
-using HDKTech.Repositories.Interfaces;
+﻿using HDKTech.Repositories.Interfaces;
 using HDKTech.Models;
 using Microsoft.AspNetCore.Mvc;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -23,7 +25,7 @@ namespace HDKTech.Controllers
             if (product == null) return NotFound();
 
             // Lấy sản phẩm liên quan cũng qua Repo
-            ViewBag.RelatedProducts = await _productRepo.GetRelatedProductsAsync(product.MaDanhMuc, product.MaSanPham, 4);
+            ViewBag.RelatedProducts = await _productRepo.GetRelatedProductsAsync(product.Id, product.Id, 4);
 
             // Use the unified premium Details layout with Grid 7-5, responsive design, and full specs tabs
             return View(product);
@@ -58,3 +60,5 @@ namespace HDKTech.Controllers
         }
     }
 }
+
+

@@ -25,17 +25,17 @@ namespace HDKTech.Areas.Identity.Pages.Account
 {
     public class RegisterModel : PageModel
     {
-        private readonly SignInManager<NguoiDung> _signInManager;
-        private readonly UserManager<NguoiDung> _userManager;
-        private readonly IUserStore<NguoiDung> _userStore;
-        private readonly IUserEmailStore<NguoiDung> _emailStore;
+        private readonly SignInManager<AppUser> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly IUserStore<AppUser> _userStore;
+        private readonly IUserEmailStore<AppUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
 
         public RegisterModel(
-            UserManager<NguoiDung> userManager,
-            IUserStore<NguoiDung> userStore,
-            SignInManager<NguoiDung> signInManager,
+            UserManager<AppUser> userManager,
+            IUserStore<AppUser> userStore,
+            SignInManager<AppUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender)
         {
@@ -50,7 +50,7 @@ namespace HDKTech.Areas.Identity.Pages.Account
         [BindProperty]
         public InputModel Input { get; set; }
 
-        public string ReturnUrl { get; set; }
+        public string ReturnImageUrl { get; set; }
 
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
@@ -59,7 +59,7 @@ namespace HDKTech.Areas.Identity.Pages.Account
             [Required(ErrorMessage = "Vui lòng nhập Họ tên.")]
             [StringLength(100)]
             [Display(Name = "Họ và tên")]
-            public string HoTen { get; set; }
+            public string FullName { get; set; }
 
             [Required(ErrorMessage = "Vui lòng nhập Email.")]
             [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
@@ -79,20 +79,20 @@ namespace HDKTech.Areas.Identity.Pages.Account
         }
 
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(string returnImageUrl = null)
         {
-            ReturnUrl = returnUrl;
+            ReturnImageUrl = returnImageUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string returnImageUrl = null)
         {
-            returnUrl ??= Url.Content("~/");
+            returnImageUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
-                user.HoTen = Input.HoTen;   
+                user.FullName = Input.FullName;   
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -107,23 +107,23 @@ namespace HDKTech.Areas.Identity.Pages.Account
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
+                    var callbackImageUrl = Url.Page(
                         "/Account/ConfirmEmail",
                         pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+                        values: new { area = "Identity", userId = userId, code = code, returnImageUrl = returnImageUrl },
                         protocol: Request.Scheme);
 
                     await _emailSender.SendEmailAsync(Input.Email, "Xác nhận email của bạn",
-                        $"Vui lòng xác nhận tài khoản của bạn bằng cách <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>bấm vào đây</a>.");
+                        $"Vui lòng xác nhận tài khoản của bạn bằng cách <a href='{HtmlEncoder.Default.Encode(callbackImageUrl)}'>bấm vào đây</a>.");
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnImageUrl = returnImageUrl });
                     }
                     else
                     {
                         await _signInManager.SignInAsync(user, isPersistent: false);
-                        return LocalRedirect(returnUrl);
+                        return LocalRedirect(returnImageUrl);
                     }
                 }
                 foreach (var error in result.Errors)
@@ -136,26 +136,27 @@ namespace HDKTech.Areas.Identity.Pages.Account
             return Page();
         }
 
-        private NguoiDung CreateUser()
+        private AppUser CreateUser()
         {
             try
             {
-                return Activator.CreateInstance<NguoiDung>();
+                return Activator.CreateInstance<AppUser>();
             }
             catch
             {
-                throw new InvalidOperationException($"Không thể tạo thực thể '{nameof(NguoiDung)}'. " +
-                    $"Hãy đảm bảo rằng '{nameof(NguoiDung)}' không phải là lớp trừu tượng và có hàm tạo không tham số.");
+                throw new InvalidOperationException($"Không thể tạo thực thể '{nameof(AppUser)}'. " +
+                    $"Hãy đảm bảo rằng '{nameof(AppUser)}' không phải là lớp trừu tượng và có hàm tạo không tham số.");
             }
         }
 
-        private IUserEmailStore<NguoiDung> GetEmailStore()
+        private IUserEmailStore<AppUser> GetEmailStore()
         {
             if (!_userManager.SupportsUserEmail)
             {
                 throw new NotSupportedException("Giao diện mặc định yêu cầu kho lưu trữ người dùng có hỗ trợ Email.");
             }
-            return (IUserEmailStore<NguoiDung>)_userStore;
+            return (IUserEmailStore<AppUser>)_userStore;
         }
     }
 }
+

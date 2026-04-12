@@ -1,33 +1,35 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 
 namespace HDKTech.Repositories.Interfaces
 {
-    public interface IOrderRepository : IGenericRepository<DonHang>
+    public interface IOrderRepository : IGenericRepository<Order>
     {
         /// <summary>
         /// Tạo đơn hàng mới và lưu vào database
         /// </summary>
-        Task<DonHang> CreateOrderAsync(string userId, string tenNguoiNhan, string soDienThoai, 
-                                       string diaChiGiaoHang, List<CartItem> items, decimal phiVanChuyen = 0);
+        Task<Order> CreateOrderAsync(string userId, string RecipientName, string soDienThoai, 
+                                       string ShippingAddress, List<CartItem> items, decimal ShippingFee = 0);
 
         /// <summary>
         /// Lấy đơn hàng theo mã đơn hàng
         /// </summary>
-        Task<DonHang> GetOrderByMaDonHangAsync(string maDonHangChuoi);
+        Task<Order> GetOrderByMaDonHangAsync(string OrderCode);
 
         /// <summary>
         /// Lấy tất cả đơn hàng của một user
         /// </summary>
-        Task<IEnumerable<DonHang>> GetUserOrdersAsync(string userId);
+        Task<IEnumerable<Order>> GetUserOrdersAsync(string userId);
 
         /// <summary>
         /// Cập nhật trạng thái đơn hàng
         /// </summary>
-        Task<bool> UpdateOrderStatusAsync(int maDonHang, int trangThaiMoi);
+        Task<bool> UpdateOrderStatusAsync(int maOrder, int trangThaiMoi);
 
         /// <summary>
         /// Xóa đơn hàng
         /// </summary>
-        Task<bool> DeleteOrderAsync(int maDonHang);
+        Task<bool> DeleteOrderAsync(int maOrder);
     }
 }
+
+

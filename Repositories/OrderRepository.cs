@@ -1,115 +1,117 @@
-using HDKTech.Data;
+﻿using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Repositories
 {
-    public class OrderRepository : GenericRepository<DonHang>, IOrderRepository
+    public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
         public OrderRepository(HDKTechContext context) : base(context)
         {
         }
 
-        public async Task<DonHang> CreateOrderAsync(string userId, string tenNguoiNhan, string soDienThoai, 
-                                                    string diaChiGiaoHang, List<CartItem> items, decimal phiVanChuyen = 0)
+        public async Task<Order> CreateOrderAsync(string userId, string RecipientName, string soDienThoai, 
+                                                    string ShippingAddress, List<CartItem> items, decimal ShippingFee = 0)
         {
             // Tính tổng tiền
-            var tongTien = items.Sum(x => x.Price * x.Quantity);
+            var TotalAmount = items.Sum(x => x.Price * x.Quantity);
 
             // Tạo mã đơn hàng: HDK + timestamp + random 4 digits
             // Ví dụ: HDK20260410180530_4821
-            var maDonHangChuoi = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
+            var OrderCode = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
 
             // Đảm bảo mã đơn hàng unique (retries 3 lần nếu trùng)
             var retries = 3;
             while (retries-- > 0)
             {
-                var existingOrder = await _context.Set<DonHang>()
-                    .FirstOrDefaultAsync(x => x.MaDonHangChuoi == maDonHangChuoi);
+                var existingOrder = await _context.Set<Order>()
+                    .FirstOrDefaultAsync(x => x.OrderCode == OrderCode);
 
                 if (existingOrder == null)
                     break; // Mã unique, dùng được
 
                 // Nếu trùng, tạo mã mới
-                maDonHangChuoi = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
+                OrderCode = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
             }
 
-            var donHang = new DonHang
+            var Order = new Order
             {
-                MaNguoiDung = userId,
-                MaDonHangChuoi = maDonHangChuoi,
-                TenNguoiNhan = tenNguoiNhan,
-                SoDienThoaiNhan = soDienThoai,
-                DiaChiGiaoHang = diaChiGiaoHang,
-                TongTien = tongTien,
-                PhiVanChuyen = phiVanChuyen,
-                TrangThaiDonHang = 0, // Chờ xác nhận
-                NgayDatHang = DateTime.Now,
-                ChiTietDonHangs = new List<ChiTietDonHang>()
+                UserId = userId,
+                OrderCode = OrderCode,
+                RecipientName = RecipientName,
+                RecipientPhone = soDienThoai,
+                ShippingAddress = ShippingAddress,
+                TotalAmount = TotalAmount,
+                ShippingFee = ShippingFee,
+                Status = 0, // Chờ xác nhận
+                OrderDate = DateTime.Now,
+                Items = new List<OrderItem>()
             };
 
             // Thêm chi tiết đơn hàng
             foreach (var item in items)
             {
-                var chiTiet = new ChiTietDonHang
+                var chiTiet = new OrderItem
                 {
-                    MaSanPham = item.ProductId,
-                    SoLuong = item.Quantity,
-                    GiaBanLucMua = item.Price
+                    Id = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.Price
                 };
-                donHang.ChiTietDonHangs.Add(chiTiet);
+                Order.Items.Add(chiTiet);
             }
 
             // Lưu vào database
-            await _context.AddAsync(donHang);
+            await _context.AddAsync(Order);
             await _context.SaveChangesAsync();
 
-            return donHang;
+            return Order;
         }
 
-        public async Task<DonHang> GetOrderByMaDonHangAsync(string maDonHangChuoi)
+        public async Task<Order> GetOrderByMaDonHangAsync(string OrderCode)
         {
-            return await _context.Set<DonHang>()
-                .Include(x => x.ChiTietDonHangs)
-                .Include(x => x.NguoiDung)
-                .FirstOrDefaultAsync(x => x.MaDonHangChuoi == maDonHangChuoi);
+            return await _context.Set<Order>()
+                .Include(x => x.Items)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.OrderCode == OrderCode);
         }
 
-        public async Task<IEnumerable<DonHang>> GetUserOrdersAsync(string userId)
+        public async Task<IEnumerable<Order>> GetUserOrdersAsync(string userId)
         {
-            return await _context.Set<DonHang>()
-                .Include(x => x.ChiTietDonHangs)
-                .Where(x => x.MaNguoiDung == userId)
-                .OrderByDescending(x => x.NgayDatHang)
+            return await _context.Set<Order>()
+                .Include(x => x.Items)
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.OrderDate)
                 .ToListAsync();
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(int maDonHang, int trangThaiMoi)
+        public async Task<bool> UpdateOrderStatusAsync(int maOrder, int trangThaiMoi)
         {
-            var donHang = await _context.Set<DonHang>().FindAsync(maDonHang);
-            if (donHang == null)
+            var Order = await _context.Set<Order>().FindAsync(maOrder);
+            if (Order == null)
                 return false;
 
-            donHang.TrangThaiDonHang = trangThaiMoi;
-            _context.Update(donHang);
+            Order.Status = trangThaiMoi;
+            _context.Update(Order);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> DeleteOrderAsync(int maDonHang)
+        public async Task<bool> DeleteOrderAsync(int maOrder)
         {
-            var donHang = await _context.Set<DonHang>()
-                .Include(x => x.ChiTietDonHangs)
-                .FirstOrDefaultAsync(x => x.MaDonHang == maDonHang);
+            var Order = await _context.Set<Order>()
+                .Include(x => x.Items)
+                .FirstOrDefaultAsync(x => x.OrderCode == maOrder.ToString());
 
-            if (donHang == null)
+            if (Order == null)
                 return false;
 
-            _context.RemoveRange(donHang.ChiTietDonHangs);
-            _context.Remove(donHang);
+            _context.RemoveRange(Order.Items);
+            _context.Remove(Order);
             await _context.SaveChangesAsync();
             return true;
         }
     }
 }
+
+

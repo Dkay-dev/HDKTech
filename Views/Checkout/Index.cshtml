@@ -1,4 +1,4 @@
-@model CheckoutViewModel
+﻿@model CheckoutViewModel
 @{
     ViewData["Title"] = "Thanh Toán";
 }
@@ -40,11 +40,11 @@
                                 <i class="bi bi-person"></i>
                                 Họ Tên
                             </label>
-                            <input type="text" class="form-control @(ViewData.ModelState["TenNguoiNhan"]?.Errors.Any() == true ? "is-invalid" : "")" 
-                                   name="TenNguoiNhan" value="@Model.TenNguoiNhan" placeholder="Nhập họ tên">
-                            @if (ViewData.ModelState["TenNguoiNhan"]?.Errors.Any() == true)
+                            <input type="text" class="form-control @(ViewData.ModelState["RecipientName"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                                   name="RecipientName" value="@Model.RecipientName" placeholder="Nhập họ tên">
+                            @if (ViewData.ModelState["RecipientName"]?.Errors.Any() == true)
                             {
-                                <span class="invalid-feedback">@ViewData.ModelState["TenNguoiNhan"].Errors[0].ErrorMessage</span>
+                                <span class="invalid-feedback">@ViewData.ModelState["RecipientName"].Errors[0].ErrorMessage</span>
                             }
                         </div>
 
@@ -79,11 +79,11 @@
                                 <i class="bi bi-geo-alt"></i>
                                 Địa Chỉ Giao Hàng
                             </label>
-                            <input type="text" class="form-control @(ViewData.ModelState["DiaChiGiaoHang"]?.Errors.Any() == true ? "is-invalid" : "")" 
-                                   name="DiaChiGiaoHang" value="@Model.DiaChiGiaoHang" placeholder="Nhập địa chỉ giao hàng">
-                            @if (ViewData.ModelState["DiaChiGiaoHang"]?.Errors.Any() == true)
+                            <input type="text" class="form-control @(ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                                   name="ShippingAddress" value="@Model.ShippingAddress" placeholder="Nhập địa chỉ giao hàng">
+                            @if (ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true)
                             {
-                                <span class="invalid-feedback">@ViewData.ModelState["DiaChiGiaoHang"].Errors[0].ErrorMessage</span>
+                                <span class="invalid-feedback">@ViewData.ModelState["ShippingAddress"].Errors[0].ErrorMessage</span>
                             }
                         </div>
 
@@ -155,17 +155,17 @@
 
                         <div class="summary-item">
                             <span>Tổng Tiền Hàng:</span>
-                            <span style="font-weight: 600; color: var(--hdk-dark);">@Model.TongTien.ToString("N0")₫</span>
+                            <span style="font-weight: 600; color: var(--hdk-dark);">@Model.TotalAmount.ToString("N0")₫</span>
                         </div>
 
                         <div class="summary-item">
                             <span>Phí Vận Chuyển:</span>
-                            <span style="font-weight: 600; color: var(--hdk-dark);">@Model.PhiVanChuyen.ToString("N0")₫</span>
+                            <span style="font-weight: 600; color: var(--hdk-dark);">@Model.ShippingFee.ToString("N0")₫</span>
                         </div>
 
                         <div class="summary-total">
                             <span>Tổng Cộng:</span>
-                            <span>@((Model.TongTien + Model.PhiVanChuyen).ToString("N0"))₫</span>
+                            <span>@((Model.TotalAmount + Model.ShippingFee).ToString("N0"))₫</span>
                         </div>
 
                         <button type="submit" class="btn-checkout">
@@ -183,3 +183,4 @@
         </form>
     </div>
 </div>
+

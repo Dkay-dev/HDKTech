@@ -1,8 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Chi tiết Đơn Hàng";
-    var order = (HDKTech.Models.DonHang)ViewBag.Order;
+    var order = (HDKTech.Models.Order)ViewBag.Order;
 
-    var statusName = order.TrangThaiDonHang switch
+    var statusName = order.Status switch
     {
         0 => "Chờ xác nhận",
         1 => "Đang xử lý",
@@ -12,7 +12,7 @@
         _ => "Không xác định"
     };
 
-    var statusColor = order.TrangThaiDonHang switch
+    var statusColor = order.Status switch
     {
         0 => "error",
         1 => "outline",
@@ -33,10 +33,10 @@
                     Quay lại
                 </a>
             </div>
-            <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Đơn Hàng <span class="text-primary">@order.MaDonHangChuoi</span></h1>
+            <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Đơn Hàng <span class="text-primary">@order.OrderCode</span></h1>
         </div>
         <div>
-            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-@statusColor text-white" style="background-color: @(order.TrangThaiDonHang == 0 ? "#ba1a1a" : order.TrangThaiDonHang == 1 ? "#946e69" : order.TrangThaiDonHang == 2 ? "#b22a22" : order.TrangThaiDonHang == 3 ? "#006195" : "#a1a1a1");">
+            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-@statusColor text-white" style="background-color: @(order.Status == 0 ? "#ba1a1a" : order.Status == 1 ? "#946e69" : order.Status == 2 ? "#b22a22" : order.Status == 3 ? "#006195" : "#a1a1a1");">
                 @statusName
             </span>
         </div>
@@ -54,11 +54,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Mã Đơn Hàng</p>
-                        <p class="text-sm font-bold text-on-surface">@order.MaDonHangChuoi</p>
+                        <p class="text-sm font-bold text-on-surface">@order.OrderCode</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Ngày Đặt</p>
-                        <p class="text-sm font-bold text-on-surface">@order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p class="text-sm font-bold text-on-surface">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Trạng Thái</p>
@@ -66,7 +66,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Tổng Giá Trị</p>
-                        <p class="text-sm font-bold text-primary">@order.TongTien.ToString("C0")</p>
+                        <p class="text-sm font-bold text-primary">@order.TotalAmount.ToString("C0")</p>
                     </div>
                 </div>
             </div>
@@ -80,19 +80,19 @@
                 <div class="space-y-3">
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Người Nhận</p>
-                        <p class="text-sm font-bold text-on-surface">@order.TenNguoiNhan</p>
+                        <p class="text-sm font-bold text-on-surface">@order.RecipientName</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Số Điện Thoại</p>
-                        <p class="text-sm font-bold text-on-surface">@order.SoDienThoaiNhan</p>
+                        <p class="text-sm font-bold text-on-surface">@order.RecipientPhone</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Địa Chỉ Giao Hàng</p>
-                        <p class="text-sm font-bold text-on-surface">@order.DiaChiGiaoHang</p>
+                        <p class="text-sm font-bold text-on-surface">@order.ShippingAddress</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Phí Vận Chuyển</p>
-                        <p class="text-sm font-bold text-on-surface">@order.PhiVanChuyen.ToString("C0")</p>
+                        <p class="text-sm font-bold text-on-surface">@order.ShippingFee.ToString("C0")</p>
                     </div>
                 </div>
             </div>
@@ -116,16 +116,16 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-surface-container">
-                            @if (order.ChiTietDonHangs != null && order.ChiTietDonHangs.Count > 0)
+                            @if (order.Items != null && order.Items.Count > 0)
                             {
-                                @foreach (var item in order.ChiTietDonHangs)
+                                @foreach (var item in order.Items)
                                 {
                                     <tr class="hover:bg-surface-container-low transition-colors">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                @if (item.SanPham?.HinhAnhs?.FirstOrDefault() != null)
+                                                @if (item.Product?.Images?.FirstOrDefault() != null)
                                                 {
-                                                    <img src="@item.SanPham.HinhAnhs.FirstOrDefault().Url" alt="@item.SanPham.TenSanPham" class="w-12 h-12 rounded object-cover" />
+                                                    <img src="@item.Product.Images.FirstOrDefault().ImageUrl" alt="@item.Product.Name" class="w-12 h-12 rounded object-cover" />
                                                 }
                                                 else
                                                 {
@@ -134,19 +134,19 @@
                                                     </div>
                                                 }
                                                 <div>
-                                                    <p class="text-sm font-semibold text-on-surface">@item.SanPham?.TenSanPham</p>
-                                                    <p class="text-xs text-zinc-500">SKU: @item.SanPham?.MaSanPham</p>
+                                                    <p class="text-sm font-semibold text-on-surface">@item.Product?.Name</p>
+                                                    <p class="text-xs text-zinc-500">SKU: @item.Product?.Id</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 text-sm font-bold text-on-surface">
-                                            @item.GiaBanLucMua.ToString("C0")
+                                            @item.UnitPrice.ToString("C0")
                                         </td>
                                         <td class="px-6 py-4 text-center text-sm font-bold text-on-surface">
-                                            @item.SoLuong
+                                            @item.Quantity
                                         </td>
                                         <td class="px-6 py-4 text-right text-sm font-bold text-primary">
-                                            @(item.GiaBanLucMua * item.SoLuong).ToString("C0")
+                                            @(item.UnitPrice * item.Quantity).ToString("C0")
                                         </td>
                                     </tr>
                                 }
@@ -159,19 +159,19 @@
                 <div class="px-6 py-6 border-t border-surface-container bg-surface-container-low space-y-3">
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-zinc-600">Tổng sản phẩm:</span>
-                        <span class="font-bold text-on-surface">@order.ChiTietDonHangs?.Sum(x => x.SoLuong) ?? 0 sản phẩm</span>
+                        <span class="font-bold text-on-surface">@order.Items?.Sum(x => x.Quantity) ?? 0 sản phẩm</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-zinc-600">Tiền hàng:</span>
-                        <span class="font-bold text-on-surface">@(order.TongTien - order.PhiVanChuyen).ToString("C0")</span>
+                        <span class="font-bold text-on-surface">@(order.TotalAmount - order.ShippingFee).ToString("C0")</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-zinc-600">Phí vận chuyển:</span>
-                        <span class="font-bold text-on-surface">@order.PhiVanChuyen.ToString("C0")</span>
+                        <span class="font-bold text-on-surface">@order.ShippingFee.ToString("C0")</span>
                     </div>
                     <div class="flex justify-between items-center text-base border-t border-surface-container pt-3 mt-3">
                         <span class="font-bold text-on-surface">Tổng cộng:</span>
-                        <span class="font-extrabold text-primary text-lg">@order.TongTien.ToString("C0")</span>
+                        <span class="font-extrabold text-primary text-lg">@order.TotalAmount.ToString("C0")</span>
                     </div>
                 </div>
             </div>
@@ -185,14 +185,14 @@
                     <span class="material-symbols-outlined">person</span>
                     Khách Hàng
                 </h2>
-                @if (order.NguoiDung != null)
+                @if (order.User != null)
                 {
                     <div class="space-y-3">
                             <div class="flex items-center gap-3 mb-4">
-                                @if (order.NguoiDung != null)
+                                @if (order.User != null)
                                 {
                                     <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-                                        @(order.NguoiDung.HoTen.FirstOrDefault().ToString().ToUpper())
+                                        @(order.User.FullName.FirstOrDefault().ToString().ToUpper())
                                     </div>
                                 }
                                 else
@@ -202,17 +202,17 @@
                                     </div>
                                 }
                                 <div>
-                                    <p class="font-bold text-on-surface">@order.NguoiDung?.HoTen</p>
-                                    <p class="text-xs text-zinc-500">ID: @order.NguoiDung?.Id</p>
+                                    <p class="font-bold text-on-surface">@order.User?.FullName</p>
+                                    <p class="text-xs text-zinc-500">ID: @order.User?.Id</p>
                                 </div>
                             </div>
                         <div>
                             <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Email</p>
-                            <p class="text-sm text-on-surface">@order.NguoiDung.Email</p>
+                            <p class="text-sm text-on-surface">@order.User.Email</p>
                         </div>
                         <div>
                             <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">Số Điện Thoại</p>
-                            <p class="text-sm text-on-surface">@order.NguoiDung.PhoneNumber</p>
+                            <p class="text-sm text-on-surface">@order.User.PhoneNumber</p>
                         </div>
                     </div>
                 }
@@ -229,23 +229,23 @@
                     Cập nhật trạng thái
                 </h2>
                 <div class="space-y-2">
-                    <button type="button" class="w-full px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded font-bold text-sm transition-colors status-btn" data-status="0" @(order.TrangThaiDonHang == 0 ? "disabled" : "")>
+                    <button type="button" class="w-full px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded font-bold text-sm transition-colors status-btn" data-status="0" @(order.Status == 0 ? "disabled" : "")>
                         <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">schedule</span>
                         Chờ xác nhận
                     </button>
-                    <button type="button" class="w-full px-4 py-2 bg-outline/10 hover:bg-outline/20 text-on-surface-variant rounded font-bold text-sm transition-colors status-btn" data-status="1" @(order.TrangThaiDonHang == 1 ? "disabled" : "")>
+                    <button type="button" class="w-full px-4 py-2 bg-outline/10 hover:bg-outline/20 text-on-surface-variant rounded font-bold text-sm transition-colors status-btn" data-status="1" @(order.Status == 1 ? "disabled" : "")>
                         <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">hourglass_bottom</span>
                         Đang xử lý
                     </button>
-                    <button type="button" class="w-full px-4 py-2 bg-secondary-container/20 hover:bg-secondary-container/30 text-on-secondary rounded font-bold text-sm transition-colors status-btn" data-status="2" @(order.TrangThaiDonHang == 2 ? "disabled" : "")>
+                    <button type="button" class="w-full px-4 py-2 bg-secondary-container/20 hover:bg-secondary-container/30 text-on-secondary rounded font-bold text-sm transition-colors status-btn" data-status="2" @(order.Status == 2 ? "disabled" : "")>
                         <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">local_shipping</span>
                         Đang giao
                     </button>
-                    <button type="button" class="w-full px-4 py-2 bg-tertiary/10 hover:bg-tertiary/20 text-tertiary rounded font-bold text-sm transition-colors status-btn" data-status="3" @(order.TrangThaiDonHang == 3 ? "disabled" : "")>
+                    <button type="button" class="w-full px-4 py-2 bg-tertiary/10 hover:bg-tertiary/20 text-tertiary rounded font-bold text-sm transition-colors status-btn" data-status="3" @(order.Status == 3 ? "disabled" : "")>
                         <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">check_circle</span>
                         Đã giao
                     </button>
-                    @if (order.TrangThaiDonHang != 3 && order.TrangThaiDonHang != 4)
+                    @if (order.Status != 3 && order.Status != 4)
                     {
                         <button type="button" class="w-full px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded font-bold text-sm transition-colors" id="cancelBtn">
                             <span class="material-symbols-outlined text-base mr-1" style="vertical-align: middle;">close</span>
@@ -275,7 +275,7 @@
         document.querySelectorAll('.status-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const status = this.dataset.status;
-                const orderId = @order.MaDonHang;
+                const orderId = @order.OrderCode;
 
                 fetch('@Url.Action("UpdateStatus", "Order", new { area = "Admin" })', {
                     method: 'POST',
@@ -304,7 +304,7 @@
         if (cancelBtn) {
             cancelBtn.addEventListener('click', function() {
                 if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
-                    const orderId = @order.MaDonHang;
+                    const orderId = @order.OrderCode;
 
                     fetch('@Url.Action("CancelOrder", "Order", new { area = "Admin" })', {
                         method: 'POST',

@@ -1,7 +1,7 @@
-@model HDKTech.Models.DonHang
+﻿@model HDKTech.Models.Order
 
 @{
-    ViewData["Title"] = $"Chi Tiết Đơn Hàng {Model?.MaDonHangChuoi}";
+    ViewData["Title"] = $"Chi Tiết Đơn Hàng {Model?.OrderCode}";
 }
 
 <div class="container py-5">
@@ -16,11 +16,11 @@
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h4 class="mb-0">
-                                <i class="bi bi-receipt"></i> Đơn Hàng #@Model.MaDonHangChuoi
+                                <i class="bi bi-receipt"></i> Đơn Hàng #@Model.OrderCode
                             </h4>
                         </div>
                         <div class="col-md-6 text-end">
-                            @switch (Model.TrangThaiDonHang)
+                            @switch (Model.Status)
                             {
                                 case 0:
                                     <span class="badge bg-warning text-dark fs-6">Chờ Xác Nhận</span>
@@ -50,17 +50,17 @@
                                 <i class="bi bi-calendar3"></i> Thông Tin Đơn Hàng
                             </h6>
                             <p class="mb-2">
-                                <strong>Ngày Đặt:</strong> @Model.NgayDatHang.ToString("dd/MM/yyyy HH:mm")
+                                <strong>Ngày Đặt:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
                             </p>
                             <p class="mb-2">
                                 <strong>Tổng Tiền:</strong>
-                                <span class="text-danger fs-5">@Model.TongTien.ToString("C0").Replace("₫", "").Trim()₫</span>
+                                <span class="text-danger fs-5">@Model.TotalAmount.ToString("C0").Replace("₫", "").Trim()₫</span>
                             </p>
-                            @if (Model.PhiVanChuyen > 0)
+                            @if (Model.ShippingFee > 0)
                             {
                                 <p class="mb-0">
                                     <strong>Phí Vận Chuyển:</strong>
-                                    <span>@Model.PhiVanChuyen.ToString("C0").Replace("₫", "").Trim()₫</span>
+                                    <span>@Model.ShippingFee.ToString("C0").Replace("₫", "").Trim()₫</span>
                                 </p>
                             }
                         </div>
@@ -70,13 +70,13 @@
                                 <i class="bi bi-truck"></i> Thông Tin Giao Hàng
                             </h6>
                             <p class="mb-2">
-                                <strong>Người Nhận:</strong> @Model.TenNguoiNhan
+                                <strong>Người Nhận:</strong> @Model.RecipientName
                             </p>
                             <p class="mb-2">
-                                <strong>Số Điện Thoại:</strong> @Model.SoDienThoaiNhan
+                                <strong>Số Điện Thoại:</strong> @Model.RecipientPhone
                             </p>
                             <p class="mb-0">
-                                <strong>Địa Chỉ:</strong> @Model.DiaChiGiaoHang
+                                <strong>Địa Chỉ:</strong> @Model.ShippingAddress
                             </p>
                         </div>
                     </div>
@@ -88,7 +88,7 @@
                         <i class="bi bi-box-seam"></i> Chi Tiết Sản Phẩm
                     </h6>
 
-                    @if (Model.ChiTietDonHangs != null && Model.ChiTietDonHangs.Any())
+                    @if (Model.Items != null && Model.Items.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-sm">
@@ -101,23 +101,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model.ChiTietDonHangs)
+                                    @foreach (var item in Model.Items)
                                     {
                                         <tr>
                                             <td>
-                                                @if (item.SanPham != null)
+                                                @if (item.Product != null)
                                                 {
-                                                    <strong>@item.SanPham.TenSanPham</strong>
+                                                    <strong>@item.Product.Name</strong>
                                                 }
                                                 else
                                                 {
                                                     <em class="text-muted">Sản phẩm không còn tồn tại</em>
                                                 }
                                             </td>
-                                            <td class="text-center">@item.SoLuong</td>
-                                            <td class="text-end">@item.GiaBanLucMua.ToString("C0").Replace("₫", "").Trim()₫</td>
+                                            <td class="text-center">@item.Quantity</td>
+                                            <td class="text-end">@item.UnitPrice.ToString("C0").Replace("₫", "").Trim()₫</td>
                                             <td class="text-end">
-                                                <strong>@(item.SoLuong * item.GiaBanLucMua).ToString("C0").Replace("₫", "").Trim()₫</strong>
+                                                <strong>@(item.Quantity * item.UnitPrice).ToString("C0").Replace("₫", "").Trim()₫</strong>
                                             </td>
                                         </tr>
                                     }
@@ -149,3 +149,5 @@
         </div>
     </div>
 </div>
+
+

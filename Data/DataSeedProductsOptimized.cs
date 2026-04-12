@@ -1,4 +1,4 @@
-using Bogus;
+﻿using Bogus;
 using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Data;
 using HDKTech.Models;
@@ -20,10 +20,10 @@ namespace HDKTech.Areas.Identity.Data
             var context = services.GetRequiredService<HDKTechContext>();
 
             // Skip if already seeded
-            if (await context.SanPhams.AnyAsync()) return;
+            if (await context.Products.AnyAsync()) return;
 
-            var brands = await context.HangSXs.ToListAsync();
-            var categories = await context.DanhMucs.Where(c => c.MaDanhMucCha == null).ToListAsync();
+            var brands = await context.Brands.ToListAsync();
+            var categories = await context.Categories.Where(c => c.ParentCategoryId == null).ToListAsync();
 
             // Product data: (Name, Price, MSRP, CategoryName, Brand, Description, StructuredSpecs, Image, Discount)
             var products = new List<(string, decimal, decimal?, string, string, string, string, string, int)>
@@ -497,38 +497,38 @@ namespace HDKTech.Areas.Identity.Data
             int imageIndex = 1;
             foreach (var (name, price, msrp, categoryName, brandName, description, specs, imageName, discount) in products)
             {
-                var category = categories.FirstOrDefault(c => c.TenDanhMuc == categoryName);
-                var brand = brands.FirstOrDefault(b => b.TenHangSX == brandName);
+                var category = categories.FirstOrDefault(c => c.Name == categoryName);
+                var brand = brands.FirstOrDefault(b => b.Name == brandName);
 
                 if (category == null || brand == null) continue;
 
-                var product = new SanPham
+                var product = new Product
                 {
-                    TenSanPham = name,
-                    Gia = price,
-                    GiaNiemYet = msrp,
-                    MoTaSanPham = description,
-                    ThongSoKyThuat = specs,  // Structured format
-                    MaDanhMuc = category.MaDanhMuc,
-                    MaHangSX = brand.MaHangSX,
-                    TrangThaiSanPham = 1,
-                    ThongTinBaoHanh = "24 Tháng chính hãng",
-                    KhuyenMai = "Miễn phí vận chuyển | Trả góp 0%",
-                    ThoiGianTaoSP = DateTime.Now.AddDays(-new Random().Next(1, 30))
+                    Name = name,
+                    Price = price,
+                    ListPrice = msrp,
+                    Description = description,
+                    Specifications = specs,  // Structured format
+                    CategoryId = category.Id,
+                    BrandId = brand.Id,
+                    Status = 1,
+                    WarrantyInfo = "24 Tháng chính hãng",
+                    DiscountNote = "Miễn phí vận chuyển | Trả góp 0%",
+                    CreatedAt = DateTime.Now.AddDays(-new Random().Next(1, 30))
                 };
 
-                context.SanPhams.Add(product);
+                context.Products.Add(product);
                 await context.SaveChangesAsync();
 
                 // Add image
-                var image = new HinhAnh
+                var image = new ProductImage
                 {
-                    MaSanPham = product.MaSanPham,
-                    Url = imageName,
+                    Id = product.Id,
+                    ImageUrl = imageName,
                     IsDefault = true,
-                    NgayTao = DateTime.Now
+                    CreatedAt = DateTime.Now
                 };
-                context.HinhAnhs.Add(image);
+                context.ProductImages.Add(image);
 
                 imageIndex++;
             }
@@ -537,4 +537,5 @@ namespace HDKTech.Areas.Identity.Data
         }
     }
 }
+
 

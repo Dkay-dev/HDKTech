@@ -1,7 +1,9 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using HDKTech.Models;
 using HDKTech.Repositories;
 using Microsoft.AspNetCore.Mvc;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -45,24 +47,24 @@ namespace HDKTech.Controllers
 
                 // Danh mục chính (lấy danh mục không có cha - root categories)
                 Categories = categories
-                    .Where(c => c.MaDanhMucCha == null)
-                    .OrderBy(c => c.MaDanhMuc)
+                    .Where(c => c.ParentCategoryId == null)
+                    .OrderBy(c => c.Id)
                     .ToList(),
 
                 // 🆕 Banners by type
                 MainBanners = activeBanners
-                    .Where(b => b.LoaiBanner == "Main")
-                    .OrderBy(b => b.ThuTuHienThi)
+                    .Where(b => b.BannerType == "Main")
+                    .OrderBy(b => b.DisplayOrder)
                     .ToList(),
 
                 SideBanners = activeBanners
-                    .Where(b => b.LoaiBanner == "Side")
-                    .OrderBy(b => b.ThuTuHienThi)
+                    .Where(b => b.BannerType == "Side")
+                    .OrderBy(b => b.DisplayOrder)
                     .ToList(),
 
                 BottomBanners = activeBanners
-                    .Where(b => b.LoaiBanner == "Bottom")
-                    .OrderBy(b => b.ThuTuHienThi)
+                    .Where(b => b.BannerType == "Bottom")
+                    .OrderBy(b => b.DisplayOrder)
                     .ToList()
             };
 
@@ -78,10 +80,10 @@ namespace HDKTech.Controllers
 
             var categoriesWithCount = allCategories.Select(c => new
             {
-                c.MaDanhMuc,
-                c.TenDanhMuc,
-                c.MaDanhMucCha,
-                ProductCount = allProducts.Count(p => p.MaDanhMuc == c.MaDanhMuc)
+                c.Id,
+                c.Name,
+                c.ParentCategoryId,
+                ProductCount = allProducts.Count(p => p.Id == c.Id)
             }).ToList();
 
             ViewBag.Categories = categoriesWithCount;
@@ -104,3 +106,5 @@ namespace HDKTech.Controllers
         public IActionResult Hotline() => View();
     }
 }
+
+

@@ -1,7 +1,7 @@
-@model BannerAnalytics
+﻿@model HDKTech.Areas.Admin.Repositories.BannerAnalytics
 @{
     ViewData["Title"] = "Chi tiết Banner Analytics";
-    var banner = ViewBag.Banner as Banner;
+    var banner = ViewBag.Banner as HDKTech.Areas.Admin.Models.Banner;
 }
 
 <div class="container-fluid mt-4">
@@ -9,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3">📊 Chi tiết Analytics: @Model.BannerName</h1>
-            <p class="text-muted">@banner?.TenBanner | @banner?.LoaiBanner</p>
+            <p class="text-muted">@banner?.Title | @banner?.BannerType</p>
         </div>
         <div>
             <a href="/Admin/BannerAnalytics" class="btn btn-secondary">
@@ -84,11 +84,11 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>
-                        <strong>Tên Banner:</strong> @banner?.TenBanner
+                        <strong>Tên Banner:</strong> @banner?.Title
                     </p>
                     <p>
                         <strong>Loại:</strong> 
-                        <span class="badge bg-info">@banner?.LoaiBanner</span>
+                        <span class="badge bg-info">@banner?.BannerType</span>
                     </p>
                     <p>
                         <strong>Trạng thái:</strong>
@@ -100,15 +100,15 @@
                 <div class="col-md-6">
                     <p>
                         <strong>Link:</strong>
-                        <a href="@banner?.LinkBanner" target="_blank" class="text-truncate">
-                            @banner?.LinkBanner
+                        <a href="@banner?.LinkUrl" target="_blank" class="text-truncate">
+                            @banner?.LinkUrl
                         </a>
                     </p>
                     <p>
                         <strong>Ảnh:</strong>
                         @if (!string.IsNullOrEmpty(banner?.ImageUrl))
                         {
-                            <img src="@banner.ImageUrl" alt="@banner.TenBanner" style="max-width: 200px; border-radius: 5px;">
+                            <img src="@banner.ImageUrl" alt="@banner.Title" style="max-width: 200px; border-radius: 5px;">
                         }
                     </p>
                 </div>

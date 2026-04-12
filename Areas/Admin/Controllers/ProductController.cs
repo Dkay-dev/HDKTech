@@ -8,363 +8,378 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
-    /// <summary>
-    /// Admin Product Management Controller
-    /// Handles all CRUD operations for products in the admin area
-    /// Requires Authorization
-    /// </summary>
     [Area("Admin")]
     [Authorize(Roles = "Admin,Manager")]
     [Route("admin/[controller]")]
     public class ProductController : Controller
     {
-        private readonly IAdminProductRepository _productRepository;
+        private readonly IAdminProductRepository _productRepo;
         private readonly ILogger<ProductController> _logger;
         private readonly HDKTechContext _context;
+        private readonly IWebHostEnvironment _env;
+
+        // Thư mục lưu ảnh sản phẩm (tương đối trong wwwroot)
+        private const string ImgFolder = "images/products";
 
         public ProductController(
-            IAdminProductRepository productRepository,
+            IAdminProductRepository productRepo,
             ILogger<ProductController> logger,
-            HDKTechContext context)
+            HDKTechContext context,
+            IWebHostEnvironment env)
         {
-            _productRepository = productRepository;
+            _productRepo = productRepo;
             _logger = logger;
             _context = context;
+            _env = env;
         }
 
-        /// <summary>
-        /// Display list of all products with pagination
-        /// GET: /admin/product
-        /// </summary>
-        [HttpGet]
-        [Route("")]
-        [Route("index")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
+        // ──────────────────────────────────────────────────────────────
+        // INDEX — danh sách sản phẩm với search + filter + phân trang
+        // GET: /admin/product
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("")]
+        [HttpGet("index")]
+        public async Task<IActionResult> Index(
+            string searchTerm = "",
+            int? categoryId = null,
+            int? brandId = null,
+            int page = 1,
+            int pageSize = 15)
         {
             try
             {
-                var (products, totalCount) = await _productRepository.GetProductsPagedAsync(page, pageSize);
-                
-                ViewBag.CurrentPage = page;
-                ViewBag.PageSize = pageSize;
-                ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-                ViewBag.TotalCount = totalCount;
+                IQueryable<Product> query = _context.Products
+                    .AsNoTracking()
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .Include(p => p.Images)
+                    .Include(p => p.Inventories);
+
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                    query = query.Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm));
+
+                if (categoryId.HasValue)
+                    query = query.Where(p => p.CategoryId == categoryId.Value);
+
+                if (brandId.HasValue)
+                    query = query.Where(p => p.BrandId == brandId.Value);
+
+                var totalCount = await query.CountAsync();
+                var products = await query
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                // Dropdowns cho filter
+                ViewBag.Categories   = await _context.Categories.AsNoTracking().Where(c => c.ParentCategoryId == null).OrderBy(c => c.Name).ToListAsync();
+                ViewBag.Brands       = await _context.Brands.AsNoTracking().OrderBy(b => b.Name).ToListAsync();
+                ViewBag.SearchTerm   = searchTerm;
+                ViewBag.CategoryId   = categoryId;
+                ViewBag.BrandId      = brandId;
+                ViewBag.CurrentPage  = page;
+                ViewBag.PageSize     = pageSize;
+                ViewBag.TotalPages   = (int)Math.Ceiling(totalCount / (double)pageSize);
+                ViewBag.TotalCount   = totalCount;
 
                 return View(products);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading products list");
-                TempData["Error"] = "Lỗi khi tải danh sách sản phẩm";
-                return View(new List<SanPham>());
+                _logger.LogError(ex, "Lỗi tải danh sách sản phẩm");
+                TempData["Error"] = "Lỗi khi tải danh sách sản phẩm.";
+                return View(new List<Product>());
             }
         }
 
-        /// <summary>
-        /// Display product details for editing
-        /// GET: /admin/product/details/{id}
-        /// </summary>
-        [HttpGet]
-        [Route("details/{id}")]
+        // ──────────────────────────────────────────────────────────────
+        // DETAILS — xem/chỉnh sửa sản phẩm
+        // GET: /admin/product/details/{id}
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("details/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
-            try
-            {
-                var product = await _productRepository.GetProductByIdAsync(id);
-                if (product == null)
-                {
-                    TempData["Error"] = "Sản phẩm không tìm thấy";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                await LoadViewBagData();
-                return View(product);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading product details for ID: {ProductId}", id);
-                TempData["Error"] = "Lỗi khi tải chi tiết sản phẩm";
-                return RedirectToAction(nameof(Index));
-            }
+            var product = await _productRepo.GetProductByIdAsync(id);
+            if (product == null) { TempData["Error"] = "Sản phẩm không tìm thấy."; return RedirectToAction(nameof(Index)); }
+            await LoadDropdowns();
+            return View(product);
         }
 
-        /// <summary>
-        /// Display create product form
-        /// GET: /admin/product/create
-        /// </summary>
-        [HttpGet]
-        [Route("create")]
+        // ──────────────────────────────────────────────────────────────
+        // CREATE — form tạo mới
+        // GET: /admin/product/create
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("create")]
         public async Task<IActionResult> Create()
         {
-            await LoadViewBagData();
-            return View("Details", new SanPham());
+            await LoadDropdowns();
+            return View(new Product { Status = 1, CreatedAt = DateTime.Now });
         }
 
-        /// <summary>
-        /// Handle product creation
-        /// POST: /admin/product/create
-        /// </summary>
-        [HttpPost]
-        [Route("create")]
+        // POST: /admin/product/create
+        [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SanPham product)
+        public async Task<IActionResult> Create(Product product, IList<IFormFile> images, int stockQuantity = 0)
         {
+            // Bỏ validation cho navigation properties
+            ModelState.Remove(nameof(Product.Category));
+            ModelState.Remove(nameof(Product.Brand));
+            ModelState.Remove(nameof(Product.Images));
+            ModelState.Remove(nameof(Product.Inventories));
+            ModelState.Remove(nameof(Product.OrderItems));
+            ModelState.Remove(nameof(Product.Reviews));
+
+            if (!ModelState.IsValid)
+            {
+                await LoadDropdowns();
+                return View(product);
+            }
+
             try
             {
-                if (!ModelState.IsValid)
+                product.CreatedAt = DateTime.Now;
+                var created = await _productRepo.CreateProductAsync(product);
+
+                // Lưu ảnh
+                if (images?.Count > 0)
+                    await SaveProductImages(created.Id, images, created.Category?.Name);
+
+                // Tạo inventory
+                if (stockQuantity > 0)
                 {
-                    await LoadViewBagData();
-                    return View("Details", product);
+                    _context.Inventories.Add(new Inventory
+                    {
+                        ProductId = created.Id,
+                        Quantity  = stockQuantity,
+                        UpdatedAt = DateTime.Now
+                    });
+                    await _context.SaveChangesAsync();
                 }
 
-                // Set timestamps
-                product.ThoiGianTaoSP = DateTime.Now;
-
-                var createdProduct = await _productRepository.CreateProductAsync(product);
-
-                TempData["Success"] = $"Sản phẩm '{product.TenSanPham}' đã được tạo thành công";
-                return RedirectToAction(nameof(Details), new { id = createdProduct.MaSanPham });
+                TempData["Success"] = $"Tạo sản phẩm \"{created.Name}\" thành công!";
+                return RedirectToAction(nameof(Details), new { id = created.Id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating product");
-                ModelState.AddModelError(string.Empty, "Lỗi khi tạo sản phẩm");
-                await LoadViewBagData();
-                return View("Details", product);
+                _logger.LogError(ex, "Lỗi tạo sản phẩm: {Name}", product.Name);
+                TempData["Error"] = "Lỗi khi tạo sản phẩm.";
+                await LoadDropdowns();
+                return View(product);
             }
         }
 
-        /// <summary>
-        /// Handle product update
-        /// POST: /admin/product/edit/{id}
-        /// </summary>
-        [HttpPost]
-        [Route("edit/{id}")]
+        // ──────────────────────────────────────────────────────────────
+        // EDIT — cập nhật sản phẩm (dùng chung view Details)
+        // POST: /admin/product/edit/{id}
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, SanPham product)
+        public async Task<IActionResult> Edit(int id, Product product, IList<IFormFile> images)
         {
+            if (id != product.Id) return BadRequest();
+
+            ModelState.Remove(nameof(Product.Category));
+            ModelState.Remove(nameof(Product.Brand));
+            ModelState.Remove(nameof(Product.Images));
+            ModelState.Remove(nameof(Product.Inventories));
+            ModelState.Remove(nameof(Product.OrderItems));
+            ModelState.Remove(nameof(Product.Reviews));
+
+            if (!ModelState.IsValid)
+            {
+                await LoadDropdowns();
+                return View("Details", product);
+            }
+
             try
             {
-                if (id != product.MaSanPham)
+                var success = await _productRepo.UpdateProductAsync(product);
+
+                // Thêm ảnh mới nếu có upload
+                if (images?.Count > 0)
                 {
-                    return BadRequest("Mismatch product ID");
+                    var cat = await _context.Categories.FindAsync(product.CategoryId);
+                    await SaveProductImages(product.Id, images, cat?.Name);
                 }
 
-                if (!ModelState.IsValid)
-                {
-                    await LoadViewBagData();
-                    return View(nameof(Details), product);
-                }
-
-                var success = await _productRepository.UpdateProductAsync(product);
-
-                if (success)
-                {
-                    TempData["Success"] = "Sản phẩm đã được cập nhật thành công";
-                }
-                else
-                {
-                    TempData["Error"] = "Cập nhật sản phẩm thất bại";
-                }
+                TempData[success ? "Success" : "Error"] = success
+                    ? "Cập nhật sản phẩm thành công!"
+                    : "Cập nhật sản phẩm thất bại.";
 
                 return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating product ID: {ProductId}", id);
-                ModelState.AddModelError(string.Empty, "Lỗi khi cập nhật sản phẩm");
-                await LoadViewBagData();
-                TempData["Error"] = "Lỗi khi cập nhật sản phẩm";
-                return View(nameof(Details), product);
+                _logger.LogError(ex, "Lỗi cập nhật sản phẩm Id: {Id}", id);
+                TempData["Error"] = "Lỗi khi cập nhật sản phẩm.";
+                await LoadDropdowns();
+                return View("Details", product);
             }
         }
 
-        /// <summary>
-        /// Delete product
-        /// POST: /admin/product/delete/{id}
-        /// </summary>
-        [HttpPost]
-        [Route("delete/{id}")]
+        // ──────────────────────────────────────────────────────────────
+        // DELETE IMAGE — xóa ảnh đơn lẻ (AJAX)
+        // POST: /admin/product/delete-image/{imageId}
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("delete-image/{imageId:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteImage(int imageId)
+        {
+            try
+            {
+                var img = await _context.ProductImages.FindAsync(imageId);
+                if (img == null) return Json(new { success = false, message = "Không tìm thấy ảnh." });
+
+                // Xóa file vật lý
+                DeletePhysicalFile(img.ImageUrl);
+
+                _context.ProductImages.Remove(img);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi xóa ảnh Id: {Id}", imageId);
+                return Json(new { success = false, message = "Lỗi khi xóa ảnh." });
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // SET DEFAULT IMAGE (AJAX)
+        // POST: /admin/product/set-default-image/{imageId}
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("set-default-image/{imageId:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetDefaultImage(int imageId)
+        {
+            try
+            {
+                var img = await _context.ProductImages.FindAsync(imageId);
+                if (img == null) return Json(new { success = false });
+
+                var siblings = _context.ProductImages.Where(x => x.ProductId == img.ProductId);
+                await siblings.ForEachAsync(x => x.IsDefault = false);
+                img.IsDefault = true;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi set ảnh mặc định Id: {Id}", imageId);
+                return Json(new { success = false });
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // DELETE PRODUCT
+        // POST: /admin/product/delete/{id}
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("delete/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                var product = await _productRepository.GetProductByIdAsync(id);
-                if (product == null)
-                {
-                    return NotFound("Sản phẩm không tìm thấy");
-                }
+                var product = await _productRepo.GetProductByIdAsync(id);
+                if (product == null) { TempData["Error"] = "Sản phẩm không tìm thấy."; return RedirectToAction(nameof(Index)); }
 
-                var success = await _productRepository.DeleteProductAsync(id);
+                // Xóa ảnh vật lý trước
+                if (product.Images != null)
+                    foreach (var img in product.Images) DeletePhysicalFile(img.ImageUrl);
 
-                if (success)
-                {
-                    TempData["Success"] = $"Sản phẩm '{product.TenSanPham}' đã được xóa thành công";
-                }
-                else
-                {
-                    TempData["Error"] = "Xóa sản phẩm thất bại";
-                }
-
+                var success = await _productRepo.DeleteProductAsync(id);
+                TempData[success ? "Success" : "Error"] = success
+                    ? $"Đã xóa sản phẩm \"{product.Name}\"."
+                    : "Xóa sản phẩm thất bại.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting product ID: {ProductId}", id);
-                TempData["Error"] = "Lỗi khi xóa sản phẩm";
+                _logger.LogError(ex, "Lỗi xóa sản phẩm Id: {Id}", id);
+                TempData["Error"] = "Lỗi khi xóa sản phẩm.";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        /// <summary>
-        /// Bulk delete products
-        /// POST: /admin/product/bulk-delete
-        /// </summary>
-        [HttpPost]
-        [Route("bulk-delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BulkDelete([FromBody] int[] ids)
-        {
-            try
-            {
-                if (ids == null || ids.Length == 0)
-                {
-                    return BadRequest("No products selected");
-                }
-
-                var success = await _productRepository.DeleteProductsAsync(ids);
-                
-                if (success)
-                {
-                    return Json(new { success = true, message = $"{ids.Length} sản phẩm đã được xóa" });
-                }
-                else
-                {
-                    return Json(new { success = false, message = "Xóa sản phẩm thất bại" });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error bulk deleting products");
-                return Json(new { success = false, message = "Lỗi khi xóa sản phẩm" });
-            }
-        }
-
-        /// <summary>
-        /// Update product stock
-        /// POST: /admin/product/update-stock/{id}
-        /// </summary>
-        [HttpPost]
-        [Route("update-stock/{id}")]
+        // ──────────────────────────────────────────────────────────────
+        // UPDATE STOCK (AJAX)
+        // POST: /admin/product/update-stock/{id}
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("update-stock/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStock(int id, int quantity)
         {
-            try
-            {
-                if (quantity < 0)
-                {
-                    return BadRequest("Số lượng không hợp lệ");
-                }
-
-                var success = await _productRepository.UpdateProductStockAsync(id, quantity);
-                
-                if (success)
-                {
-                    return Json(new { success = true, message = "Cập nhật kho thành công" });
-                }
-                else
-                {
-                    return Json(new { success = false, message = "Cập nhật kho thất bại" });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating stock for product ID: {ProductId}", id);
-                return Json(new { success = false, message = "Lỗi khi cập nhật kho" });
-            }
+            if (quantity < 0) return Json(new { success = false, message = "Số lượng không hợp lệ." });
+            var ok = await _productRepo.UpdateProductStockAsync(id, quantity);
+            return Json(new { success = ok, message = ok ? "Cập nhật kho thành công." : "Cập nhật kho thất bại." });
         }
 
-        /// <summary>
-        /// Update product price
-        /// POST: /admin/product/update-price/{id}
-        /// </summary>
-        [HttpPost]
-        [Route("update-price/{id}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdatePrice(int id, decimal price)
-        {
-            try
-            {
-                if (price < 0)
-                {
-                    return BadRequest("Giá không hợp lệ");
-                }
+        // ──────────────────────────────────────────────────────────────
+        // PRIVATE HELPERS
+        // ──────────────────────────────────────────────────────────────
 
-                var success = await _productRepository.UpdateProductPriceAsync(id, price);
-                
-                if (success)
-                {
-                    return Json(new { success = true, message = "Cập nhật giá thành công" });
-                }
-                else
-                {
-                    return Json(new { success = false, message = "Cập nhật giá thất bại" });
-                }
-            }
-            catch (Exception ex)
+        /// <summary>Lưu danh sách ảnh upload vào wwwroot/images/products/[productId]/</summary>
+        private async Task SaveProductImages(int productId, IList<IFormFile> files, string? categoryName = null)
+        {
+            // Tạo sub-folder theo productId để dễ quản lý
+            var subFolder = productId.ToString();
+            var uploadDir = Path.Combine(_env.WebRootPath, ImgFolder, subFolder);
+            Directory.CreateDirectory(uploadDir);
+
+            bool isFirst = !await _context.ProductImages.AnyAsync(x => x.ProductId == productId);
+
+            foreach (var file in files)
             {
-                _logger.LogError(ex, "Error updating price for product ID: {ProductId}", id);
-                return Json(new { success = false, message = "Lỗi khi cập nhật giá" });
+                if (file.Length == 0) continue;
+
+                // Chỉ chấp nhận ảnh
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext)) continue;
+
+                var fileName   = $"{Guid.NewGuid():N}{ext}";
+                var physPath   = Path.Combine(uploadDir, fileName);
+                var relUrl     = $"/{ImgFolder}/{subFolder}/{fileName}";
+
+                await using var stream = new FileStream(physPath, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                _context.ProductImages.Add(new ProductImage
+                {
+                    ProductId = productId,
+                    ImageUrl  = relUrl,
+                    IsDefault = isFirst,   // ảnh đầu tiên là mặc định
+                    AltText   = Path.GetFileNameWithoutExtension(file.FileName),
+                    CreatedAt = DateTime.Now
+                });
+
+                isFirst = false;
             }
+
+            await _context.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Search products
-        /// GET: /admin/product/search
-        /// </summary>
-        [HttpGet]
-        [Route("search")]
-        public async Task<IActionResult> Search(string searchTerm)
+        /// <summary>Xóa file ảnh vật lý khỏi wwwroot</summary>
+        private void DeletePhysicalFile(string? relUrl)
         {
+            if (string.IsNullOrWhiteSpace(relUrl)) return;
             try
             {
-                if (string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var products = await _productRepository.SearchProductsAsync(searchTerm);
-                
-                ViewBag.SearchTerm = searchTerm;
-                ViewBag.ResultCount = products.Count();
-
-                return View(nameof(Index), products);
+                var path = Path.Combine(_env.WebRootPath, relUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching products with term: {SearchTerm}", searchTerm);
-                TempData["Error"] = "Lỗi khi tìm kiếm sản phẩm";
-                return RedirectToAction(nameof(Index));
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Không thể xóa file: {Url}", relUrl); }
         }
 
-        /// <summary>
-        /// Load dropdown data (Categories, Brands)
-        /// </summary>
-        private async Task LoadViewBagData()
+        /// <summary>Load dropdowns Brand + Category cho form</summary>
+        private async Task LoadDropdowns()
         {
-            var categories = await _context.DanhMucs
-                .Where(c => c.MaDanhMucCha == null)
-                .OrderBy(c => c.TenDanhMuc)
+            ViewBag.Categories = await _context.Categories
+                .Where(c => c.ParentCategoryId == null)
+                .OrderBy(c => c.Name)
                 .ToListAsync();
-
-            var brands = await _context.HangSXs
-                .OrderBy(b => b.TenHangSX)
+            ViewBag.Brands = await _context.Brands
+                .OrderBy(b => b.Name)
                 .ToListAsync();
-
-            ViewBag.Categories = categories;
-            ViewBag.Brands = brands;
         }
     }
 }

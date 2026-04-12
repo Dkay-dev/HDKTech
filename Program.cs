@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HDKTech.Areas.Identity.Data;
@@ -7,7 +7,7 @@ using HDKTech.Data;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
-
+using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Utilities;
 
 namespace HDKTech
@@ -22,7 +22,7 @@ namespace HDKTech
             builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
 
             builder.Services
-                 .AddIdentity<NguoiDung, IdentityRole>(options => 
+                 .AddIdentity<AppUser, IdentityRole>(options => 
                  {
                      options.SignIn.RequireConfirmedAccount = false;
                      options.Password.RequireDigit = false;
@@ -35,28 +35,31 @@ namespace HDKTech
                  .AddDefaultUI()
                  .AddDefaultTokenProviders();
 
-            // Đăng ký Repository Pattern
+            // Register Repository Pattern
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<ProductRepository>();
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<CategoryRepository>();
+            builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+            builder.Services.AddScoped<BrandRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-            // Đăng ký Admin Repositories
-            builder.Services.AddScoped<IAdminProductRepository, AdminProductRepository>();
-            builder.Services.AddScoped<BannerRepository>();
-            builder.Services.AddScoped<BannerClickEventRepository>();
-            builder.Services.AddScoped<KhuyenMaiRepository>();
-            builder.Services.AddScoped<ISystemLogRepository, SystemLogRepository>();
+            // Register Admin Repositories
+            builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository, HDKTech.Repositories.AdminProductRepository>();
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerClickEventRepository>();
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.PromotionRepository>();
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.ISystemLogRepository, HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
             builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
-            // Đăng ký Cart Service (Session) - 7 ngày để giỏ hàng không bị mất
+            // Register Cart Service (Session) - 7 days
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromDays(7); // 7 ngày
+                options.IdleTimeout = TimeSpan.FromDays(7);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SameSite = SameSiteMode.Lax; // Security
+                options.Cookie.SameSite = SameSiteMode.Lax;
             });
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICartService, SessionCartService>();
@@ -103,7 +106,7 @@ namespace HDKTech
 
             // 1. Route cho các Area (Admin,...)
             // TUYỆT ĐỐI KHÔNG để {controller=Product} ở đây. 
-            // Hãy để trống controller để nó không tự động gán Product vào URL khi bạn đăng nhập.
+            // Hãy để trống controller để nó không tự động gán Product vào ImageUrl khi bạn đăng nhập.
             app.MapControllerRoute(
                 name: "MyAreas",
                 pattern: "{area:exists}/{controller}/{action=Index}/{id?}");

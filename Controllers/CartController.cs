@@ -1,9 +1,11 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 using HDKTech.Utils;
 using Microsoft.AspNetCore.Mvc;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -38,32 +40,32 @@ namespace HDKTech.Controllers
             if (id <= 0 || quantity <= 0)
                 return BadRequest("Sản phẩm không hợp lệ");
 
-            // Lấy sản phẩm từ database (với DanhMuc)
+            // Lấy sản phẩm từ database (với Category)
             var product = await _productRepo.GetProductWithDetailsAsync(id);
             if (product == null)
                 return NotFound("Sản phẩm không tồn tại");
 
             // Lấy ảnh đầu tiên (nếu có)
-            var rawImageUrl = product.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url 
-                           ?? product.HinhAnhs?.FirstOrDefault()?.Url;
+            var rawImageUrl = product.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl 
+                           ?? product.Images?.FirstOrDefault()?.ImageUrl;
 
             // Chuẩn hoá đường dẫn ảnh bằng shared helper
-            var fullImageUrl = ImageHelper.GetImagePath(rawImageUrl, product.DanhMuc?.TenDanhMuc);
+            var fullImageUrl = ImageHelper.GetImagePath(rawImageUrl, product.Category?.Name);
 
-            // Tạo CartItem từ SanPham với đường dẫn ảnh đầy đủ
+            // Tạo CartItem từ Product với đường dẫn ảnh đầy đủ
             var cartItem = new CartItem(
-                productId: product.MaSanPham,
-                productName: product.TenSanPham,
-                price: product.Gia,
+                productId: product.Id,
+                productName: product.Name,
+                price: product.Price,
                 quantity: quantity,
-                imageUrl: fullImageUrl,
-                categoryName: product.DanhMuc?.TenDanhMuc
+                ImageUrl: fullImageUrl,
+                categoryName: product.Category?.Name
             );
 
             // Thêm vào giỏ
             await _cartService.AddItemAsync(cartItem);
 
-            _logger.LogInformation($"Thêm sản phẩm {product.TenSanPham} vào giỏ");
+            _logger.LogInformation($"Thêm sản phẩm {product.Name} vào giỏ");
 
             // Redirect về trang giỏ hàng
             return RedirectToAction("Index");
@@ -84,19 +86,19 @@ namespace HDKTech.Controllers
                 if (product == null)
                     return NotFound(new { success = false, message = "Sản phẩm không tồn tại" });
 
-                var rawImageUrl = product.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url 
-                               ?? product.HinhAnhs?.FirstOrDefault()?.Url;
+                var rawImageUrl = product.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl 
+                               ?? product.Images?.FirstOrDefault()?.ImageUrl;
 
                 // Chuẩn hoá đường dẫn ảnh bằng shared helper
-                var fullImageUrl = ImageHelper.GetImagePath(rawImageUrl, product.DanhMuc?.TenDanhMuc);
+                var fullImageUrl = ImageHelper.GetImagePath(rawImageUrl, product.Category?.Name);
 
                 var cartItem = new CartItem(
-                    productId: product.MaSanPham,
-                    productName: product.TenSanPham,
-                    price: product.Gia,
+                    productId: product.Id,
+                    productName: product.Name,
+                    price: product.Price,
                     quantity: request.Quantity,
-                    imageUrl: fullImageUrl,
-                    categoryName: product.DanhMuc?.TenDanhMuc
+                    ImageUrl: fullImageUrl,
+                    categoryName: product.Category?.Name
                 );
 
                 await _cartService.AddItemAsync(cartItem);
@@ -106,7 +108,7 @@ namespace HDKTech.Controllers
                 return Ok(new
                 {
                     success = true,
-                    message = $"Đã thêm {product.TenSanPham} vào giỏ",
+                    message = $"Đã thêm {product.Name} vào giỏ",
                     totalItems = cart.TotalItems,
                     totalPrice = cart.TotalPrice.ToString("C")
                 });
@@ -241,3 +243,5 @@ namespace HDKTech.Controllers
         public int ProductId { get; set; }
     }
 }
+
+

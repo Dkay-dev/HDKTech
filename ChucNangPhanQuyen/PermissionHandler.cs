@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +12,9 @@ namespace HDKTech.ChucNangPhanQuyen
     {
         private readonly HDKTechContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<NguoiDung> _userManager;
+        private readonly UserManager<AppUser> _userManager;
 
-        public PermissionHandler(HDKTechContext context, IHttpContextAccessor httpContextAccessor, UserManager<NguoiDung> userManager)
+        public PermissionHandler(HDKTechContext context, IHttpContextAccessor httpContextAccessor, UserManager<AppUser> userManager)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;

@@ -1,128 +1,128 @@
-using HDKTech.Data;
+﻿using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Repositories
 {
-    public class ProductRepository : GenericRepository<SanPham>, IProductRepository
+    public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
         public ProductRepository(HDKTechContext context) : base(context) { }
 
-        public async Task<List<SanPham>> GetAllWithImagesAsync()
+        public async Task<List<Product>> GetAllWithImagesAsync()
         {
             return await _dbSet
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
                 .ToListAsync();
         }
 
-        public async Task<SanPham?> GetProductWithDetailsAsync(int id)
+        public async Task<Product?> GetProductWithDetailsAsync(int id)
         {
             return await _dbSet
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
-                .Include(p => p.DanhMuc)
-                .Include(p => p.DanhGias)
-                .ThenInclude(d => d.NguoiDung)
-                .FirstOrDefaultAsync(m => m.MaSanPham == id);
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .Include(p => p.Reviews)
+                .ThenInclude(d => d.User)
+                .FirstOrDefaultAsync(m => m.Id == id);
         }
 
-        public async Task<List<SanPham>> GetRelatedProductsAsync(int categoryId, int currentProductId, int limit)
+        public async Task<List<Product>> GetRelatedProductsAsync(int categoryId, int currentProductId, int limit)
         {
             return await _dbSet
-                .Where(p => p.MaDanhMuc == categoryId && p.MaSanPham != currentProductId)
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.DanhMuc)
+                .Where(p => p.CategoryId == categoryId && p.Id != currentProductId)
+                .Include(p => p.Images)
+                .Include(p => p.Category)
                 .Take(limit)
                 .ToListAsync();
         }
 
-        public async Task<List<SanPham>> FilterProductsAsync(ProductFilterModel filter)
+        public async Task<List<Product>> FilterProductsAsync(ProductFilterModel filter)
         {
             var query = _dbSet
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
                 .AsQueryable();
 
-            // Lọc theo danh mục
+            // Filter by category
             if (filter.CategoryId.HasValue && filter.CategoryId > 0)
             {
-                query = query.Where(p => p.MaDanhMuc == filter.CategoryId);
+                query = query.Where(p => p.CategoryId == filter.CategoryId);
             }
 
-            // Lọc theo hãng sản xuất
+            // Filter by brand
             if (filter.BrandId.HasValue && filter.BrandId > 0)
             {
-                query = query.Where(p => p.MaHangSX == filter.BrandId);
+                query = query.Where(p => p.BrandId == filter.BrandId);
             }
 
-            // Lọc theo giá
+            // Filter by price
             if (filter.MinPrice.HasValue)
             {
-                query = query.Where(p => p.Gia >= filter.MinPrice);
+                query = query.Where(p => p.Price >= filter.MinPrice);
             }
 
             if (filter.MaxPrice.HasValue)
             {
-                query = query.Where(p => p.Gia <= filter.MaxPrice);
+                query = query.Where(p => p.Price <= filter.MaxPrice);
             }
 
-            // Lọc theo trạng thái (có hàng/hết hàng)
+            // Filter by status
             if (filter.Status.HasValue)
             {
-                query = query.Where(p => p.TrangThaiSanPham == filter.Status);
+                query = query.Where(p => p.Status == filter.Status);
             }
 
-            // Lọc theo từ khóa tìm kiếm
+            // Filter by search keyword
             if (!string.IsNullOrWhiteSpace(filter.SearchKeyword))
             {
-                query = query.Where(p => p.TenSanPham.Contains(filter.SearchKeyword));
+                query = query.Where(p => p.Name.Contains(filter.SearchKeyword));
             }
 
-            // Lọc theo CPU (dùng ThongSoKyThuat hoặc thêm cột riêng)
+            // Filter by CPU
             if (!string.IsNullOrWhiteSpace(filter.CpuLine))
             {
-                query = query.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(filter.CpuLine));
+                query = query.Where(p => p.Specifications != null && p.Specifications.Contains(filter.CpuLine));
             }
 
-            // Lọc theo VGA
+            // Filter by VGA
             if (!string.IsNullOrWhiteSpace(filter.VgaLine))
             {
-                query = query.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(filter.VgaLine));
+                query = query.Where(p => p.Specifications != null && p.Specifications.Contains(filter.VgaLine));
             }
 
-            // Lọc theo loại RAM
+            // Filter by RAM type
             if (!string.IsNullOrWhiteSpace(filter.RamType))
             {
-                query = query.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(filter.RamType));
+                query = query.Where(p => p.Specifications != null && p.Specifications.Contains(filter.RamType));
             }
 
-            // Sắp xếp
+            // Sort
             query = ApplySortBy(query, filter.SortBy);
 
             return await query.ToListAsync();
         }
 
-        private IQueryable<SanPham> ApplySortBy(IQueryable<SanPham> query, string? sortBy)
+        private IQueryable<Product> ApplySortBy(IQueryable<Product> query, string? sortBy)
         {
             return sortBy?.ToLower() switch
             {
-                "name_asc" => query.OrderBy(p => p.TenSanPham),
-                "name_desc" => query.OrderByDescending(p => p.TenSanPham),
-                "price_asc" => query.OrderBy(p => p.Gia),
-                "price_desc" => query.OrderByDescending(p => p.Gia),
-                "new" => query.OrderByDescending(p => p.ThoiGianTaoSP),
-                _ => query.OrderByDescending(p => p.ThoiGianTaoSP) // Mặc định: mới nhất
+                "name_asc" => query.OrderBy(p => p.Name),
+                "name_desc" => query.OrderByDescending(p => p.Name),
+                "price_asc" => query.OrderBy(p => p.Price),
+                "price_desc" => query.OrderByDescending(p => p.Price),
+                "new" => query.OrderByDescending(p => p.CreatedAt),
+                _ => query.OrderByDescending(p => p.CreatedAt) // Default: newest
             };
         }
 
         public async Task<List<string>> GetUniqueBrandsByCategory(int categoryId)
         {
             return await _dbSet
-                .Where(p => p.MaDanhMuc == categoryId)
-                .Include(p => p.HangSX)
-                .Select(p => p.HangSX.TenHangSX)
+                .Where(p => p.CategoryId == categoryId)
+                .Include(p => p.Brand)
+                .Select(p => p.Brand.Name)
                 .Distinct()
                 .ToListAsync();
         }
@@ -130,8 +130,8 @@ namespace HDKTech.Repositories
         public async Task<List<string>> GetUniqueCpuLines()
         {
             return await _dbSet
-                .Where(p => p.ThongSoKyThuat != null)
-                .Select(p => p.ThongSoKyThuat)
+                .Where(p => p.Specifications != null)
+                .Select(p => p.Specifications)
                 .Distinct()
                 .ToListAsync()
                 .ContinueWith(t => ExtractUniqueCpuLines(t.Result));
@@ -158,47 +158,40 @@ namespace HDKTech.Repositories
             return cpuLines.ToList();
         }
 
-        // ✅ NEW: Các method specialized để tránh N+1 query ở HomeController
+        public async Task<List<Product>> GetFlashSaleProductsAsync(int limit = 5)
+        {
+            var products = await _dbSet
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
+                .Where(p => p.ListPrice.HasValue && p.ListPrice > p.Price)
+                .ToListAsync();
 
-        /// <summary>
-        /// Lấy 5 sản phẩm Flash Sale (có discount cao nhất)
-        /// TRONG SQL, không load tất cả rồi filter ở C#
-        /// </summary>
-        public async Task<List<SanPham>> GetFlashSaleProductsAsync(int limit = 5)
+            return products
+                .OrderByDescending(p => p.DiscountPercent)
+                .Take(limit)
+                .ToList();
+        }
+
+        public async Task<List<Product>> GetTopSellerProductsAsync(int limit = 8)
         {
             return await _dbSet
-                .Where(p => p.PhanTramGiamGia > 0)
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
-                .OrderByDescending(p => p.PhanTramGiamGia)
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
+                .OrderByDescending(p => p.Id)
                 .Take(limit)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lấy 8 sản phẩm Top Sellers (bán chạy nhất)
-        /// </summary>
-        public async Task<List<SanPham>> GetTopSellerProductsAsync(int limit = 8)
+        public async Task<List<Product>> GetNewProductsAsync(int limit = 6)
         {
             return await _dbSet
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
-                .OrderByDescending(p => p.MaSanPham) // TODO: Thay bằng trường "DaBan" nếu có
-                .Take(limit)
-                .ToListAsync();
-        }
-
-        /// <summary>
-        /// Lấy 6 sản phẩm mới nhất
-        /// </summary>
-        public async Task<List<SanPham>> GetNewProductsAsync(int limit = 6)
-        {
-            return await _dbSet
-                .Include(p => p.HinhAnhs)
-                .Include(p => p.HangSX)
-                .OrderByDescending(p => p.ThoiGianTaoSP)
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
+                .OrderByDescending(p => p.CreatedAt)
                 .Take(limit)
                 .ToListAsync();
         }
     }
 }
+
+
