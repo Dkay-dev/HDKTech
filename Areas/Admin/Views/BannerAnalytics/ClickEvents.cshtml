@@ -2,7 +2,7 @@
 @model List<BannerClickEvent>
 @{
     ViewData["Title"] = "Click Events";
-    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
     var banner = ViewBag.Banner as Banner;
     var currentPage = (int)ViewBag.Page;
     var pageSize = (int)ViewBag.PageSize;

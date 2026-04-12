@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using HDKTech.Areas.Identity.Data;
 using HDKTech.Models;
 using HDKTech.Data;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 using HDKTech.Areas.Admin.Repositories;
+using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
 
 namespace HDKTech
@@ -53,6 +53,9 @@ namespace HDKTech
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.ISystemLogRepository, HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
             builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
+            // Register Admin Services
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+
             // Register Cart Service (Session) - 7 days
             builder.Services.AddSession(options =>
             {
@@ -79,12 +82,7 @@ namespace HDKTech
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<HDKTechContext>();
-                // Ensure database schema is up-to-date before running seed data
-                await context.Database.MigrateAsync();
-
-                await DataSeed.KhoiTaoDuLieuMacDinh(scope.ServiceProvider);
-                await DataSeedProductsOptimized.SeedProducts(scope.ServiceProvider);
-                await BannerSeeder.SeedBannersAsync(context);
+                await HDKTech.Data.DbInitializer.InitializeAsync(scope.ServiceProvider, context);
             }
 
             // Configure the HTTP request pipeline.
