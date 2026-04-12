@@ -1,14 +1,15 @@
+﻿@using HDKTech.Areas.Admin.Models
 @model Banner
 
 @{
-    ViewData["Title"] = $"Chi tiết - {Model.TenBanner}";
+    ViewData["Title"] = $"Chi tiết - {Model.Title}";
 }
 
 <div class="mb-8">
     <a href="@Url.Action("Index")" class="inline-flex items-center gap-2 text-primary hover:underline mb-4">
         <span class="material-symbols-outlined">arrow_back</span>Quay lại
     </a>
-    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">@Model.TenBanner</h1>
+    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">@Model.Title</h1>
     <p class="text-zinc-500">Chi tiết banner</p>
 </div>
 
@@ -17,7 +18,7 @@
         <!-- Ảnh Banner -->
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div class="h-96 bg-gray-100">
-                <img src="@Model.ImageUrl" alt="@Model.TenBanner" class="w-full h-full object-cover" />
+                <img src="@Model.ImageUrl" alt="@Model.Title" class="w-full h-full object-cover" />
             </div>
         </div>
 
@@ -25,24 +26,24 @@
         <div class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
             <div>
                 <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Tên Banner</h3>
-                <p class="text-lg font-bold text-on-surface">@Model.TenBanner</p>
+                <p class="text-lg font-bold text-on-surface">@Model.Title</p>
             </div>
 
             <div class="border-t border-surface-container pt-6">
                 <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Mô tả</h3>
-                <p class="text-on-surface">@Model.MoTa</p>
+                <p class="text-on-surface">@Model.Description</p>
             </div>
 
             <div class="border-t border-surface-container pt-6">
                 <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Link Banner</h3>
-                <p class="text-on-surface font-mono">@Model.LinkBanner</p>
+                <p class="text-on-surface font-mono">@Model.ImageUrl</p>
             </div>
 
             <div class="grid grid-cols-2 gap-6 border-t border-surface-container pt-6">
                 <div>
                     <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Loại Banner</h3>
                     <p class="text-on-surface">
-                        @switch (Model.LoaiBanner)
+                        @switch (Model.BannerType)
                         {
                             case "Main":
                                 <span>Trang Chủ</span>
@@ -54,14 +55,14 @@
                                 <span>Footer</span>
                                 break;
                             default:
-                                <span>@Model.LoaiBanner</span>
+                                <span>@Model.BannerType</span>
                                 break;
                         }
                     </p>
                 </div>
                 <div>
                     <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Thứ tự hiển thị</h3>
-                    <p class="text-on-surface">@Model.ThuTuHienThi</p>
+                    <p class="text-on-surface">@Model.DisplayOrder</p>
                 </div>
             </div>
 
@@ -74,15 +75,15 @@
                 </div>
                 <div>
                     <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Ngày tạo</h3>
-                    <p class="text-on-surface">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="text-on-surface">@(Model.StartDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</p>
                 </div>
             </div>
 
-            @if (Model.NgayCapNhat.HasValue)
+            @if (Model.UpdatedAt.HasValue)
             {
                 <div class="border-t border-surface-container pt-6">
                     <h3 class="text-sm font-bold text-zinc-600 uppercase tracking-wider mb-2">Ngày cập nhật</h3>
-                    <p class="text-on-surface">@Model.NgayCapNhat.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="text-on-surface">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
                 </div>
             }
         </div>
@@ -91,10 +92,10 @@
     <!-- Actions -->
     <div>
         <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24 space-y-3">
-            <a href="@Url.Action("Edit", new { id = Model.MaBanner })" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
+            <a href="@Url.Action("Edit", new { id = Model.Id })" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
                 <span class="material-symbols-outlined">edit</span>Chỉnh sửa
             </a>
-            <form method="post" action="@Url.Action("Delete", new { id = Model.MaBanner })" style="display:contents;">
+            <form method="post" action="@Url.Action("Delete", new { id = Model.Id })" style="display:contents;">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-red-300 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all" onclick="return confirm('Bạn chắc chắn muốn xóa banner này?')">
                     <span class="material-symbols-outlined">delete</span>Xóa

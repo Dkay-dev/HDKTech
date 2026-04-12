@@ -1,4 +1,4 @@
-namespace HDKTech.Repositories.Interfaces
+﻿namespace HDKTech.Repositories.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     {
@@ -10,3 +10,5 @@ namespace HDKTech.Repositories.Interfaces
         Task<bool> SaveAsync();
     }
 }
+
+

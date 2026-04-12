@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HDKTech.Models
@@ -9,91 +9,59 @@ namespace HDKTech.Models
         [Key]
         public int Id { get; set; }
 
-        /// <summary>
-        /// Thời gian thực hiện hành động
-        /// </summary>
-        [Required]
-        public DateTime Timestamp { get; set; }
+        // Mapped column in DB is 'Timestamp' - expose as CreatedAt for existing code
+        [Column("Timestamp")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        /// <summary>
-        /// Tên người dùng thực hiện
-        /// </summary>
-        [Required]
+        // Backwards-compatible alias
+        [NotMapped]
+        public DateTime Timestamp { get => CreatedAt; set => CreatedAt = value; }
+
+        [Column("Username")]
         [StringLength(255)]
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
-        /// <summary>
-        /// Loại hành động (Create, Update, Delete, Login, Logout, etc.)
-        /// </summary>
-        [Required]
+        // In DB the column is 'ActionType' - expose as Action for legacy code
+        [Column("ActionType")]
         [StringLength(50)]
-        public string ActionType { get; set; }
+        public string? Action { get; set; }
 
-        /// <summary>
-        /// Phần hành (Product, Order, Banner, KhuyenMai, Category, Brand, Role, etc.)
-        /// </summary>
-        [Required]
+        // Alias for newer code
+        [NotMapped]
+        public string? ActionType { get => Action; set => Action = value; }
+
+        // In DB the column is 'Module' - expose as LogLevel for legacy code
+        [Column("Module")]
         [StringLength(100)]
-        public string Module { get; set; }
+        public string? LogLevel { get; set; }
 
-        /// <summary>
-        /// Mô tả chi tiết hành động
-        /// </summary>
-        [Required]
-        public string Description { get; set; }
+        // Alias for newer code
+        [NotMapped]
+        public string? Module { get => LogLevel; set => LogLevel = value; }
 
-        /// <summary>
-        /// ID của entity bị ảnh hưởng (nếu có)
-        /// </summary>
-        public string EntityId { get; set; }
+        public string? Description { get; set; }
 
-        /// <summary>
-        /// Tên entity (tên sản phẩm, mã đơn hàng, etc.)
-        /// </summary>
+        public string? EntityId { get; set; }
+
         [StringLength(500)]
-        public string EntityName { get; set; }
+        public string? EntityName { get; set; }
 
-        /// <summary>
-        /// Giá trị cũ (nếu là Update) - JSON format
-        /// </summary>
-        public string OldValue { get; set; }
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
 
-        /// <summary>
-        /// Giá trị mới (nếu là Update) - JSON format
-        /// </summary>
-        public string NewValue { get; set; }
-
-        /// <summary>
-        /// Địa chỉ IP của người dùng
-        /// </summary>
         [StringLength(50)]
-        public string IpAddress { get; set; }
+        public string? IpAddress { get; set; }
 
-        /// <summary>
-        /// User Agent / Browser Info
-        /// </summary>
-        public string UserAgent { get; set; }
+        public string? UserAgent { get; set; }
 
-        /// <summary>
-        /// Trạng thái hành động (Success, Failed, Pending)
-        /// </summary>
         [StringLength(50)]
-        public string Status { get; set; } = "Success";
+        public string? Status { get; set; }
 
-        /// <summary>
-        /// Ghi chú lỗi (nếu có)
-        /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
-        /// <summary>
-        /// Vai trò của người dùng
-        /// </summary>
         [StringLength(100)]
-        public string UserRole { get; set; }
+        public string? UserRole { get; set; }
 
-        /// <summary>
-        /// ID người dùng (nếu có)
-        /// </summary>
-        public string UserId { get; set; }
+        public string? UserId { get; set; }
     }
 }

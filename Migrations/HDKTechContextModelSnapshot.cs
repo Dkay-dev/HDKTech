@@ -22,13 +22,31 @@ namespace HDKTech.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HDKTech.Models.Banner", b =>
+            modelBuilder.Entity("HDKTech.Areas.Admin.Models.Banner", b =>
                 {
-                    b.Property<int>("MaBanner")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaBanner"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BannerType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
@@ -38,45 +56,27 @@ namespace HDKTech.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LinkBanner")
+                    b.Property<string>("LinkUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("LoaiBanner")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("NgayBatDau")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("NgayCapNhat")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("NgayKetThuc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("NgayTao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("TenBanner")
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("ThuTuHienThi")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.HasKey("MaBanner");
+                    b.HasKey("Id");
 
-                    b.ToTable("Banner");
+                    b.ToTable("Banners");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.BannerClickEvent", b =>
+            modelBuilder.Entity("HDKTech.Areas.Admin.Models.BannerClickEvent", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -120,369 +120,70 @@ namespace HDKTech.Migrations
                     b.ToTable("BannerClickEvents");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.ChiTietDonHang", b =>
+            modelBuilder.Entity("HDKTech.Areas.Admin.Models.Promotion", b =>
                 {
-                    b.Property<int>("MaChiTietDonHang")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaChiTietDonHang"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("GiaBanLucMua")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("MaDonHang")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SoLuong")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaChiTietDonHang");
-
-                    b.HasIndex("MaDonHang");
-
-                    b.HasIndex("MaSanPham");
-
-                    b.ToTable("ChiTietDonHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.ChiTietGioHang", b =>
-                {
-                    b.Property<int>("MaChiTietGioHang")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaChiTietGioHang"));
-
-                    b.Property<int>("MaGioHang")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SoLuong")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaChiTietGioHang");
-
-                    b.HasIndex("MaGioHang");
-
-                    b.HasIndex("MaSanPham");
-
-                    b.ToTable("ChiTietGioHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DanhGia", b =>
-                {
-                    b.Property<int>("MaDanhGia")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDanhGia"));
-
-                    b.Property<string>("IdNguoiDung")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("MaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("NgayDanhGia")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("NoiDung")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("SoSao")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaDanhGia");
-
-                    b.HasIndex("IdNguoiDung");
-
-                    b.HasIndex("MaSanPham");
-
-                    b.ToTable("DanhGia");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DanhMuc", b =>
-                {
-                    b.Property<int>("MaDanhMuc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDanhMuc"));
-
-                    b.Property<string>("BannerImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("MaDanhMucCha")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MoTaDanhMuc")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TenDanhMuc")
-                        .IsRequired()
+                    b.Property<string>("ApplicableCategory")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("MaDanhMuc");
-
-                    b.HasIndex("MaDanhMucCha");
-
-                    b.ToTable("DanhMuc");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DonHang", b =>
-                {
-                    b.Property<int>("MaDonHang")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDonHang"));
-
-                    b.Property<string>("DiaChiGiaoHang")
+                    b.Property<string>("CampaignName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MaDonHangChuoi")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MaNguoiDung")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("NgayDatHang")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("PhiVanChuyen")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("SoDienThoaiNhan")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TenNguoiNhan")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("TongTien")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("TrangThaiDonHang")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaDonHang");
-
-                    b.HasIndex("MaNguoiDung");
-
-                    b.ToTable("DonHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.GioHang", b =>
-                {
-                    b.Property<int>("MaGioHang")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaGioHang"));
-
-                    b.Property<string>("MaNguoiDung")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("MaGioHang");
-
-                    b.HasIndex("MaNguoiDung");
-
-                    b.ToTable("GioHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HangSX", b =>
-                {
-                    b.Property<int>("MaHangSX")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHangSX"));
-
-                    b.Property<string>("MoTa")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TenHangSX")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("MaHangSX");
-
-                    b.ToTable("HangSanXuat");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HinhAnh", b =>
-                {
-                    b.Property<int>("MaHinhAnh")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHinhAnh"));
-
-                    b.Property<string>("AltText")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("NgayTao")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
-                    b.HasKey("MaHinhAnh");
-
-                    b.HasIndex("MaSanPham");
-
-                    b.ToTable("HinhAnh", (string)null);
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HoaDon", b =>
-                {
-                    b.Property<int>("HoaDonId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HoaDonId"));
-
-                    b.Property<string>("DiaChiCongTy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmailNhanHoaDon")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaDonHang")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MaSoThue")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("NgayYeuCau")
+                    b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("TenCongTy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("HoaDonId");
-
-                    b.HasIndex("MaDonHang")
-                        .IsUnique();
-
-                    b.ToTable("HoaDons");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.KhoHang", b =>
-                {
-                    b.Property<int>("MaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("NgayCapNhat")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("SanPhamMaSanPham")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SoLuong")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaSanPham");
-
-                    b.HasIndex("SanPhamMaSanPham");
-
-                    b.ToTable("KhoHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.KhuyenMai", b =>
-                {
-                    b.Property<int>("MaKhuyenMai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaKhuyenMai"));
-
-                    b.Property<string>("DanhMucAp")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("GiaTri")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LoaiKhuyenMai")
+                    b.Property<int?>("MaxUsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PromoCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PromotionType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("MaKhuyenMai_Code")
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("NgayBatDau")
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("NgayCapNhat")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("NgayKetThuc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("NgayTao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SoLuongSuDung")
+                    b.Property<int>("UsageCount")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SoLuongToiDa")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("TenChienDich")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.HasKey("Id");
 
-                    b.Property<string>("TrangThai")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("MaKhuyenMai");
-
-                    b.ToTable("KhuyenMai");
+                    b.ToTable("Promotion");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.NguoiDung", b =>
+            modelBuilder.Entity("HDKTech.Models.AppUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -494,6 +195,9 @@ namespace HDKTech.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -501,7 +205,7 @@ namespace HDKTech.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("HoTen")
+                    b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -511,9 +215,6 @@ namespace HDKTech.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTime>("NgayTao")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -555,46 +256,284 @@ namespace HDKTech.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("HDKTech.Models.NhatKyHeThong", b =>
+            modelBuilder.Entity("HDKTech.Models.Brand", b =>
                 {
-                    b.Property<int>("MaNhatKy")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaNhatKy"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("DiaChiIP")
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Brands");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BannerImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("ParentCategoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentCategoryId");
+
+                    b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("HanhDong")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoaiDoiTuong")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MaDoiTuong")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MaNguoiDung")
+                    b.Property<string>("SenderId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("NgayThucHien")
+                    b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("NoiDungChiTiet")
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.ChatSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StaffId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("ChatSessions");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Inventory", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ProductId");
+
+                    b.ToTable("Inventories");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CompanyAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("MaNhatKy");
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("MaNguoiDung");
+                    b.Property<string>("InvoiceEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.ToTable("NhatKyHeThong");
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TaxId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.OTPRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OTPRequests");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecipientPhone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShippingAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ShippingFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.OrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("HDKTech.Models.Permission", b =>
@@ -636,35 +575,123 @@ namespace HDKTech.Migrations
                     b.ToTable("Permissions");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.PhienChat", b =>
+            modelBuilder.Entity("HDKTech.Models.Product", b =>
                 {
-                    b.Property<int>("MaPhienChat")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaPhienChat"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("DaKetThuc")
-                        .HasColumnType("bit");
+                    b.Property<int>("BrandId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("MaKhachHang")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("MaNhanVien")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("NgayBatDau")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("MaPhienChat");
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("MaKhachHang");
+                    b.Property<string>("DiscountNote")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("MaNhanVien");
+                    b.Property<decimal?>("ListPrice")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.ToTable("PhienChat");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Specifications")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WarrantyInfo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.ProductImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImages", (string)null);
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReviewDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("HDKTech.Models.Role", b =>
@@ -722,58 +749,6 @@ namespace HDKTech.Migrations
                     b.ToTable("RolePermissions");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.SanPham", b =>
-                {
-                    b.Property<int>("MaSanPham")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaSanPham"));
-
-                    b.Property<decimal>("Gia")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("GiaNiemYet")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("KhuyenMai")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaDanhMuc")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaHangSX")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MoTaSanPham")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TenSanPham")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("ThoiGianTaoSP")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ThongSoKyThuat")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ThongTinBaoHanh")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TrangThaiSanPham")
-                        .HasColumnType("int");
-
-                    b.HasKey("MaSanPham");
-
-                    b.HasIndex("MaDanhMuc");
-
-                    b.HasIndex("MaHangSX");
-
-                    b.ToTable("SanPham");
-                });
-
             modelBuilder.Entity("HDKTech.Models.SystemLog", b =>
                 {
                     b.Property<int>("Id")
@@ -782,144 +757,65 @@ namespace HDKTech.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ActionType")
-                        .IsRequired()
+                    b.Property<string>("Action")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ActionType");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Timestamp");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EntityId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EntityName")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("ErrorMessage")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IpAddress")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Module")
-                        .IsRequired()
+                    b.Property<string>("LogLevel")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Module");
 
                     b.Property<string>("NewValue")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OldValue")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("UserAgent")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserRole")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Username")
-                        .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Username");
 
                     b.HasKey("Id");
 
                     b.ToTable("SystemLogs");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.TinNhanChat", b =>
-                {
-                    b.Property<int>("MaTinNhan")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaTinNhan"));
-
-                    b.Property<bool>("DaXem")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MaNguoiGui")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaPhienChat")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NoiDung")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ThoiGianGui")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("MaTinNhan");
-
-                    b.HasIndex("MaPhienChat");
-
-                    b.ToTable("TinNhanChat");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.YeuCauOTP", b =>
-                {
-                    b.Property<int>("MaOTP")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaOTP"));
-
-                    b.Property<bool>("DaSuDung")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("EmailHoacSDT")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoaiOTP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MaOTPHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("NgayTao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SoLanGoSai")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ThoiGianHetHan")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("MaOTP");
-
-                    b.ToTable("YeuCauOTP");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1055,9 +951,9 @@ namespace HDKTech.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("HDKTech.Models.BannerClickEvent", b =>
+            modelBuilder.Entity("HDKTech.Areas.Admin.Models.BannerClickEvent", b =>
                 {
-                    b.HasOne("HDKTech.Models.Banner", "Banner")
+                    b.HasOne("HDKTech.Areas.Admin.Models.Banner", "Banner")
                         .WithMany()
                         .HasForeignKey("BannerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1066,157 +962,161 @@ namespace HDKTech.Migrations
                     b.Navigation("Banner");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.ChiTietDonHang", b =>
+            modelBuilder.Entity("HDKTech.Models.Category", b =>
                 {
-                    b.HasOne("HDKTech.Models.DonHang", "DonHang")
-                        .WithMany("ChiTietDonHangs")
-                        .HasForeignKey("MaDonHang")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("HDKTech.Models.Category", "ParentCategory")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("ParentCategoryId");
 
-                    b.HasOne("HDKTech.Models.SanPham", "SanPham")
-                        .WithMany("ChiTietDonHangs")
-                        .HasForeignKey("MaSanPham")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DonHang");
-
-                    b.Navigation("SanPham");
+                    b.Navigation("ParentCategory");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.ChiTietGioHang", b =>
+            modelBuilder.Entity("HDKTech.Models.ChatMessage", b =>
                 {
-                    b.HasOne("HDKTech.Models.GioHang", "GioHang")
-                        .WithMany("ChiTietGioHangs")
-                        .HasForeignKey("MaGioHang")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HDKTech.Models.SanPham", "SanPham")
-                        .WithMany("ChiTietGioHangs")
-                        .HasForeignKey("MaSanPham")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GioHang");
-
-                    b.Navigation("SanPham");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DanhGia", b =>
-                {
-                    b.HasOne("HDKTech.Models.NguoiDung", "NguoiDung")
+                    b.HasOne("HDKTech.Models.AppUser", "Sender")
                         .WithMany()
-                        .HasForeignKey("IdNguoiDung");
-
-                    b.HasOne("HDKTech.Models.SanPham", "SanPham")
-                        .WithMany("DanhGias")
-                        .HasForeignKey("MaSanPham")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("NguoiDung");
-
-                    b.Navigation("SanPham");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DanhMuc", b =>
-                {
-                    b.HasOne("HDKTech.Models.DanhMuc", "DanhMucCha")
-                        .WithMany("DanhMucCon")
-                        .HasForeignKey("MaDanhMucCha");
-
-                    b.Navigation("DanhMucCha");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.DonHang", b =>
-                {
-                    b.HasOne("HDKTech.Models.NguoiDung", "NguoiDung")
-                        .WithMany("DonHangs")
-                        .HasForeignKey("MaNguoiDung")
+                    b.HasOne("HDKTech.Models.ChatSession", "Session")
+                        .WithMany("Messages")
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("NguoiDung");
+                    b.Navigation("Sender");
+
+                    b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.GioHang", b =>
+            modelBuilder.Entity("HDKTech.Models.ChatSession", b =>
                 {
-                    b.HasOne("HDKTech.Models.NguoiDung", "NguoiDung")
+                    b.HasOne("HDKTech.Models.AppUser", "Customer")
                         .WithMany()
-                        .HasForeignKey("MaNguoiDung")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NguoiDung");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HinhAnh", b =>
-                {
-                    b.HasOne("HDKTech.Models.SanPham", "SanPham")
-                        .WithMany("HinhAnhs")
-                        .HasForeignKey("MaSanPham")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SanPham");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HoaDon", b =>
-                {
-                    b.HasOne("HDKTech.Models.DonHang", "DonHang")
-                        .WithOne("HoaDon")
-                        .HasForeignKey("HDKTech.Models.HoaDon", "MaDonHang")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DonHang");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.KhoHang", b =>
-                {
-                    b.HasOne("HDKTech.Models.SanPham", "SanPham")
-                        .WithOne()
-                        .HasForeignKey("HDKTech.Models.KhoHang", "MaSanPham")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HDKTech.Models.SanPham", null)
-                        .WithMany("KhoHangs")
-                        .HasForeignKey("SanPhamMaSanPham");
-
-                    b.Navigation("SanPham");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.NhatKyHeThong", b =>
-                {
-                    b.HasOne("HDKTech.Models.NguoiDung", "NguoiDung")
-                        .WithMany()
-                        .HasForeignKey("MaNguoiDung")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NguoiDung");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.PhienChat", b =>
-                {
-                    b.HasOne("HDKTech.Models.NguoiDung", "KhachHang")
-                        .WithMany()
-                        .HasForeignKey("MaKhachHang")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("HDKTech.Models.NguoiDung", "NhanVien")
+                    b.HasOne("HDKTech.Models.AppUser", "Staff")
                         .WithMany()
-                        .HasForeignKey("MaNhanVien")
+                        .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("KhachHang");
+                    b.Navigation("Customer");
 
-                    b.Navigation("NhanVien");
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Inventory", b =>
+                {
+                    b.HasOne("HDKTech.Models.Product", "Product")
+                        .WithMany("Inventories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Invoice", b =>
+                {
+                    b.HasOne("HDKTech.Models.Order", "Order")
+                        .WithOne("Invoice")
+                        .HasForeignKey("HDKTech.Models.Invoice", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.OTPRequest", b =>
+                {
+                    b.HasOne("HDKTech.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Order", b =>
+                {
+                    b.HasOne("HDKTech.Models.AppUser", "User")
+                        .WithMany("Orders")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.OrderItem", b =>
+                {
+                    b.HasOne("HDKTech.Models.Order", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HDKTech.Models.Product", "Product")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Product", b =>
+                {
+                    b.HasOne("HDKTech.Models.Brand", "Brand")
+                        .WithMany("Products")
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HDKTech.Models.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.ProductImage", b =>
+                {
+                    b.HasOne("HDKTech.Models.Product", "Product")
+                        .WithMany("Images")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Review", b =>
+                {
+                    b.HasOne("HDKTech.Models.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HDKTech.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HDKTech.Models.RolePermission", b =>
@@ -1238,36 +1138,6 @@ namespace HDKTech.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.SanPham", b =>
-                {
-                    b.HasOne("HDKTech.Models.DanhMuc", "DanhMuc")
-                        .WithMany("SanPhams")
-                        .HasForeignKey("MaDanhMuc")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HDKTech.Models.HangSX", "HangSX")
-                        .WithMany("SanPhams")
-                        .HasForeignKey("MaHangSX")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DanhMuc");
-
-                    b.Navigation("HangSX");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.TinNhanChat", b =>
-                {
-                    b.HasOne("HDKTech.Models.PhienChat", "PhienChat")
-                        .WithMany("TinNhanChats")
-                        .HasForeignKey("MaPhienChat")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("PhienChat");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1279,7 +1149,7 @@ namespace HDKTech.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("HDKTech.Models.NguoiDung", null)
+                    b.HasOne("HDKTech.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1288,7 +1158,7 @@ namespace HDKTech.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("HDKTech.Models.NguoiDung", null)
+                    b.HasOne("HDKTech.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1303,7 +1173,7 @@ namespace HDKTech.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HDKTech.Models.NguoiDung", null)
+                    b.HasOne("HDKTech.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1312,41 +1182,41 @@ namespace HDKTech.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("HDKTech.Models.NguoiDung", null)
+                    b.HasOne("HDKTech.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("HDKTech.Models.DanhMuc", b =>
+            modelBuilder.Entity("HDKTech.Models.AppUser", b =>
                 {
-                    b.Navigation("DanhMucCon");
-
-                    b.Navigation("SanPhams");
+                    b.Navigation("Orders");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.DonHang", b =>
+            modelBuilder.Entity("HDKTech.Models.Brand", b =>
                 {
-                    b.Navigation("ChiTietDonHangs");
+                    b.Navigation("Products");
+                });
 
-                    b.Navigation("HoaDon")
+            modelBuilder.Entity("HDKTech.Models.Category", b =>
+                {
+                    b.Navigation("Products");
+
+                    b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.ChatSession", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("HDKTech.Models.Order", b =>
+                {
+                    b.Navigation("Invoice")
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("HDKTech.Models.GioHang", b =>
-                {
-                    b.Navigation("ChiTietGioHangs");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.HangSX", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.NguoiDung", b =>
-                {
-                    b.Navigation("DonHangs");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("HDKTech.Models.Permission", b =>
@@ -1354,27 +1224,20 @@ namespace HDKTech.Migrations
                     b.Navigation("RolePermissions");
                 });
 
-            modelBuilder.Entity("HDKTech.Models.PhienChat", b =>
+            modelBuilder.Entity("HDKTech.Models.Product", b =>
                 {
-                    b.Navigation("TinNhanChats");
+                    b.Navigation("Images");
+
+                    b.Navigation("Inventories");
+
+                    b.Navigation("OrderItems");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("HDKTech.Models.Role", b =>
                 {
                     b.Navigation("RolePermissions");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.SanPham", b =>
-                {
-                    b.Navigation("ChiTietDonHangs");
-
-                    b.Navigation("ChiTietGioHangs");
-
-                    b.Navigation("DanhGias");
-
-                    b.Navigation("HinhAnhs");
-
-                    b.Navigation("KhoHangs");
                 });
 #pragma warning restore 612, 618
         }

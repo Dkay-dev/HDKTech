@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/admin/Documents/HDKTech/.claude/worktrees/**)",
+      "Read(//c/Users/admin/Documents/HDKTech/**)",
+      "Bash(dotnet build:*)",
+      "Bash(dir \"C:\\\\Users\\\\admin\\\\Documents\\\\HDKTech\\\\.claude\\\\worktrees\\\\friendly-chandrasekhar\")",
+      "Bash(test -f \"C:\\\\\\\\Users\\\\\\\\admin\\\\\\\\Documents\\\\\\\\HDKTech\\\\\\\\.claude\\\\\\\\worktrees\\\\\\\\friendly-chandrasekhar\\\\\\\\HDKTech.csproj\")",
+      "Bash(sed -i 's|~/css/pages/|~/guest/css/pages/|g' C:/Users/admin/Documents/HDKTech/Views/Brand/Index.cshtml)",
+      "Bash(sed -i 's|~/css/pages/|~/guest/css/pages/|g' C:/Users/admin/Documents/HDKTech/Views/Cart/Index.cshtml)",
+      "Bash(sed -i 's|~/css/pages/|~/guest/css/pages/|g' C:/Users/admin/Documents/HDKTech/Views/Category/Index.cshtml)",
+      "Bash(sed -i 's|~/css/pages/|~/guest/css/pages/|g' C:/Users/admin/Documents/HDKTech/Views/Checkout/Index.cshtml)",
+      "Bash(sed -i 's|~/css/pages/|~/guest/css/pages/|g' C:/Users/admin/Documents/HDKTech/Views/Home/Index.cshtml)",
+      "Bash(sed -i 's|@model HDKTech\\\\.Models\\\\.Role|@model Role|g' \"C:/Users/admin/Documents/HDKTech/Areas/Admin/Views/Role/Create.cshtml\")",
+      "Bash(sed -i 's|@model HDKTech\\\\.Models\\\\.Role|@model Role|g' \"C:/Users/admin/Documents/HDKTech/Areas/Admin/Views/Role/Edit.cshtml\")",
+      "Bash(dir \"C:\\\\Users\\\\admin\\\\Documents\\\\HDKTech\\\\Areas\\\\Identity\\\\Pages\\\\Account\" /B)",
+      "Bash(dir \"C:\\\\Users\\\\admin\\\\Documents\\\\HDKTech\\\\Areas\\\\Admin\\\\Repositories\" /B)",
+      "Bash(del \"C:\\\\Users\\\\admin\\\\Documents\\\\HDKTech\\\\Areas\\\\Admin\\\\Repositories\\\\KhuyenMaiRepository.cs\")"
+    ]
+  }
+}

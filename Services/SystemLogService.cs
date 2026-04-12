@@ -1,7 +1,9 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 using HDKTech.Repositories;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Services
 {
@@ -162,3 +164,4 @@ namespace HDKTech.Services
         }
     }
 }
+

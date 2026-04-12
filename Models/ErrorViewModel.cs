@@ -1,4 +1,4 @@
-namespace HDKTech.Models
+﻿namespace HDKTech.Models
 {
     public class ErrorViewModel
     {

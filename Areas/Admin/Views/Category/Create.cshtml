@@ -1,111 +1,196 @@
-@model HDKTech.Models.DanhMuc
+@model HDKTech.Models.Category
 
 @{
-    ViewData["Title"] = "Tạo Danh Mục";
-    var parentCategories = (List<HDKTech.Models.DanhMuc>)ViewBag.ParentCategories ?? new List<HDKTech.Models.DanhMuc>();
+    ViewData["Title"] = "Tạo Danh Mục Mới";
+    var parentCategories = ViewBag.ParentCategories as List<HDKTech.Models.Category>
+                           ?? new List<HDKTech.Models.Category>();
 }
 
-<div class="p-8">
-    <!-- Header -->
-    <div class="mb-10">
-        <div class="flex items-center gap-3 mb-2">
-            <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
-                <span class="material-symbols-outlined">chevron_left</span>
-                Quay lại
-            </a>
-        </div>
-        <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Tạo Danh Mục</h1>
-    </div>
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Form -->
-        <div class="lg:col-span-2">
-            <form asp-action="Create" asp-controller="Category" asp-area="Admin" method="post" class="space-y-6">
-                <!-- Tên Danh Mục -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="TenDanhMuc" class="block text-sm font-bold text-on-surface mb-2">Tên Danh Mục <span class="text-error">*</span></label>
-                    <input type="text" asp-for="TenDanhMuc" placeholder="Nhập tên danh mục" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
-                    <span asp-validation-for="TenDanhMuc" class="text-xs text-error mt-1 block"></span>
-                </div>
+<div class="p-3">
 
-                <!-- Mô Tả -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="MoTaDanhMuc" class="block text-sm font-bold text-on-surface mb-2">Mô Tả</label>
-                    <textarea asp-for="MoTaDanhMuc" placeholder="Nhập mô tả danh mục" rows="5" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none resize-none"></textarea>
-                    <span asp-validation-for="MoTaDanhMuc" class="text-xs text-error mt-1 block"></span>
-                </div>
+    <!-- ── Breadcrumb ──────────────────────────────────────────────── -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="text-decoration-none">
+                    <i class="fa-solid fa-tags me-1"></i>Danh mục
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Tạo mới</li>
+        </ol>
+    </nav>
 
-                <!-- Banner Image URL -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="BannerImageUrl" class="block text-sm font-bold text-on-surface mb-2">Banner Image URL</label>
-                    <input type="url" asp-for="BannerImageUrl" placeholder="https://..." class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
-                    <span asp-validation-for="BannerImageUrl" class="text-xs text-error mt-1 block"></span>
-                </div>
+    <h5 class="fw-bold mb-4">
+        <i class="fa-solid fa-folder-plus text-danger me-2"></i>
+        Tạo Danh Mục Mới
+    </h5>
 
-                <!-- Danh Mục Cha -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="MaDanhMucCha" class="block text-sm font-bold text-on-surface mb-2">Danh Mục Cha (Nếu là danh mục con)</label>
-                    <select asp-for="MaDanhMucCha" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none">
-                        <option value="">-- Không chọn (Danh mục chính) --</option>
-                        @foreach (var parent in parentCategories)
-                        {
-                            <option value="@parent.MaDanhMuc">@parent.TenDanhMuc</option>
-                        }
-                    </select>
-                </div>
+    <form asp-action="Create" asp-controller="Category" asp-area="Admin"
+          method="post" id="createForm">
+        @Html.AntiForgeryToken()
 
-                <!-- Buttons -->
-                <div class="flex gap-3">
-                    <button type="submit" class="px-6 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined">check</span>
-                        Tạo
-                    </button>
-                    <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined">close</span>
-                        Hủy
-                    </a>
-                </div>
-            </form>
-        </div>
+        <div class="row g-4">
 
-        <!-- Info Panel -->
-        <div class="space-y-6">
-            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined">info</span>
-                    Hướng dẫn
-                </h2>
-                <div class="space-y-3 text-sm text-zinc-600">
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">📝 Tên Danh Mục</p>
-                        <p>Nhập tên danh mục sản phẩm, ví dụ: "Laptop Gaming", "Điện thoại"</p>
+            <!-- ── Cột trái: Form nhập liệu ──────────────────────── -->
+            <div class="col-lg-8">
+
+                <!-- Card: Thông tin cơ bản -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>Thông tin danh mục
                     </div>
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">📄 Mô Tả</p>
-                        <p>Mô tả chi tiết về danh mục, SEO friendly</p>
-                    </div>
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">🖼️ Banner</p>
-                        <p>URL hình ảnh banner để hiển thị trên trang</p>
-                    </div>
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">📁 Danh Mục Cha</p>
-                        <p>Chọn nếu muốn tạo danh mục con</p>
+                    <div class="card-body">
+
+                        <!-- Tên danh mục -->
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">
+                                Tên danh mục <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-tag text-muted fa-sm"></i>
+                                </span>
+                                <input asp-for="Name"
+                                       class="form-control"
+                                       placeholder="Ví dụ: Laptop Gaming, Điện thoại..." />
+                            </div>
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Mô tả -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
+                            <textarea asp-for="Description"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="Mô tả chi tiết về danh mục sản phẩm..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                            <div class="form-text">Tối đa 500 ký tự. Mô tả tốt giúp SEO hiệu quả hơn.</div>
+                        </div>
+
+                        <!-- Banner URL -->
+                        <div class="mb-0">
+                            <label asp-for="BannerImageUrl" class="form-label fw-semibold">
+                                URL hình ảnh banner
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-image text-muted fa-sm"></i>
+                                </span>
+                                <input asp-for="BannerImageUrl"
+                                       type="url"
+                                       class="form-control"
+                                       placeholder="https://..."
+                                       id="bannerUrlInput" />
+                            </div>
+                            <span asp-validation-for="BannerImageUrl" class="text-danger small"></span>
+                            <!-- Preview -->
+                            <div id="bannerPreview" class="mt-2 d-none">
+                                <img id="previewImg" src="" alt="Preview banner"
+                                     class="img-fluid rounded border"
+                                     style="max-height:160px; object-fit:cover;" />
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+
+                <!-- Card: Phân cấp -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-sitemap text-warning me-2"></i>Phân cấp danh mục
+                    </div>
+                    <div class="card-body">
+                        <label asp-for="ParentCategoryId" class="form-label fw-semibold">
+                            Danh mục cha
+                        </label>
+                        <select asp-for="ParentCategoryId" class="form-select">
+                            <option value="">-- Không chọn (Đây là danh mục gốc) --</option>
+                            @foreach (var parent in parentCategories)
+                            {
+                                <option value="@parent.Id">@parent.Name</option>
+                            }
+                        </select>
+                        <div class="form-text">
+                            <i class="fa-solid fa-lightbulb text-warning me-1"></i>
+                            Để trống nếu đây là danh mục cấp cao nhất (ví dụ: "Laptop", "Điện thoại").
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="bg-primary/10 p-6 rounded-lg border-l-4 border-primary">
-                <p class="text-sm text-on-surface">
-                    <span class="font-bold">💡 Tip:</span> Sử dụng danh mục cha để tổ chức sản phẩm theo cấu trúc, tạo trải nghiệm tốt hơn cho khách hàng
-                </p>
+            <!-- ── Cột phải: Hướng dẫn + Actions ─────────────────── -->
+            <div class="col-lg-4">
+
+                <!-- Card: Nút hành động -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Tạo danh mục
+                            </button>
+                            <a href="@Url.Action("Index", "Category", new { area = "Admin" })"
+                               class="btn btn-outline-secondary">
+                                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Hướng dẫn -->
+                <div class="card border-0 shadow-sm border-start border-danger border-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fa-solid fa-circle-question text-danger me-2"></i>Hướng dẫn
+                        </h6>
+                        <ul class="list-unstyled small text-muted mb-0">
+                            <li class="mb-2">
+                                <i class="fa-solid fa-tag text-danger me-2"></i>
+                                <strong>Tên danh mục</strong> là bắt buộc, tối đa 100 ký tự.
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-align-left text-secondary me-2"></i>
+                                <strong>Mô tả</strong> giúp khách hàng hiểu rõ hơn về danh mục.
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa-solid fa-image text-info me-2"></i>
+                                <strong>Banner</strong> là URL hình ảnh để hiển thị trên trang web.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-sitemap text-warning me-2"></i>
+                                <strong>Danh mục cha</strong> để tổ chức cấu trúc phân cấp.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
-    </div>
+    </form>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        // Preview banner khi nhập URL
+        const bannerInput = document.getElementById('bannerUrlInput');
+        const previewImg  = document.getElementById('previewImg');
+        const preview     = document.getElementById('bannerPreview');
+
+        bannerInput?.addEventListener('input', function () {
+            const val = this.value.trim();
+            if (val) {
+                previewImg.src = val;
+                preview.classList.remove('d-none');
+                previewImg.onerror = () => preview.classList.add('d-none');
+            } else {
+                preview.classList.add('d-none');
+            }
+        });
+    </script>
 }

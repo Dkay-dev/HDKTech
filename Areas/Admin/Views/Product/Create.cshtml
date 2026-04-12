@@ -1,0 +1,235 @@
+@model HDKTech.Models.Product
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm mới";
+    var categories = ViewBag.Categories as List<HDKTech.Models.Category> ?? new();
+    var brands     = ViewBag.Brands as List<HDKTech.Models.Brand> ?? new();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        .upload-zone { border: 2px dashed #dee2e6; border-radius: 8px; transition: border-color .2s, background .2s; cursor: pointer; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #dc3545; background: rgba(220,53,69,.04); }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 10px; margin-top: 12px; }
+        .preview-item { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #dee2e6; }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-item .rm { position: absolute; top: 4px; right: 4px; background: rgba(220,53,69,.85); border: none; border-radius: 50%; width: 22px; height: 22px; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    </style>
+}
+
+<div class="p-3">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index","Product",new{area="Admin"})" class="text-decoration-none"><i class="fa-solid fa-box-open me-1"></i>Sản phẩm</a></li>
+            <li class="breadcrumb-item active">Thêm mới</li>
+        </ol>
+    </nav>
+
+    <h5 class="fw-bold mb-4"><i class="fa-solid fa-circle-plus text-danger me-2"></i>Thêm Sản Phẩm Mới</h5>
+
+    <form asp-action="Create" asp-controller="Product" asp-area="Admin"
+          method="post" enctype="multipart/form-data" id="createForm">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+
+            <!-- ── Cột trái ───────────────────────────────────── -->
+            <div class="col-lg-8">
+
+                <!-- Thông tin cơ bản -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>Thông tin cơ bản
+                    </div>
+                    <div class="card-body row g-3">
+                        <div class="col-12">
+                            <label asp-for="Name" class="form-label fw-semibold">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Nhập tên sản phẩm..." />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="Price" class="form-label fw-semibold">Giá bán (₫) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-dong-sign text-muted fa-sm"></i></span>
+                                <input asp-for="Price" type="number" min="0" step="1000" class="form-control" placeholder="0" />
+                            </div>
+                            <span asp-validation-for="Price" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="ListPrice" class="form-label fw-semibold">Giá niêm yết (₫)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-tag text-muted fa-sm"></i></span>
+                                <input asp-for="ListPrice" type="number" min="0" step="1000" class="form-control" placeholder="0" />
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="CategoryId" class="form-label fw-semibold">Danh mục <span class="text-danger">*</span></label>
+                            <select asp-for="CategoryId" class="form-select">
+                                <option value="">-- Chọn danh mục --</option>
+                                @foreach (var c in categories)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="BrandId" class="form-label fw-semibold">Thương hiệu <span class="text-danger">*</span></label>
+                            <select asp-for="BrandId" class="form-select">
+                                <option value="">-- Chọn thương hiệu --</option>
+                                @foreach (var b in brands)
+                                {
+                                    <option value="@b.Id">@b.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="BrandId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="Status" class="form-label fw-semibold">Trạng thái</label>
+                            <select asp-for="Status" class="form-select">
+                                <option value="1">Đang bán</option>
+                                <option value="0">Ngừng bán</option>
+                                <option value="2">Sắp về hàng</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Số lượng nhập kho ban đầu</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-warehouse text-muted fa-sm"></i></span>
+                                <input type="number" name="stockQuantity" min="0" value="0" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="WarrantyInfo" class="form-label fw-semibold">Bảo hành</label>
+                            <input asp-for="WarrantyInfo" class="form-control" placeholder="24 Months" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="DiscountNote" class="form-label fw-semibold">Ghi chú giảm giá</label>
+                            <input asp-for="DiscountNote" class="form-control" placeholder="VD: Tặng chuột gaming" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mô tả -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-align-left text-secondary me-2"></i>Mô tả & Thông số
+                    </div>
+                    <div class="card-body row g-3">
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label fw-semibold">Mô tả sản phẩm</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả chi tiết..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Specifications" class="form-label fw-semibold">Thông số kỹ thuật</label>
+                            <textarea asp-for="Specifications" class="form-control" rows="5" placeholder="CPU: Intel i7&#10;RAM: 16GB..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload ảnh -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-images text-info me-2"></i>Hình ảnh sản phẩm
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-zone p-4 text-center" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+                            <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2 d-block"></i>
+                            <p class="mb-1 fw-semibold">Kéo thả ảnh vào đây hoặc <span class="text-danger">chọn file</span></p>
+                            <p class="text-muted small mb-0">JPG, PNG, WEBP — Tối đa 5MB mỗi ảnh</p>
+                        </div>
+                        <input type="file" name="images" id="imageInput" multiple accept="image/*" class="d-none" />
+                        <div class="preview-grid" id="previewGrid"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Cột phải ───────────────────────────────────── -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Lưu sản phẩm
+                            </button>
+                            <a href="@Url.Action("Index","Product",new{area="Admin"})" class="btn btn-outline-secondary">
+                                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm border-start border-danger border-3">
+                    <div class="card-body small text-muted">
+                        <p class="fw-semibold text-dark mb-2"><i class="fa-solid fa-lightbulb text-warning me-1"></i>Lưu ý</p>
+                        <ul class="ps-3 mb-0">
+                            <li>Tên, Giá, Danh mục, Hãng là bắt buộc.</li>
+                            <li>Ảnh đầu tiên upload sẽ là ảnh đại diện.</li>
+                            <li>Giá niêm yết &gt; Giá bán để hiện % giảm giá.</li>
+                            <li>Ảnh lưu tại <code>wwwroot/images/products/{id}/</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        // ── Drag & Drop + Preview ───────────────────────────────────
+        const zone      = document.getElementById('uploadZone');
+        const input     = document.getElementById('imageInput');
+        const grid      = document.getElementById('previewGrid');
+        let   allFiles  = new DataTransfer();
+
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            addFiles(e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => addFiles(input.files));
+
+        function addFiles(fileList) {
+            for (const f of fileList) {
+                if (!f.type.startsWith('image/')) continue;
+                allFiles.items.add(f);
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const idx = allFiles.files.length - 1;
+                    const div = document.createElement('div');
+                    div.className = 'preview-item';
+                    div.innerHTML = `<img src="${e.target.result}" alt="${f.name}" />
+                        <button type="button" class="rm" onclick="removeFile(${idx}, this.parentElement)" title="Xóa">
+                            <i class="fa-solid fa-xmark"></i></button>
+                        ${allFiles.files.length === 1 ? '<span style="position:absolute;bottom:4px;left:4px;font-size:10px;background:rgba(220,53,69,.85);color:#fff;padding:1px 5px;border-radius:3px;">Đại diện</span>' : ''}`;
+                    grid.appendChild(div);
+                };
+                reader.readAsDataURL(f);
+            }
+            input.files = allFiles.files;
+        }
+
+        function removeFile(idx, el) {
+            const dt = new DataTransfer();
+            Array.from(allFiles.files).forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+            allFiles = dt;
+            input.files = allFiles.files;
+            el.remove();
+        }
+    </script>
+}

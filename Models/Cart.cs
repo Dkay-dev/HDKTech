@@ -1,4 +1,4 @@
-namespace HDKTech.Models
+﻿namespace HDKTech.Models
 {
     /// <summary>
     /// Đại diện cho toàn bộ giỏ hàng

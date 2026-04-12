@@ -1,6 +1,8 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HDKTech.Repositories;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -175,7 +177,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 var csv = "Mã Banner,Tên Banner,Thời Gian Click,IP Address,User Agent\n";
                 foreach (var click in clicks)
                 {
-                    csv += $"{click.BannerId},\"{banner.TenBanner}\",\"{click.ClickedAt:yyyy-MM-dd HH:mm:ss}\",\"{click.UserIpAddress}\",\"{click.UserAgent}\"\n";
+                    csv += $"{click.BannerId},\"{banner.Title}\",\"{click.ClickedAt:yyyy-MM-dd HH:mm:ss}\",\"{click.UserIpAddress}\",\"{click.UserAgent}\"\n";
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
@@ -210,3 +212,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

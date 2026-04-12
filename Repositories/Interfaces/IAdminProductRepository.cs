@@ -1,25 +1,25 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 
 namespace HDKTech.Repositories.Interfaces
 {
     /// <summary>
     /// Interface for Product repository operations
-    /// Handles all CRUD operations for SanPham (Product) model
+    /// Handles all CRUD operations for Product (Product) model
     /// </summary>
     public interface IAdminProductRepository
     {
         // Read operations
-        Task<IEnumerable<SanPham>> GetAllProductsAsync();
-        Task<SanPham> GetProductByIdAsync(int id);
-        Task<IEnumerable<SanPham>> GetProductsByCategoryAsync(int categoryId);
-        Task<IEnumerable<SanPham>> GetProductsByBrandAsync(int brandId);
-        Task<(IEnumerable<SanPham> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize);
+        Task<IEnumerable<Product>> GetAllProductsAsync();
+        Task<Product> GetProductByIdAsync(int id);
+        Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId);
+        Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId);
+        Task<(IEnumerable<Product> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize);
         
         // Create operations
-        Task<SanPham> CreateProductAsync(SanPham product);
+        Task<Product> CreateProductAsync(Product product);
         
         // Update operations
-        Task<bool> UpdateProductAsync(SanPham product);
+        Task<bool> UpdateProductAsync(Product product);
         Task<bool> UpdateProductStockAsync(int productId, int quantity);
         Task<bool> UpdateProductPriceAsync(int productId, decimal price);
         
@@ -28,8 +28,8 @@ namespace HDKTech.Repositories.Interfaces
         Task<bool> DeleteProductsAsync(IEnumerable<int> ids);
         
         // Search and filter
-        Task<IEnumerable<SanPham>> SearchProductsAsync(string searchTerm);
-        Task<IEnumerable<SanPham>> FilterProductsAsync(ProductFilterCriteria criteria);
+        Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);
+        Task<IEnumerable<Product>> FilterProductsAsync(ProductFilterCriteria criteria);
         
         // Check existence
         Task<bool> ProductExistsAsync(int id);
@@ -52,3 +52,5 @@ namespace HDKTech.Repositories.Interfaces
         public bool SortDescending { get; set; } = false;
     }
 }
+
+

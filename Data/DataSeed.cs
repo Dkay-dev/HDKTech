@@ -1,4 +1,4 @@
-using Bogus;
+﻿using Bogus;
 using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Data;
 using HDKTech.Models;
@@ -13,7 +13,7 @@ namespace HDKTech.Areas.Identity.Data
         public static async Task KhoiTaoDuLieuMacDinh(IServiceProvider services)
         {
             var context = services.GetRequiredService<HDKTechContext>();
-            var userManager = services.GetRequiredService<UserManager<NguoiDung>>();
+            var userManager = services.GetRequiredService<UserManager<AppUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             var faker = new Faker("vi");
             var random = new Random();
@@ -24,12 +24,12 @@ namespace HDKTech.Areas.Identity.Data
                 if (!await roleManager.RoleExistsAsync(role))
                     await roleManager.CreateAsync(new IdentityRole(role));
             }
-            async Task<NguoiDung> TaoUser(string email, string ten, string role)
+            async Task<AppUser> TaoUser(string email, string ten, string role)
             {
                 var user = await userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    user = new NguoiDung { UserName = email, Email = email, EmailConfirmed = true, HoTen = ten, NgayTao = DateTime.Now };
+                    user = new AppUser { UserName = email, Email = email, EmailConfirmed = true, FullName = ten, CreatedAt = DateTime.Now };
                     await userManager.CreateAsync(user, "123456Aa@");
                     await userManager.AddToRoleAsync(user, role);
                 }
@@ -39,33 +39,33 @@ namespace HDKTech.Areas.Identity.Data
             #endregion
 
             #region 2. HÃNG SẢN XUẤT (Full Brands thực tế)
-            if (!await context.HangSXs.AnyAsync())
+            if (!await context.Brands.AnyAsync())
             {
                 var brands = new[] { "ASUS", "MSI", "GIGABYTE", "LENOVO", "ACER", "DELL", "APPLE", "INTEL", "AMD", "NVIDIA", "LOGITECH", "RAZER", "SAMSUNG", "CORSAIR", "KINGSTON", "NZXT", "LIAN LI", "AKKO", "DARE-U", "EDIFIER", "HYPERX", "STEELSERIES" };
                 foreach (var b in brands)
-                    context.HangSXs.Add(new HangSX { TenHangSX = b, MoTa = $"Thương hiệu hàng đầu {b}" });
+                    context.Brands.Add(new Brand { Name = b, Description = $"Thương hiệu hàng đầu {b}" });
                 await context.SaveChangesAsync();
             }
             #endregion
 
             #region 3. DANH MỤC "VÔ CỰC" (Bám sát 100% Sidebar GearVN)
-            if (!await context.DanhMucs.AnyAsync())
+            if (!await context.Categories.AnyAsync())
             {
                 // --- TẦNG 1: SIDEBAR ---
-                var dm1 = new DanhMuc { TenDanhMuc = "Laptop", MoTaDanhMuc = "Máy tính xách tay mạnh mẽ cho công việc và giải trí hàng ngày", BannerImageUrl = "/images/banners/category-1.jpg" };
-                var dm2 = new DanhMuc { TenDanhMuc = "Laptop Gaming", MoTaDanhMuc = "Gaming laptop với hiệu năng cao cho các tựa game AAA", BannerImageUrl = "/images/banners/category-2.jpg" };
-                var dm3 = new DanhMuc { TenDanhMuc = "PC GVN", MoTaDanhMuc = "PC chuyên dụng cho thiết kế đồ họa, video editing và content creation", BannerImageUrl = "/images/banners/category-3.jpg" };
-                var dm4 = new DanhMuc { TenDanhMuc = "Main, CPU, VGA", MoTaDanhMuc = "Bộ xử lý, mainboard, card đồ họa và các linh kiện chính", BannerImageUrl = "/images/banners/category-4.jpg" };
-                var dm5 = new DanhMuc { TenDanhMuc = "Case, Nguồn, Tản", MoTaDanhMuc = "Vỏ máy, nguồn điện và tản nhiệt chất lượng cao", BannerImageUrl = "/images/banners/category-5.jpg" };
-                var dm6 = new DanhMuc { TenDanhMuc = "Ổ cứng, RAM, Thẻ nhớ", MoTaDanhMuc = "Ổ cứng, RAM, thẻ nhớ và các thiết bị lưu trữ", BannerImageUrl = "/images/banners/category-6.jpg" };
-                var dm7 = new DanhMuc { TenDanhMuc = "Loa, Micro, Webcam", MoTaDanhMuc = "Tai nghe, loa và các thiết bị âm thanh chuyên dụng", BannerImageUrl = "/images/banners/category-7.jpg" };
-                var dm8 = new DanhMuc { TenDanhMuc = "Màn hình", MoTaDanhMuc = "Màn hình máy tính với độ phân giải và tốc độ cao", BannerImageUrl = "/images/banners/category-8.jpg" };
-                var dm9 = new DanhMuc { TenDanhMuc = "Bàn phím", MoTaDanhMuc = "Chuột, bàn phím, tay cầm và các phụ kiện máy tính", BannerImageUrl = "/images/banners/category-9.jpg" };
-                var dm10 = new DanhMuc { TenDanhMuc = "Chuột + Lót chuột", MoTaDanhMuc = "Chuột gaming và phụ kiện đi kèm với độ bền cao", BannerImageUrl = "/images/banners/category-10.jpg" };
-                var dm11 = new DanhMuc { TenDanhMuc = "Tai nghe", MoTaDanhMuc = "Tai nghe gaming với âm thanh sống động", BannerImageUrl = "/images/banners/category-11.jpg" };
-                var dm12 = new DanhMuc { TenDanhMuc = "Handheld, Console", MoTaDanhMuc = "Máy chơi game cầm tay và thiết bị giải trí di động" };
+                var dm1 = new Category { Name = "Laptop", Description = "Máy tính xách tay mạnh mẽ cho công việc và giải trí hàng ngày", BannerImageUrl = "/images/banners/category-1.jpg" };
+                var dm2 = new Category { Name = "Laptop Gaming", Description = "Gaming laptop với hiệu năng cao cho các tựa game AAA", BannerImageUrl = "/images/banners/category-2.jpg" };
+                var dm3 = new Category { Name = "PC GVN", Description = "PC chuyên dụng cho thiết kế đồ họa, video editing và content creation", BannerImageUrl = "/images/banners/category-3.jpg" };
+                var dm4 = new Category { Name = "Main, CPU, VGA", Description = "Bộ xử lý, mainboard, card đồ họa và các linh kiện chính", BannerImageUrl = "/images/banners/category-4.jpg" };
+                var dm5 = new Category { Name = "Case, Nguồn, Tản", Description = "Vỏ máy, nguồn điện và tản nhiệt chất lượng cao", BannerImageUrl = "/images/banners/category-5.jpg" };
+                var dm6 = new Category { Name = "Ổ cứng, RAM, Thẻ nhớ", Description = "Ổ cứng, RAM, thẻ nhớ và các thiết bị lưu trữ", BannerImageUrl = "/images/banners/category-6.jpg" };
+                var dm7 = new Category { Name = "Loa, Micro, Webcam", Description = "Tai nghe, loa và các thiết bị âm thanh chuyên dụng", BannerImageUrl = "/images/banners/category-7.jpg" };
+                var dm8 = new Category { Name = "Màn hình", Description = "Màn hình máy tính với độ phân giải và tốc độ cao", BannerImageUrl = "/images/banners/category-8.jpg" };
+                var dm9 = new Category { Name = "Bàn phím", Description = "Chuột, bàn phím, tay cầm và các phụ kiện máy tính", BannerImageUrl = "/images/banners/category-9.jpg" };
+                var dm10 = new Category { Name = "Chuột + Lót chuột", Description = "Chuột gaming và phụ kiện đi kèm với độ bền cao", BannerImageUrl = "/images/banners/category-10.jpg" };
+                var dm11 = new Category { Name = "Tai nghe", Description = "Tai nghe gaming với âm thanh sống động", BannerImageUrl = "/images/banners/category-11.jpg" };
+                var dm12 = new Category { Name = "Handheld, Console", Description = "Máy chơi game cầm tay và thiết bị giải trí di động" };
 
-                context.DanhMucs.AddRange(dm1, dm2, dm3, dm4, dm5, dm6, dm7, dm8, dm9, dm10, dm11, dm12);
+                context.Categories.AddRange(dm1, dm2, dm3, dm4, dm5, dm6, dm7, dm8, dm9, dm10, dm11, dm12);
                 await context.SaveChangesAsync();
 
                 // --- TẦNG 2 & 3: LÀM ĐẦY ĐỦ CỰC CHI TIẾT THEO ẢNH ---
@@ -127,10 +127,10 @@ namespace HDKTech.Areas.Identity.Data
             #endregion
 
             #region 4. SẢN PHẨM & KHO (44 SP Thực Tế - Giảm từ 400+ xuống 30-50)
-            if (!await context.SanPhams.AnyAsync())
+            if (!await context.Products.AnyAsync())
             {
-                var brands = await context.HangSXs.ToListAsync();
-                var categories = await context.DanhMucs.Where(c => c.MaDanhMucCha == null).ToListAsync();
+                var brands = await context.Brands.ToListAsync();
+                var categories = await context.Categories.Where(c => c.ParentCategoryId == null).ToListAsync();
 
                 // Danh sách 44 sản phẩm thực tế, có ý nghĩa
                 var products = new List<(string name, decimal price, decimal? msrp, string categoryName, string brand, string description, string specs, int imageId, int discount)>
@@ -204,8 +204,8 @@ namespace HDKTech.Areas.Identity.Data
                 };
 
                 // Lấy brand và category từ DB
-                var brandMap = brands.ToDictionary(b => b.TenHangSX, b => b.MaHangSX);
-                var categoryMap = categories.ToDictionary(c => c.TenDanhMuc, c => c.MaDanhMuc);
+                var brandMap = brands.ToDictionary(b => b.Name, b => b.Id);
+                var categoryMap = categories.ToDictionary(c => c.Name, c => c.Id);
 
                 foreach (var prod in products)
                 {
@@ -213,19 +213,19 @@ namespace HDKTech.Areas.Identity.Data
                         !categoryMap.TryGetValue(prod.categoryName, out var catId))
                         continue;
 
-                    context.SanPhams.Add(new SanPham
+                    context.Products.Add(new Product
                     {
-                        TenSanPham = prod.name,
-                        Gia = prod.price,
-                        GiaNiemYet = prod.msrp,
-                        MaDanhMuc = catId,
-                        MaHangSX = brandId,
-                        TrangThaiSanPham = 1,
-                        ThoiGianTaoSP = DateTime.Now.AddDays(-random.Next(1, 60)),
-                        KhuyenMai = prod.discount > 0 ? $"Giảm {prod.discount}% hôm nay|Tặng Balo Gaming HDK|Vệ sinh máy miễn phí" : "Tặng Balo Gaming HDK|Vệ sinh máy miễn phí",
-                        ThongTinBaoHanh = "24 Tháng chính hãng",
-                        MoTaSanPham = $"<h4 class='text-danger'>Đặc điểm nổi bật</h4><ul><li>{prod.description}</li><li>Bảo hành chính hãng 24 tháng từ HDKTech</li><li>Giao hàng toàn quốc trong 24-48 giờ</li></ul>",
-                        ThongSoKyThuat = prod.specs
+                        Name = prod.name,
+                        Price = prod.price,
+                        ListPrice = prod.msrp,
+                        CategoryId = catId,
+                        BrandId = brandId,
+                        Status = 1,
+                        CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60)),
+                        DiscountNote = prod.discount > 0 ? $"Giảm {prod.discount}% hôm nay|Tặng Balo Gaming HDK|Vệ sinh máy miễn phí" : "Tặng Balo Gaming HDK|Vệ sinh máy miễn phí",
+                        WarrantyInfo = "24 Tháng chính hãng",
+                        Description = $"<h4 class='text-danger'>Đặc điểm nổi bật</h4><ul><li>{prod.description}</li><li>Bảo hành chính hãng 24 tháng từ HDKTech</li><li>Giao hàng toàn quốc trong 24-48 giờ</li></ul>",
+                        Specifications = prod.specs
                     });
                 }
                 await context.SaveChangesAsync();
@@ -297,7 +297,7 @@ namespace HDKTech.Areas.Identity.Data
                     { 44, "accessories/cooler-corsair-h150i-front.jpg" }
                 };
 
-                var allProds = await context.SanPhams.ToListAsync();
+                var allProds = await context.Products.ToListAsync();
                 int imageCounter = 1;
                 foreach (var p in allProds)
                 {
@@ -305,8 +305,8 @@ namespace HDKTech.Areas.Identity.Data
                         ? imageMapping[imageCounter] 
                         : $"products/placeholder-{imageCounter}.jpg";
 
-                    context.HinhAnhs.Add(new HinhAnh { MaSanPham = p.MaSanPham, Url = imageUrl, IsDefault = true });
-                    context.KhoHangs.Add(new KhoHang { MaSanPham = p.MaSanPham, SoLuong = random.Next(10, 100), NgayCapNhat = DateTime.Now });
+                    context.ProductImages.Add(new ProductImage { ProductId = p.Id, ImageUrl = imageUrl, IsDefault = true });
+                    context.Inventories.Add(new Inventory { ProductId = p.Id, Quantity = random.Next(10, 100), UpdatedAt = DateTime.Now });
                     imageCounter++;
                 }
                 await context.SaveChangesAsync();
@@ -314,9 +314,9 @@ namespace HDKTech.Areas.Identity.Data
             #endregion
 
             #region 5. ĐÁNH GIÁ (REVIEWS - Dữ liệu thật cho Tab Review)
-            if (!await context.DanhGias.AnyAsync())
+            if (!await context.Reviews.AnyAsync())
             {
-                var allProducts = await context.SanPhams.Take(20).ToListAsync();
+                var allProducts = await context.Products.Take(20).ToListAsync();
                 var users = await context.Users.ToListAsync();
 
                 var reviewComments = new[] {
@@ -333,13 +333,13 @@ namespace HDKTech.Areas.Identity.Data
                     for (int i = 0; i < reviewCount; i++)
                     {
                         var user = users[random.Next(users.Count)];
-                        context.DanhGias.Add(new DanhGia
+                        context.Reviews.Add(new Review
                         {
-                            MaSanPham = p.MaSanPham,
-                            IdNguoiDung = user.Id,
-                            NoiDung = reviewComments[random.Next(reviewComments.Length)],
-                            SoSao = random.Next(4, 6),
-                            NgayDanhGia = DateTime.Now.AddDays(-random.Next(1, 30))
+                            ProductId = p.Id,
+                            UserId = user.Id,
+                            Content = reviewComments[random.Next(reviewComments.Length)],
+                            Rating = random.Next(4, 6),
+                            ReviewDate = DateTime.Now.AddDays(-random.Next(1, 30))
                         });
                     }
                 }
@@ -354,8 +354,8 @@ namespace HDKTech.Areas.Identity.Data
 
         private static async Task SeedBannerImages(HDKTechContext context)
         {
-            // Danh sách ảnh CHÍNH THỨC từ ProductSeeds.json - ánh xạ MaSanPham → ảnh
-            var bannerImages = new Dictionary<int, List<(string url, bool isDefault)>>
+            // Danh sách ảnh CHÍNH THỨC từ ProductSeeds.json - ánh xạ Id → ảnh
+            var bannerImages = new Dictionary<int, List<(string ImageUrl, bool isDefault)>>
             {
                 // Laptop (1-6)
                 { 1, new List<(string, bool)> { ("laptops/dell-xps-13-silver-front.jpg", true), ("laptops/dell-xps-13-silver-side.jpg", false), ("laptops/dell-xps-13-silver-keyboard.jpg", false) } },
@@ -433,32 +433,32 @@ namespace HDKTech.Areas.Identity.Data
 
             // Bước 1: XÓA tất cả hình ảnh cũ (generic như "1_1.jpg", "2_1.jpg")
             var productsToUpdate = bannerImages.Keys.ToList();
-            var oldImages = await context.HinhAnhs
-                .Where(h => productsToUpdate.Contains(h.MaSanPham))
+            var oldImages = await context.ProductImages
+                .Where(h => productsToUpdate.Contains(h.ProductId))
                 .ToListAsync();
 
             foreach (var oldImg in oldImages)
             {
-                context.HinhAnhs.Remove(oldImg);
+                context.ProductImages.Remove(oldImg);
             }
             await context.SaveChangesAsync();
 
             // Bước 2: THÊM hình ảnh mới
             foreach (var productImages in bannerImages)
             {
-                var productExists = await context.SanPhams.AnyAsync(p => p.MaSanPham == productImages.Key);
+                var productExists = await context.Products.AnyAsync(p => p.Id == productImages.Key);
                 if (!productExists)
                     continue;
 
                 foreach (var image in productImages.Value)
                 {
-                    context.HinhAnhs.Add(new HinhAnh
+                    context.ProductImages.Add(new ProductImage
                     {
-                        MaSanPham = productImages.Key,
-                        Url = image.url,
+                        ProductId = productImages.Key,
+                        ImageUrl = image.ImageUrl,
                         IsDefault = image.isDefault,
-                        AltText = image.url.Split('/').LastOrDefault()?.Replace(".jpg", ""),
-                        NgayTao = DateTime.Now
+                        AltText = image.ImageUrl.Split('/').LastOrDefault()?.Replace(".jpg", ""),
+                        CreatedAt = DateTime.Now
                     });
                 }
             }
@@ -466,14 +466,15 @@ namespace HDKTech.Areas.Identity.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedSub(HDKTechContext context, DanhMuc parent, string subName, string[] grandChildren)
+        private static async Task SeedSub(HDKTechContext context, Category parent, string subName, string[] grandChildren)
         {
-            var sub = new DanhMuc { TenDanhMuc = subName, MaDanhMucCha = parent.MaDanhMuc };
-            context.DanhMucs.Add(sub);
+            var sub = new Category { Name = subName, ParentCategoryId = parent.Id };
+            context.Categories.Add(sub);
             await context.SaveChangesAsync();
             foreach (var gc in grandChildren)
-                context.DanhMucs.Add(new DanhMuc { TenDanhMuc = gc, MaDanhMucCha = sub.MaDanhMuc });
+                context.Categories.Add(new Category { Name = gc, ParentCategoryId = sub.Id });
             await context.SaveChangesAsync();
         }
     }
 }
+

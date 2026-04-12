@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -31,33 +33,33 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<DonHang> query = _context.DonHangs
+                IQueryable<Order> query = _context.Orders
                     .AsNoTracking()
-                    .Include(o => o.NguoiDung)
-                    .Include(o => o.ChiTietDonHangs);
+                    .Include(o => o.User)
+                    .Include(o => o.Items);
 
                 // Apply search filter
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(o => 
-                        o.MaDonHangChuoi.Contains(searchTerm) ||
-                        o.NguoiDung.HoTen.Contains(searchTerm) ||
-                        o.SoDienThoaiNhan.Contains(searchTerm));
+                        o.OrderCode.Contains(searchTerm) ||
+                        o.User.FullName.Contains(searchTerm) ||
+                        o.RecipientPhone.Contains(searchTerm));
                 }
 
                 // Apply status filter
                 if (statusFilter >= 0)
                 {
-                    query = query.Where(o => o.TrangThaiDonHang == statusFilter);
+                    query = query.Where(o => o.Status == statusFilter);
                 }
 
                 // Apply sorting
                 query = sortBy switch
                 {
-                    "amount_high" => query.OrderByDescending(o => o.TongTien),
-                    "amount_low" => query.OrderBy(o => o.TongTien),
-                    "customer" => query.OrderBy(o => o.NguoiDung.HoTen),
-                    _ => query.OrderByDescending(o => o.NgayDatHang)
+                    "amount_high" => query.OrderByDescending(o => o.TotalAmount),
+                    "amount_low" => query.OrderBy(o => o.TotalAmount),
+                    "customer" => query.OrderBy(o => o.User.FullName),
+                    _ => query.OrderByDescending(o => o.OrderDate)
                 };
 
                 var totalCount = await query.CountAsync();
@@ -76,11 +78,11 @@ namespace HDKTech.Areas.Admin.Controllers
                 ViewBag.SortBy = sortBy;
 
                 // Summary statistics
-                var pendingCount = await _context.DonHangs.AsNoTracking().CountAsync(o => o.TrangThaiDonHang == 0);
-                var processingCount = await _context.DonHangs.AsNoTracking().CountAsync(o => o.TrangThaiDonHang == 1);
-                var shippingCount = await _context.DonHangs.AsNoTracking().CountAsync(o => o.TrangThaiDonHang == 2);
-                var deliveredCount = await _context.DonHangs.AsNoTracking().CountAsync(o => o.TrangThaiDonHang == 3);
-                var cancelledCount = await _context.DonHangs.AsNoTracking().CountAsync(o => o.TrangThaiDonHang == 4);
+                var pendingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 0);
+                var processingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 1);
+                var shippingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 2);
+                var deliveredCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 3);
+                var cancelledCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 4);
 
                 ViewBag.PendingCount = pendingCount;
                 ViewBag.ProcessingCount = processingCount;
@@ -90,13 +92,13 @@ namespace HDKTech.Areas.Admin.Controllers
 
                 // Today's statistics
                 var today = DateTime.Now.Date;
-                var todayOrders = await _context.DonHangs
+                var todayOrders = await _context.Orders
                     .AsNoTracking()
-                    .Where(o => o.NgayDatHang.Date == today)
+                    .Where(o => o.OrderDate.Date == today)
                     .ToListAsync();
 
                 ViewBag.TodayOrderCount = todayOrders.Count;
-                ViewBag.TodayRevenue = todayOrders.Sum(o => o.TongTien);
+                ViewBag.TodayRevenue = todayOrders.Sum(o => o.TotalAmount);
 
                 return View();
             }
@@ -118,11 +120,11 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var order = await _context.DonHangs
-                    .Include(o => o.NguoiDung)
-                    .Include(o => o.ChiTietDonHangs)
-                        .ThenInclude(od => od.SanPham)
-                    .FirstOrDefaultAsync(o => o.MaDonHang == id);
+                var order = await _context.Orders
+                    .Include(o => o.User)
+                    .Include(o => o.Items)
+                        .ThenInclude(od => od.Product)
+                    .FirstOrDefaultAsync(o => o.Id == id);
 
                 if (order == null)
                 {
@@ -151,14 +153,14 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var order = await _context.DonHangs.FindAsync(orderId);
+                var order = await _context.Orders.FindAsync(orderId);
                 if (order == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
                 }
 
-                order.TrangThaiDonHang = newStatus;
-                _context.DonHangs.Update(order);
+                order.Status = newStatus;
+                _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
                 var statusName = GetStatusName(newStatus);
@@ -181,19 +183,19 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var order = await _context.DonHangs.FindAsync(orderId);
+                var order = await _context.Orders.FindAsync(orderId);
                 if (order == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
                 }
 
-                if (order.TrangThaiDonHang == 3) // Delivered
+                if (order.Status == 3) // Delivered
                 {
                     return Json(new { success = false, message = "Không thể hủy đơn hàng đã giao" });
                 }
 
-                order.TrangThaiDonHang = 4; // Cancelled
-                _context.DonHangs.Update(order);
+                order.Status = 4; // Cancelled
+                _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Hủy đơn hàng thành công" });
@@ -215,30 +217,30 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<DonHang> query = _context.DonHangs
+                IQueryable<Order> query = _context.Orders
                     .AsNoTracking()
-                    .Include(o => o.NguoiDung);
+                    .Include(o => o.User);
 
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(o => 
-                        o.MaDonHangChuoi.Contains(searchTerm) ||
-                        o.NguoiDung.HoTen.Contains(searchTerm));
+                        o.OrderCode.Contains(searchTerm) ||
+                        o.User.FullName.Contains(searchTerm));
                 }
 
                 if (statusFilter >= 0)
                 {
-                    query = query.Where(o => o.TrangThaiDonHang == statusFilter);
+                    query = query.Where(o => o.Status == statusFilter);
                 }
 
-                var orders = await query.OrderByDescending(o => o.NgayDatHang).ToListAsync();
+                var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
 
                 var csv = "Mã Đơn Hàng,Khách Hàng,Số Điện Thoại,Địa Chỉ,Tổng Tiền,Phí Vận Chuyển,Trạng Thái,Ngày Đặt\n";
 
                 foreach (var order in orders)
                 {
-                    var status = GetStatusName(order.TrangThaiDonHang);
-                    csv += $"\"{order.MaDonHangChuoi}\",\"{order.TenNguoiNhan}\",\"{order.SoDienThoaiNhan}\",\"{order.DiaChiGiaoHang}\",{order.TongTien},{order.PhiVanChuyen},\"{status}\",{order.NgayDatHang:yyyy-MM-dd}\n";
+                    var status = GetStatusName(order.Status);
+                    csv += $"\"{order.OrderCode}\",\"{order.RecipientName}\",\"{order.RecipientPhone}\",\"{order.ShippingAddress}\",{order.TotalAmount},{order.ShippingFee},\"{status}\",{order.OrderDate:yyyy-MM-dd}\n";
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
@@ -266,3 +268,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

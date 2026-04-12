@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HDKTech.Models
@@ -36,17 +36,17 @@ namespace HDKTech.Models
         public decimal TotalPrice => Price * Quantity;
 
         /// <summary>
-        /// Constructor cho dễ dàng tạo CartItem từ SanPham hoặc model khác
+        /// Constructor cho dễ dàng tạo CartItem từ Product hoặc model khác
         /// </summary>
         public CartItem() { }
 
-        public CartItem(int productId, string productName, decimal price, int quantity, string? imageUrl = null, string? categoryName = null)
+        public CartItem(int productId, string productName, decimal price, int quantity, string? ImageUrl = null, string? categoryName = null)
         {
             ProductId = productId;
             ProductName = productName;
             Price = price;
             Quantity = quantity;
-            ImageUrl = imageUrl;
+            ImageUrl = ImageUrl;
             CategoryName = categoryName;
         }
     }

@@ -1,10 +1,10 @@
-@model HDKTech.Models.SanPham
+﻿@model HDKTech.Models.Product
 @using HDKTech.Utils
 @{
-    ViewData["Title"] = Model.TenSanPham + " - HDKTech";
+    ViewData["Title"] = Model.Name + " - HDKTech";
 
-    var defaultImg = Model.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url 
-                     ?? Model.HinhAnhs?.FirstOrDefault()?.Url 
+    var defaultImg = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl 
+                     ?? Model.Images?.FirstOrDefault()?.ImageUrl 
                      ?? "no-image.png";
 }
 
@@ -16,18 +16,18 @@
         <div class="row g-4">
             <div class="col-lg-7">
                 <div class="main-img-container">
-                    <a href="@ImageHelper.GetImagePath(defaultImg, Model.DanhMuc?.TenDanhMuc)" class="glightbox">
-                        <img id="mainImg" src="@ImageHelper.GetImagePath(defaultImg, Model.DanhMuc?.TenDanhMuc)" class="main-img" onerror="handleImageError(this)">
+                    <a href="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="glightbox">
+                        <img id="mainImg" src="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="main-img" onerror="handleImageError(this)">
                     </a>
                 </div>
                 <p class="text-center text-muted small mt-2"><i class="bi bi-search"></i> Click vào ảnh để phóng to</p>
-                @if (Model.HinhAnhs != null && Model.HinhAnhs.Any())
+                @if (Model.Images != null && Model.Images.Any())
                 {
                     <div class="thumb-container">
-                        @foreach (var img in Model.HinhAnhs)
+                        @foreach (var img in Model.Images)
                         {
-                            <img src="@ImageHelper.GetImagePath(img.Url, Model.DanhMuc?.TenDanhMuc)" class="thumb-item @(img.IsDefault ? "active" : "")" 
-                                 onclick="updateMainImage('@ImageHelper.GetImagePath(img.Url, Model.DanhMuc?.TenDanhMuc)', this)" onerror="handleImageError(this)">
+                            <img src="@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)" class="thumb-item @(img.IsDefault ? "active" : "")" 
+                                 onclick="updateMainImage('@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)', this)" onerror="handleImageError(this)">
                         }
                     </div>
                 }
@@ -35,20 +35,20 @@
             </div>
 
             <div class="col-lg-5">
-                <h2 class="h4 fw-bold mb-1">@Model.TenSanPham</h2>
-                <div class="text-muted small mb-2">Thương hiệu: <strong>@Model.HangSX?.TenHangSX</strong> | SKU: <strong>HDK-@Model.MaSanPham</strong></div>
+                <h2 class="h4 fw-bold mb-1">@Model.Name</h2>
+                <div class="text-muted small mb-2">Thương hiệu: <strong>@Model.Brand?.Name</strong> | SKU: <strong>HDK-@Model.Id</strong></div>
 
                 @{
-                    var discountPercent = Model.GiaNiemYet > 0 
-                        ? (int)((Model.GiaNiemYet - Model.Gia) / Model.GiaNiemYet * 100) 
+                    var discountPercent = Model.ListPrice > 0 
+                        ? (int)((Model.ListPrice - Model.Price) / Model.ListPrice * 100) 
                         : 0;
                 }
 
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <div>
-                        <span class="price-text">@Model.Gia.ToString("N0")₫</span>
-                        @if(Model.GiaNiemYet > Model.Gia){
-                            <span class="price-old">@Model.GiaNiemYet?.ToString("N0")₫</span>
+                        <span class="price-text">@Model.Price.ToString("N0")₫</span>
+                        @if(Model.ListPrice > Model.Price){
+                            <span class="price-old">@Model.ListPrice?.ToString("N0")₫</span>
                         }
                     </div>
                     @if(discountPercent > 0){
@@ -65,7 +65,7 @@
                         <button class="btn btn-outline-secondary btn-sm" onclick="updateQty(1)">+</button>
                     </div>
                     <button class="btn btn-danger flex-grow-1 fw-bold" style="padding: 0.5rem;" onclick="buyNow()">MUA NGAY</button>
-                    <button class="btn btn-dark" style="padding: 0.5rem 1rem;" onclick="addToCartAjax(@Model.MaSanPham, '@Model.TenSanPham', document.getElementById('qtyInput').value)">
+                    <button class="btn btn-dark" style="padding: 0.5rem 1rem;" onclick="addToCartAjax(@Model.Id, '@Model.Name', document.getElementById('qtyInput').value)">
                         <i class="bi bi-cart-plus"></i>
                     </button>
                 </div>
@@ -80,8 +80,8 @@
                 </div>
 
                 <div class="info-dark-card">
-                    <div class="info-dark-item"><i class="bi bi-cpu"></i> <span><strong>Hãng:</strong> @Model.HangSX?.TenHangSX</span></div>
-                    <div class="info-dark-item"><i class="bi bi-box"></i> <span><strong>Loại:</strong> @Model.DanhMuc?.TenDanhMuc</span></div>
+                    <div class="info-dark-item"><i class="bi bi-cpu"></i> <span><strong>Hãng:</strong> @Model.Brand?.Name</span></div>
+                    <div class="info-dark-item"><i class="bi bi-box"></i> <span><strong>Loại:</strong> @Model.Category?.Name</span></div>
                     <div class="info-dark-item"><i class="bi bi-shield-check"></i> <span><strong>Bảo hành:</strong> 24 tháng</span></div>
                     <div class="info-dark-item"><i class="bi bi-truck"></i> <span><strong>Vận chuyển:</strong> Toàn quốc</span></div>
                 </div>
@@ -98,7 +98,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
-                        <i class="bi bi-star"></i> NHẬN XÉT (@(Model.DanhGias?.Count() ?? 0))
+                        <i class="bi bi-star"></i> NHẬN XÉT (@(Model.Reviews?.Count() ?? 0))
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -113,7 +113,7 @@
                 <div class="tab-pane fade show active" id="specs" role="tabpanel">
                     <div class="specs-section" style="padding: 30px; background: #f8f9fa;">
                         @{
-                            var specs = Model?.ThongSoKyThuat?.Trim();
+                            var specs = Model?.Specifications?.Trim();
                             var hasSpecs = !string.IsNullOrWhiteSpace(specs);
                             var specsArray = hasSpecs ? specs.Split(new[] { '|', ',' }, StringSplitOptions.RemoveEmptyEntries) : new string[] { };
                         }
@@ -126,19 +126,19 @@
                             <div class="specs-grid">
                                 <div class="spec-item">
                                     <span class="spec-label">Hãng sản xuất</span>
-                                    <span class="spec-value">@(Model.HangSX?.TenHangSX ?? "N/A")</span>
+                                    <span class="spec-value">@(Model.Brand?.Name ?? "N/A")</span>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Model</span>
-                                    <span class="spec-value">@Model.TenSanPham</span>
+                                    <span class="spec-value">@Model.Name</span>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Danh mục</span>
-                                    <span class="spec-value">@(Model.DanhMuc?.TenDanhMuc ?? "N/A")</span>
+                                    <span class="spec-value">@(Model.Category?.Name ?? "N/A")</span>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Bảo hành</span>
-                                    <span class="spec-value highlight">@(Model.ThongTinBaoHanh ?? "24 Tháng")</span>
+                                    <span class="spec-value highlight">@(Model.WarrantyInfo ?? "24 Tháng")</span>
                                 </div>
                             </div>
                         </div>
@@ -197,7 +197,7 @@
                             <div class="rating-avg">
                                 <div class="rating-avg-number">
                                     @{
-                                        var avgRating = Model.DanhGias?.Any() == true ? Model.DanhGias.Average(x => x.SoSao) : 0;
+                                        var avgRating = Model.Reviews?.Any() == true ? Model.Reviews.Average(x => x.Rating) : 0;
                                     }
                                     @avgRating.ToString("0.0")
                                 </div>
@@ -208,15 +208,15 @@
                                         for (int i = fullStars; i < 5; i++) { <span>☆</span> }
                                     }
                                 </div>
-                                <div class="rating-count">Dựa trên @(Model.DanhGias?.Count() ?? 0) đánh giá</div>
+                                <div class="rating-count">Dựa trên @(Model.Reviews?.Count() ?? 0) đánh giá</div>
                             </div>
 
                             <div class="rating-breakdown">
                                 @for (int i = 5; i >= 1; i--)
                                 {
-                                    var count = Model.DanhGias?.Count(x => x.SoSao == i) ?? 0;
-                                    var percent = (Model.DanhGias?.Count() ?? 0) > 0 ? 
-                                        (int)((count * 100.0) / (Model.DanhGias?.Count() ?? 1)) : 0;
+                                    var count = Model.Reviews?.Count(x => x.Rating == i) ?? 0;
+                                    var percent = (Model.Reviews?.Count() ?? 0) > 0 ? 
+                                        (int)((count * 100.0) / (Model.Reviews?.Count() ?? 1)) : 0;
 
                                     <div class="rating-row">
                                         <div class="rating-row-label">
@@ -232,27 +232,27 @@
                         </div>
 
                         <!-- REVIEWS LIST -->
-                        @if (Model.DanhGias?.Any() == true)
+                        @if (Model.Reviews?.Any() == true)
                         {
                             <div class="reviews-list">
-                                @foreach (var review in Model.DanhGias.OrderByDescending(x => x.NgayDanhGia).Take(5))
+                                @foreach (var review in Model.Reviews.OrderByDescending(x => x.ReviewDate).Take(5))
                                 {
                                     <div class="review-item">
                                         <div class="review-header">
                                             <div>
-                                                <div class="review-author">@(review.NguoiDung?.HoTen ?? "Ẩn danh")</div>
+                                                <div class="review-author">@(review.User?.FullName ?? "Ẩn danh")</div>
                                                 <div class="review-meta">
                                                     <span class="review-verified">✓ Xác thực mua hàng</span>
-                                                    <span>@review.NgayDanhGia.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
+                                                    <span>@review.ReviewDate.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
                                                 </div>
                                             </div>
                                             <div class="review-rating">
-                                                @(new string('★', review.SoSao))@(new string('☆', 5 - review.SoSao))
+                                                @(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))
                                             </div>
                                         </div>
 
-                                        <div class="review-title">@(review.NoiDung?.Split('.').FirstOrDefault() ?? "Nhận xét")</div>
-                                        <div class="review-content">@review.NoiDung</div>
+                                        <div class="review-title">@(review.Content?.Split('.').FirstOrDefault() ?? "Nhận xét")</div>
+                                        <div class="review-content">@review.Content</div>
 
                                         <div class="review-actions">
                                             <button class="review-action-btn" type="button" onclick="toggleLike(this)">
@@ -266,7 +266,7 @@
                                 }
                             </div>
 
-                            @if ((Model.DanhGias?.Count() ?? 0) > 5)
+                            @if ((Model.Reviews?.Count() ?? 0) > 5)
                             {
                                 <button class="load-more-btn" onclick="loadMoreReviews()">TẢI THÊM NHẬN XÉT</button>
                             }
@@ -289,7 +289,7 @@
                         </h2>
 
                         <div class="description-content" style="color: #6b7280; line-height: 1.8; font-size: 15px;">
-                            @Html.Raw(Model.MoTaSanPham ?? "<p style='color: #aaa;'>Chưa có mô tả sản phẩm</p>")
+                            @Html.Raw(Model.Description ?? "<p style='color: #aaa;'>Chưa có mô tả sản phẩm</p>")
                         </div>
                     </div>
                 </div>
@@ -301,24 +301,24 @@
             <div class="related-products-grid">
                 @if (ViewBag.RelatedProducts != null)
                 {
-                    @foreach (var item in (List<HDKTech.Models.SanPham>)ViewBag.RelatedProducts)
+                    @foreach (var item in (List<HDKTech.Models.Product>)ViewBag.RelatedProducts)
                     {
-                        var fileName = item.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url
-                                       ?? item.HinhAnhs?.FirstOrDefault()?.Url
+                        var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+                                       ?? item.Images?.FirstOrDefault()?.ImageUrl
                                        ?? "no-image.png";
                         var relatedImagePath = "/images/products/" + fileName;
 
                         <div class="related-card-wrapper">
                             <div class="related-card">
                                 <div class="related-image-container">
-                                    <a href="/Product/Details/@item.MaSanPham" class="related-image-link">
-                                        <img src="@relatedImagePath" class="related-img" alt="@item.TenSanPham" onerror="this.onerror=null; this.src='/images/products/no-image.png';">
+                                    <a href="/Product/Details/@item.Id" class="related-image-link">
+                                        <img src="@relatedImagePath" class="related-img" alt="@item.Name" onerror="this.onerror=null; this.src='/images/products/no-image.png';">
                                     </a>
                                 </div>
                                 <div class="related-card-body">
-                                    <div class="related-title">@item.TenSanPham</div>
-                                    <div class="related-price">@item.Gia.ToString("N0")₫</div>
-                                    <a href="/Product/Details/@item.MaSanPham" class="btn-view">Xem ngay</a>
+                                    <div class="related-title">@item.Name</div>
+                                    <div class="related-price">@item.Price.ToString("N0")₫</div>
+                                    <a href="/Product/Details/@item.Id" class="btn-view">Xem ngay</a>
                                 </div>
                             </div>
                         </div>
@@ -334,3 +334,5 @@
     const lightbox = GLightbox({ selector: '.glightbox' });
 </script>
 <script src="~/js/pages/product-details.js"></script>
+
+

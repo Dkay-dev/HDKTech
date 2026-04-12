@@ -1,7 +1,7 @@
-@{
+﻿@{
     ViewData["Title"] = "Quản lý Đơn Hàng";
 
-    var orders = (List<HDKTech.Models.DonHang>)ViewBag.Orders;
+    var orders = (List<HDKTech.Models.Order>)ViewBag.Orders;
     var totalCount = (int)ViewBag.TotalCount;
     var pageNumber = (int)ViewBag.PageNumber;
     var pageSize = (int)ViewBag.PageSize;
@@ -198,7 +198,7 @@
                     {
                         @foreach (var order in orders)
                         {
-                            var statusBadgeClass = order.TrangThaiDonHang switch
+                            var statusBadgeClass = order.Status switch
                             {
                                 0 => "bg-warning",
                                 1 => "bg-info",
@@ -208,7 +208,7 @@
                                 _ => "bg-light"
                             };
 
-                            var statusName = order.TrangThaiDonHang switch
+                            var statusName = order.Status switch
                             {
                                 0 => "Chờ xác nhận",
                                 1 => "Đang xử lý",
@@ -220,24 +220,24 @@
 
                             <tr>
                                 <td>
-                                    <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.MaDonHang })" class="text-danger fw-bold text-decoration-none">
-                                        @order.MaDonHangChuoi
+                                    <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.OrderCode })" class="text-danger fw-bold text-decoration-none">
+                                        @order.OrderCode
                                     </a>
                                 </td>
                                 <td>
                                     <div>
-                                        <p class="small fw-semibold mb-0">@(order.NguoiDung?.HoTen ?? order.TenNguoiNhan)</p>
-                                        <p class="small text-muted mb-0">@(order.NguoiDung?.Email ?? "-")</p>
+                                        <p class="small fw-semibold mb-0">@(order.User?.FullName ?? order.RecipientName)</p>
+                                        <p class="small text-muted mb-0">@(order.User?.Email ?? "-")</p>
                                     </div>
                                 </td>
                                 <td>
-                                    <small>@order.SoDienThoaiNhan</small>
+                                    <small>@order.RecipientPhone</small>
                                 </td>
                                 <td>
-                                    <small>@order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")</small>
+                                    <small>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</small>
                                 </td>
                                 <td class="text-end">
-                                    <span class="fw-bold">@order.TongTien.ToString("C0")</span>
+                                    <span class="fw-bold">@order.TotalAmount.ToString("C0")</span>
                                 </td>
                                 <td>
                                     <span class="badge @statusBadgeClass small">
@@ -246,10 +246,10 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.MaDonHang })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                        <a href="@Url.Action("Details", "Order", new { area = "Admin", id = order.OrderCode })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger btn-icon-sm cancel-btn" data-order-id="@order.MaDonHang" title="Hủy đơn hàng" @(order.TrangThaiDonHang == 3 || order.TrangThaiDonHang == 4 ? "disabled" : "")>
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm cancel-btn" data-order-id="@order.OrderCode" title="Hủy đơn hàng" @(order.Status == 3 || order.Status == 4 ? "disabled" : "")>
                                             <i class="bi bi-x-circle"></i>
                                         </button>
                                     </div>
