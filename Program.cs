@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HDKTech.Models;
@@ -9,6 +10,7 @@ using HDKTech.Services;
 using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
+using HDKTech.ChucNangPhanQuyen;
 
 namespace HDKTech
 {
@@ -56,6 +58,29 @@ namespace HDKTech
             // Register Admin Services
             builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+            // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────
+            builder.Services.AddScoped<IInventoryService, InventoryService>();
+
+            // ── Giai đoạn 1: Granular Security — PermissionHandler ───────────
+            // Kích hoạt custom AuthorizationHandler dùng bảng RolePermissions
+            builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+            // ── Giai đoạn 1: Authorization Policies ──────────────────────────
+            // Mỗi Policy ánh xạ đến 1 cặp (Module, Action) trong bảng Permissions
+            builder.Services.AddAuthorization(options =>
+            {
+                // Order
+                options.AddPolicy("Order.Read",   p => p.AddRequirements(new PermissionRequirement("Order",   "Read")));
+                options.AddPolicy("Order.Update", p => p.AddRequirements(new PermissionRequirement("Order",   "Update")));
+                options.AddPolicy("Order.Delete", p => p.AddRequirements(new PermissionRequirement("Order",   "Delete")));
+                // Product
+                options.AddPolicy("Product.Create", p => p.AddRequirements(new PermissionRequirement("Product", "Create")));
+                options.AddPolicy("Product.Update", p => p.AddRequirements(new PermissionRequirement("Product", "Update")));
+                options.AddPolicy("Product.Delete", p => p.AddRequirements(new PermissionRequirement("Product", "Delete")));
+                // Inventory
+                options.AddPolicy("Inventory.Update", p => p.AddRequirements(new PermissionRequirement("Inventory", "Update")));
+            });
+
             // Register Cart Service (Session) - 7 days
             builder.Services.AddSession(options =>
             {
@@ -66,6 +91,14 @@ namespace HDKTech
             });
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICartService, SessionCartService>();
+
+            // ── Giai đoạn 2: Observability — IMemoryCache cho Dashboard ─────
+            // Cache mặc định dùng bộ nhớ process — phù hợp single-server deployment
+            builder.Services.AddMemoryCache(options =>
+            {
+                options.SizeLimit            = null;  // không giới hạn số entry
+                options.CompactionPercentage = 0.25;  // dọn 25% khi đầy
+            });
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();

@@ -3,18 +3,21 @@ using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Services;
+using HDKTech.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager")]   // Fallback: chỉ Admin/Manager vào được
     [Route("admin/[controller]")]
     public class OrderController : Controller
     {
-        private readonly HDKTechContext _context;
+        private readonly HDKTechContext          _context;
         private readonly ILogger<OrderController> _logger;
-        private readonly ISystemLogService _logService;
+        private readonly ISystemLogService        _logService;
+        // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────────
+        private readonly IInventoryService        _inventoryService;
 
         private static readonly string[] StatusNames =
             { "Chờ xác nhận", "Đang xử lý", "Đang giao", "Đã giao", "Đã hủy" };
@@ -22,11 +25,13 @@ namespace HDKTech.Areas.Admin.Controllers
         public OrderController(
             HDKTechContext context,
             ILogger<OrderController> logger,
-            ISystemLogService logService)
+            ISystemLogService logService,
+            IInventoryService inventoryService)
         {
-            _context = context;
-            _logger = logger;
-            _logService = logService;
+            _context          = context;
+            _logger           = logger;
+            _logService       = logService;
+            _inventoryService = inventoryService;
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -35,6 +40,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // ──────────────────────────────────────────────────────────────
         [HttpGet("")]
         [HttpGet("index")]
+        [Authorize(Policy = "Order.Read")]   // ← Granular Security
         public async Task<IActionResult> Index(
             int page = 1,
             int pageSize = 20,
@@ -120,6 +126,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // GET: /admin/order/details/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpGet("details/{id:int}")]
+        [Authorize(Policy = "Order.Read")]   // ← Granular Security
         public async Task<IActionResult> Details(int id)
         {
             try
@@ -154,6 +161,7 @@ namespace HDKTech.Areas.Admin.Controllers
         // ──────────────────────────────────────────────────────────────
         [HttpPost("update-status")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "Order.Update")]   // ← Granular Security
         public async Task<IActionResult> UpdateStatus(int orderId, int newStatus)
         {
             if (newStatus < 0 || newStatus > 4)
@@ -168,41 +176,28 @@ namespace HDKTech.Areas.Admin.Controllers
                 if (order == null)
                     return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
 
-                // Guard: không thể đổi từ trạng thái cuối
+                // Guard: đơn đã giao chỉ có thể chuyển sang Đã hủy
                 if (order.Status == 3 && newStatus != 4)
                     return Json(new { success = false, message = "Đơn hàng đã giao không thể thay đổi trạng thái." });
 
                 var oldStatusName = GetStatusName(order.Status);
+                var username      = User.Identity?.Name ?? "System";
+                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userRole      = User.IsInRole("Admin") ? "Admin" : "Manager";
+
                 order.Status = newStatus;
                 await _context.SaveChangesAsync();
 
-                // ── Khi đơn hàng giao thành công → trừ kho + audit log ──
-                if (newStatus == 3 && order.Items != null)
-                {
-                    foreach (var item in order.Items)
-                    {
-                        var inv = await _context.Inventories
-                            .FirstOrDefaultAsync(i => i.ProductId == item.ProductId);
-                        if (inv != null)
-                        {
-                            inv.Quantity  = Math.Max(0, inv.Quantity - item.Quantity);
-                            inv.UpdatedAt = DateTime.Now;
-                        }
-                    }
-                    await _context.SaveChangesAsync();
-
-                    await _logService.LogActionAsync(
-                        username   : User.Identity?.Name ?? "System",
-                        actionType : "OrderCompleted",
-                        module     : "Order",
-                        description: $"Đơn hàng #{order.OrderCode} giao thành công — đã trừ tồn kho.",
-                        entityId   : order.Id.ToString(),
-                        entityName : order.OrderCode,
-                        oldValue   : oldStatusName,
-                        newValue   : "Đã giao",
-                        userRole   : User.IsInRole("Admin") ? "Admin" : "Manager",
-                        userId     : User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
-                }
+                // ── NOTE: Kho đã được trừ tại CreateOrderAsync (ReserveStock).
+                //    Không cần trừ lại ở đây. Chỉ ghi Audit Log trạng thái đơn hàng.
+                await LoggingHelper.LogOrderStatusChangeAsync(
+                    username   : username,
+                    orderId    : order.Id,
+                    orderCode  : order.OrderCode,
+                    oldStatus  : oldStatusName,
+                    newStatus  : GetStatusName(newStatus),
+                    userId     : userId,
+                    userRole   : userRole);
 
                 return Json(new { success = true, message = $"Cập nhật trạng thái → \"{GetStatusName(newStatus)}\" thành công." });
             }
@@ -219,11 +214,16 @@ namespace HDKTech.Areas.Admin.Controllers
         // ──────────────────────────────────────────────────────────────
         [HttpPost("cancel")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "Order.Delete")]   // ← Granular Security
         public async Task<IActionResult> CancelOrder(int orderId)
         {
             try
             {
-                var order = await _context.Orders.FindAsync(orderId);
+                // Cần Include Items để hoàn kho
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
                 if (order == null)
                     return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
 
@@ -233,9 +233,34 @@ namespace HDKTech.Areas.Admin.Controllers
                 if (order.Status == 4)
                     return Json(new { success = false, message = "Đơn hàng đã bị hủy trước đó." });
 
+                var oldStatusName = GetStatusName(order.Status);
+                var username      = User.Identity?.Name ?? "System";
+                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                // ── [1] Cập nhật trạng thái đơn hàng ─────────────────────────
                 order.Status = 4;
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Đã hủy đơn hàng thành công." });
+
+                // ── [2] Hoàn kho: ReleaseStock + auto Audit Log ───────────────
+                if (order.Items != null && order.Items.Any())
+                {
+                    await _inventoryService.ReleaseStockAsync(
+                        items    : order.Items.ToList(),
+                        username : username,
+                        userId   : userId);
+                }
+
+                // ── [3] Audit Log trạng thái đơn hàng ────────────────────────
+                await LoggingHelper.LogOrderStatusChangeAsync(
+                    username  : username,
+                    orderId   : order.Id,
+                    orderCode : order.OrderCode,
+                    oldStatus : oldStatusName,
+                    newStatus : "Đã hủy",
+                    userId    : userId,
+                    userRole  : User.IsInRole("Admin") ? "Admin" : "Manager");
+
+                return Json(new { success = true, message = "Đã hủy đơn hàng và hoàn kho thành công." });
             }
             catch (Exception ex)
             {

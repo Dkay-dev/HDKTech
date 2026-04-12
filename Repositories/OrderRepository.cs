@@ -1,71 +1,89 @@
 ﻿using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
+using HDKTech.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Repositories
 {
     public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
-        public OrderRepository(HDKTechContext context) : base(context)
+        // ── Giai đoạn 1: Inventory Sync — inject IInventoryService ──────────
+        private readonly IInventoryService _inventoryService;
+
+        public OrderRepository(HDKTechContext context, IInventoryService inventoryService) : base(context)
         {
+            _inventoryService = inventoryService;
         }
 
-        public async Task<Order> CreateOrderAsync(string userId, string RecipientName, string soDienThoai, 
+        public async Task<Order> CreateOrderAsync(string userId, string RecipientName, string soDienThoai,
                                                     string ShippingAddress, List<CartItem> items, decimal ShippingFee = 0)
         {
-            // Tính tổng tiền
+            // ── [1] Tính tổng tiền ───────────────────────────────────────────
             var TotalAmount = items.Sum(x => x.Price * x.Quantity);
 
-            // Tạo mã đơn hàng: HDK + timestamp + random 4 digits
-            // Ví dụ: HDK20260410180530_4821
+            // ── [2] Tạo mã đơn hàng unique: HDK + timestamp + random 4 digits ─
             var OrderCode = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
-
-            // Đảm bảo mã đơn hàng unique (retries 3 lần nếu trùng)
             var retries = 3;
             while (retries-- > 0)
             {
                 var existingOrder = await _context.Set<Order>()
                     .FirstOrDefaultAsync(x => x.OrderCode == OrderCode);
-
-                if (existingOrder == null)
-                    break; // Mã unique, dùng được
-
-                // Nếu trùng, tạo mã mới
+                if (existingOrder == null) break;
                 OrderCode = $"HDK{DateTime.Now:yyyyMMddHHmmss}_{Random.Shared.Next(1000, 9999)}";
             }
 
-            var Order = new Order
+            // ── [3] Khởi tạo Order entity ────────────────────────────────────
+            var order = new Order
             {
-                UserId = userId,
-                OrderCode = OrderCode,
-                RecipientName = RecipientName,
-                RecipientPhone = soDienThoai,
+                UserId          = userId,
+                OrderCode       = OrderCode,
+                RecipientName   = RecipientName,
+                RecipientPhone  = soDienThoai,
                 ShippingAddress = ShippingAddress,
-                TotalAmount = TotalAmount,
-                ShippingFee = ShippingFee,
-                Status = 0, // Chờ xác nhận
-                OrderDate = DateTime.Now,
-                Items = new List<OrderItem>()
+                TotalAmount     = TotalAmount,
+                ShippingFee     = ShippingFee,
+                Status          = 0, // Chờ xác nhận
+                OrderDate       = DateTime.Now,
+                Items           = new List<OrderItem>()
             };
 
-            // Thêm chi tiết đơn hàng
             foreach (var item in items)
             {
-                var chiTiet = new OrderItem
+                order.Items.Add(new OrderItem
                 {
-                    Id = item.ProductId,
-                    Quantity = item.Quantity,
+                    ProductId = item.ProductId,
+                    Quantity  = item.Quantity,
                     UnitPrice = item.Price
-                };
-                Order.Items.Add(chiTiet);
+                });
             }
 
-            // Lưu vào database
-            await _context.AddAsync(Order);
-            await _context.SaveChangesAsync();
+            // ── [4] DATABASE TRANSACTION: trừ kho + lưu đơn hàng nguyên tử ──
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // [4a] ReserveStock: chỉ sửa entity trong DbContext (chưa SaveChanges)
+                    var stockResult = await _inventoryService.ReserveStockAsync(items);
+                    if (!stockResult.Success)
+                        throw new InvalidOperationException(
+                            $"Đặt hàng thất bại — không đủ tồn kho: {stockResult.Message}");
 
-            return Order;
+                    // [4b] Lưu Order + inventory thay đổi trong 1 lần SaveChanges
+                    await _context.AddAsync(order);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                    return order;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
         }
 
         public async Task<Order> GetOrderByMaDonHangAsync(string OrderCode)
