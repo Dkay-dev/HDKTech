@@ -36,15 +36,32 @@ namespace HDKTech.Areas.Admin.Services
         // PUBLIC: GetDashboardDataAsync — với caching 5 phút
         // ─────────────────────────────────────────────────────────────────────
         public async Task<DashboardViewModel> GetDashboardDataAsync()
+            => await GetDashboardDataAsync(string.Empty);
+
+        /// <summary>
+        /// Overload role-aware: WarehouseStaff chỉ nhận dữ liệu kho + đơn cần xử lý.
+        /// Các role khác (Admin, Manager) nhận toàn bộ data được cache.
+        /// </summary>
+        public async Task<DashboardViewModel> GetDashboardDataAsync(string viewerRole)
         {
+            // WarehouseStaff: build nhanh, không cache (data nhẹ, không cần revenue)
+            if (string.Equals(viewerRole, "WarehouseStaff", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogDebug("[Dashboard] WarehouseStaff mode — build warehouse-only data.");
+                return await BuildWarehouseAsync(viewerRole);
+            }
+
+            // Admin / Manager: full data + cache 5 phút
             if (_cache.TryGetValue(MainCacheKey, out DashboardViewModel? cached) && cached != null)
             {
                 _logger.LogDebug("[Dashboard] Trả về từ cache (còn hạn).");
+                cached.ViewerRole = viewerRole;
                 return cached;
             }
 
             _logger.LogInformation("[Dashboard] Cache miss — đang build từ DB...");
             var vm = await BuildAsync();
+            vm.ViewerRole = viewerRole;
 
             _cache.Set(MainCacheKey, vm, new MemoryCacheEntryOptions
             {
@@ -52,6 +69,69 @@ namespace HDKTech.Areas.Admin.Services
                 SlidingExpiration               = TimeSpan.FromMinutes(2),
                 Priority                        = CacheItemPriority.Normal
             });
+
+            return vm;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // PRIVATE: BuildWarehouseAsync — chỉ trả về dữ liệu kho + đơn chờ
+        // ─────────────────────────────────────────────────────────────────────
+        private async Task<DashboardViewModel> BuildWarehouseAsync(string role)
+        {
+            const int lowStockThreshold = 10;
+            var vm = new DashboardViewModel
+            {
+                CachedAt        = DateTime.Now,
+                ShowRevenueData = false,
+                ViewerRole      = role
+            };
+
+            try
+            {
+                // Đơn hàng cần xử lý (Status 0 = Chờ xác nhận, 1 = Đang xử lý)
+                vm.PendingOrders = await _context.Orders.AsNoTracking()
+                    .CountAsync(o => o.Status == 0 || o.Status == 1);
+
+                vm.TotalOrders = await _context.Orders.AsNoTracking().CountAsync();
+
+                // Số đơn hàng đặt hôm nay
+                var today    = DateTime.Now.Date;
+                var tomorrow = today.AddDays(1);
+                vm.TodayOrderCount = await _context.Orders.AsNoTracking()
+                    .CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
+
+                // Tồn kho thấp
+                vm.LowStockCount = await _context.Inventories.AsNoTracking()
+                    .Where(i => i.Quantity < lowStockThreshold)
+                    .CountAsync();
+
+                vm.LowStockProducts = await _context.Inventories
+                    .AsNoTracking()
+                    .Include(i => i.Product)
+                    .Where(i => i.Quantity < lowStockThreshold)
+                    .OrderBy(i => i.Quantity)
+                    .Take(10)
+                    .Select(i => new LowStockProductItem
+                    {
+                        ProductId    = i.ProductId,
+                        ProductName  = i.Product != null ? i.Product.Name : $"SP#{i.ProductId}",
+                        CurrentStock = i.Quantity,
+                        Threshold    = lowStockThreshold
+                    })
+                    .ToListAsync();
+
+                // 5 đơn hàng chờ xử lý gần nhất
+                vm.RecentOrders = await _context.Orders.AsNoTracking()
+                    .Include(o => o.User)
+                    .Where(o => o.Status == 0 || o.Status == 1)
+                    .OrderByDescending(o => o.OrderDate)
+                    .Take(5)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Dashboard] Lỗi build WarehouseStaff data.");
+            }
 
             return vm;
         }
@@ -91,9 +171,9 @@ namespace HDKTech.Areas.Admin.Services
                     .CountAsync(o => o.Status == 0 || o.Status == 1);
 
                 // ── [4a] Tồn kho thấp — count ────────────────────────────────
-                const int lowStockThreshold = 5;
+                const int lowStockThreshold = 10;
                 vm.LowStockCount = await _context.Inventories.AsNoTracking()
-                    .Where(i => i.Quantity < 10)
+                    .Where(i => i.Quantity < lowStockThreshold)
                     .CountAsync();
 
                 // ── [4b] Giai đoạn 1 data: danh sách chi tiết cảnh báo đỏ ───

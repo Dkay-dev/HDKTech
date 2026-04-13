@@ -72,26 +72,24 @@ namespace HDKTech
             // ── Giai đoạn 3: Smart Reporting ─────────────────────────────────
             builder.Services.AddScoped<IReportService, ReportService>();
 
-            // ── Giai đoạn 1: Granular Security — PermissionHandler ───────────
-            // Kích hoạt custom AuthorizationHandler dùng bảng RolePermissions
+            // ── Sprint 1: Policy-based Authorization — PermissionHandler ────────
+            // Handler mới đọc từ AspNetRoleClaims thay vì bảng custom RolePermissions.
+            // RoleManager<IdentityRole> đã được đăng ký sẵn bởi AddIdentity() ở trên.
             builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
-            // ── Giai đoạn 1: Authorization Policies ──────────────────────────
-            // Mỗi Policy ánh xạ đến 1 cặp (Module, Action) trong bảng Permissions
+            // ── Sprint 1: Authorization Policies ─────────────────────────────────
+            // Tự động tạo policy cho mọi permission trong AllSystemPermissions.
+            // Format policy name: "Module.Action" (vd: "Inventory.Update")
+            // Dùng trên controller: [Authorize(Policy = "Inventory.Update")]
             builder.Services.AddAuthorization(options =>
             {
-                // Order
-                options.AddPolicy("Order.Read",   p => p.AddRequirements(new PermissionRequirement("Order",   "Read")));
-                options.AddPolicy("Order.Update", p => p.AddRequirements(new PermissionRequirement("Order",   "Update")));
-                options.AddPolicy("Order.Delete", p => p.AddRequirements(new PermissionRequirement("Order",   "Delete")));
-                // Product
-                options.AddPolicy("Product.Create", p => p.AddRequirements(new PermissionRequirement("Product", "Create")));
-                options.AddPolicy("Product.Update", p => p.AddRequirements(new PermissionRequirement("Product", "Update")));
-                options.AddPolicy("Product.Delete", p => p.AddRequirements(new PermissionRequirement("Product", "Delete")));
-                // Inventory
-                options.AddPolicy("Inventory.Update", p => p.AddRequirements(new PermissionRequirement("Inventory", "Update")));
-                // ── Giai đoạn 3: Smart Reporting ──────────────────────────────
-                options.AddPolicy("Report.Export", p => p.AddRequirements(new PermissionRequirement("Report", "Export")));
+                foreach (var perm in HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions)
+                {
+                    var parts = perm.Split('.');
+                    if (parts.Length == 2)
+                        options.AddPolicy(perm,
+                            p => p.AddRequirements(new PermissionRequirement(parts[0], parts[1])));
+                }
             });
 
             // Register Cart Service (Session) - 7 days

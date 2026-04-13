@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
@@ -62,9 +64,13 @@
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- SIDEBAR                                                        -->
         <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SIDEBAR — Sprint 3: Dynamic theo Policy (AuthorizeAsync)       -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
         <nav id="hdk-admin-sidebar" class="hdk-admin-sidebar d-flex flex-column">
             <ul class="nav flex-column pt-3 px-2">
 
+                @* Dashboard — mọi role đã authed đều thấy *@
                 <li class="nav-item">
                     <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")"
                        href="/admin/dashboard">
@@ -72,46 +78,87 @@
                     </a>
                 </li>
 
-                <li class="nav-item mt-2">
-                    <span class="nav-section-label px-3">QUẢN LÝ HÀNG HOÁ</span>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Product" ? "active" : "")"
-                       href="/admin/product">
-                        <i class="bi bi-box-seam me-2"></i> Sản phẩm
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Category" ? "active" : "")"
-                       href="/admin/category">
-                        <i class="bi bi-tags me-2"></i> Danh mục
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Brand" ? "active" : "")"
-                       href="/admin/brand">
-                        <i class="bi bi-award me-2"></i> Thương hiệu
-                    </a>
-                </li>
+                @* ── QUẢN LÝ HÀNG HOÁ ──────────────────────────────────── *@
+                @{
+                    var canProduct   = (await AuthorizationService.AuthorizeAsync(User, "Product.Read")).Succeeded;
+                    var canInventory = (await AuthorizationService.AuthorizeAsync(User, "Inventory.Read")).Succeeded;
+                    var canCategory  = (await AuthorizationService.AuthorizeAsync(User, "Category.Read")).Succeeded;
+                    var canBrand     = (await AuthorizationService.AuthorizeAsync(User, "Brand.Read")).Succeeded;
+                }
+                @if (canProduct || canInventory || canCategory || canBrand)
+                {
+                    <li class="nav-item mt-2">
+                        <span class="nav-section-label px-3">QUẢN LÝ HÀNG HOÁ</span>
+                    </li>
+                }
+                @if (canProduct)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Product" ? "active" : "")"
+                           href="/admin/product">
+                            <i class="bi bi-box-seam me-2"></i> Sản phẩm
+                        </a>
+                    </li>
+                }
+                @if (canInventory)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "active" : "")"
+                           href="/admin/inventory">
+                            <i class="bi bi-boxes me-2"></i> Quản lý Kho
+                        </a>
+                    </li>
+                }
+                @if (canCategory)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Category" ? "active" : "")"
+                           href="/admin/category">
+                            <i class="bi bi-tags me-2"></i> Danh mục
+                        </a>
+                    </li>
+                }
+                @if (canBrand)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Brand" ? "active" : "")"
+                           href="/admin/brand">
+                            <i class="bi bi-award me-2"></i> Thương hiệu
+                        </a>
+                    </li>
+                }
 
-                <li class="nav-item mt-2">
-                    <span class="nav-section-label px-3">KINH DOANH</span>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")"
-                       href="/admin/order">
-                        <i class="bi bi-receipt me-2"></i> Đơn hàng
-                    </a>
-                </li>
-                @* ── Giai đoạn 3: Smart Reporting ── *@
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
-                       href="/admin/reports">
-                        <i class="bi bi-file-earmark-spreadsheet me-2"></i> Báo cáo Excel
-                    </a>
-                </li>
-
-                @if (User.IsInRole("Admin"))
+                @* ── KINH DOANH ─────────────────────────────────────────── *@
+                @{
+                    var canOrder     = (await AuthorizationService.AuthorizeAsync(User, "Order.Read")).Succeeded;
+                    var canReport    = (await AuthorizationService.AuthorizeAsync(User, "Report.Export")).Succeeded;
+                    var canPromotion = (await AuthorizationService.AuthorizeAsync(User, "Promotion.Read")).Succeeded;
+                }
+                @if (canOrder || canReport || canPromotion)
+                {
+                    <li class="nav-item mt-2">
+                        <span class="nav-section-label px-3">KINH DOANH</span>
+                    </li>
+                }
+                @if (canOrder)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")"
+                           href="/admin/order">
+                            <i class="bi bi-receipt me-2"></i> Đơn hàng
+                        </a>
+                    </li>
+                }
+                @if (canReport)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
+                           href="/admin/reports">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i> Báo cáo Excel
+                        </a>
+                    </li>
+                }
+                @if (canPromotion)
                 {
                     <li class="nav-item">
                         <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Promotion" ? "active" : "")"
@@ -121,43 +168,66 @@
                     </li>
                 }
 
-                <li class="nav-item mt-2">
-                    <span class="nav-section-label px-3">MARKETING</span>
-                </li>
-                @if (User.IsInRole("Admin"))
+                @* ── MARKETING ──────────────────────────────────────────── *@
+                @{
+                    var canBanner = (await AuthorizationService.AuthorizeAsync(User, "Banner.Read")).Succeeded;
+                }
+                @if (canBanner)
                 {
+                    <li class="nav-item mt-2">
+                        <span class="nav-section-label px-3">MARKETING</span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Banner" ? "active" : "")"
                            href="/admin/banner">
                             <i class="bi bi-image me-2"></i> Banner
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BannerAnalytics" ? "active" : "")"
+                           href="/admin/banneranalytics">
+                            <i class="bi bi-bar-chart-line me-2"></i> Banner Analytics
+                        </a>
+                    </li>
                 }
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BannerAnalytics" ? "active" : "")"
-                       href="/admin/banneranalytics">
-                        <i class="bi bi-bar-chart-line me-2"></i> Banner Analytics
-                    </a>
-                </li>
 
+                @* ── HỆ THỐNG — Admin + Policy ──────────────────────────── *@
+                @{
+                    var canRole      = (await AuthorizationService.AuthorizeAsync(User, "Role.Read")).Succeeded;
+                    var canSystemLog = (await AuthorizationService.AuthorizeAsync(User, "SystemLog.Read")).Succeeded;
+                    var canUsers     = User.IsInRole("Admin");
+                }
                 @if (User.IsInRole("Admin"))
                 {
                     <li class="nav-item mt-2">
                         <span class="nav-section-label px-3">HỆ THỐNG</span>
                     </li>
+    
+                    @* Trang quản lý danh sách User & Khách hàng *@
                     <li class="nav-item">
-                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Role" ? "active" : "")"
-                           href="/admin/role">
-                            <i class="bi bi-shield-lock me-2"></i> Phân quyền
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")"
+                               href="/admin/users">
+                            <i class="bi bi-people-fill me-2"></i> Quản lý Người dùng
                         </a>
                     </li>
+
+                    @* Trang Ma trận phân quyền (Gộp từ Phân quyền & Matrix) *@
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Role" ? "active" : "")"
+                               href="/admin/role">
+                            <i class="bi bi-shield-lock-fill me-2"></i> Phân quyền Matrix
+                        </a>
+                    </li>
+
+                    @* Nhật ký hệ thống *@
                     <li class="nav-item">
                         <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SystemLog" ? "active" : "")"
-                           href="/admin/systemlog">
+                               href="/admin/systemlog">
                             <i class="bi bi-journal-text me-2"></i> Audit Log
                         </a>
                     </li>
                 }
+
             </ul>
         </nav>
         <!-- END SIDEBAR -->
@@ -208,43 +278,43 @@
             document.getElementById('hdk-admin-wrapper').classList.toggle('sidebar-collapsed');
         });
 
-        // ── Giai đoạn 4: SweetAlert2 — Global Toast Handler ──────────────
-        // Tự động hiển thị Toast popup góc phải khi có TempData từ server.
-        // Hỗ trợ: Success (xanh), Error (đỏ), Warning (vàng), Info (xanh nhạt).
-        (function () {
-            const HdkToast = Swal.mixin({
-                toast:             true,
-                position:          'top-end',
-                showConfirmButton: false,
-                timer:             4000,
-                timerProgressBar:  true,
-                showCloseButton:   true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
-
-            const checks = [
-                { id: 'toast-success', icon: 'success', title: 'Thành công' },
-                { id: 'toast-error',   icon: 'error',   title: 'Lỗi' },
-                { id: 'toast-warning', icon: 'warning', title: 'Cảnh báo' },
-                { id: 'toast-info',    icon: 'info',    title: 'Thông báo' }
-            ];
-
-            checks.forEach(({ id, icon, title }) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    HdkToast.fire({
-                        icon:  icon,
-                        title: title,
-                        text:  el.dataset.msg
+                // ── Giai đoạn 4: SweetAlert2 — Global Toast Handler ──────────────
+                // Tự động hiển thị Toast popup góc phải khi có TempData từ server.
+                // Hỗ trợ: Success (xanh), Error (đỏ), Warning (vàng), Info (xanh nhạt).
+                (function () {
+                    const HdkToast = Swal.mixin({
+                        toast:             true,
+                        position:          'top-end',
+                        showConfirmButton: false,
+                        timer:             4000,
+                        timerProgressBar:  true,
+                        showCloseButton:   true,
+                        didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                        }
                     });
-                }
-            });
-        })();
-    </script>
 
-    @RenderSection("Scripts", required: false)
-</body>
-</html>
+                    const checks = [
+                        { id: 'toast-success', icon: 'success', title: 'Thành công' },
+                        { id: 'toast-error',   icon: 'error',   title: 'Lỗi' },
+                        { id: 'toast-warning', icon: 'warning', title: 'Cảnh báo' },
+                        { id: 'toast-info',    icon: 'info',    title: 'Thông báo' }
+                    ];
+
+                    checks.forEach(({ id, icon, title }) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            HdkToast.fire({
+                                icon:  icon,
+                                title: title,
+                                text:  el.dataset.msg
+                            });
+                        }
+                    });
+                })();
+            </script>
+
+            @RenderSection("Scripts", required: false)
+        </body>
+        </html>

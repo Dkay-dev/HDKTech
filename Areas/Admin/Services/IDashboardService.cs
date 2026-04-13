@@ -14,6 +14,12 @@ namespace HDKTech.Areas.Admin.Services
         Task<DashboardViewModel> GetDashboardDataAsync();
 
         /// <summary>
+        /// Lấy dữ liệu Dashboard đã lọc theo Role người dùng.
+        /// WarehouseStaff chỉ nhận dữ liệu Tồn kho + Đơn cần xử lý.
+        /// </summary>
+        Task<DashboardViewModel> GetDashboardDataAsync(string viewerRole);
+
+        /// <summary>
         /// Xóa cache thủ công — gọi sau khi có thay đổi lớn (vd: tạo đơn, hủy đơn).
         /// </summary>
         Task InvalidateCacheAsync();

@@ -1,4 +1,4 @@
-@model HDKTech.Areas.Admin.ViewModels.RoleIndexViewModel
+@model List<HDKTech.Areas.Admin.Controllers.IdentityRoleListItem>
 @{
     ViewData["Title"] = "Phân quyền - Quản lý Vai trò";
 }
@@ -18,49 +18,25 @@
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fw-bold fs-4 text-primary">@Model.TotalRoles</div>
+            <div class="fw-bold fs-4 text-primary">@Model.Count</div>
             <small class="text-muted">Tổng vai trò</small>
         </div>
     </div>
     <div class="col-6 col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fw-bold fs-4 text-success">@Model.ActiveRoles</div>
-            <small class="text-muted">Đang hoạt động</small>
+            <div class="fw-bold fs-4 text-success">@Model.Sum(r => r.UserCount)</div>
+            <small class="text-muted">Tổng người dùng</small>
         </div>
     </div>
     <div class="col-6 col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fw-bold fs-4 text-info">@Model.TotalPermissions</div>
-            <small class="text-muted">Tổng quyền hạn</small>
+            <div class="fw-bold fs-4 text-info">@HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions.Count</div>
+            <small class="text-muted">Tổng quyền hệ thống</small>
         </div>
     </div>
 </div>
 
-<!-- Search Form -->
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
-        <form method="get" asp-area="Admin" asp-controller="Role" asp-action="Index"
-              class="row g-2 align-items-end">
-            <div class="col-12 col-md-6">
-                <input type="text" name="searchTerm" value="@Model.SearchTerm"
-                       class="form-control form-control-sm" placeholder="Tìm theo tên vai trò, mô tả..." />
-            </div>
-            <div class="col-6 col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100">
-                    <i class="bi bi-search me-1"></i>Tìm
-                </button>
-            </div>
-            <div class="col-6 col-md-2">
-                <a asp-area="Admin" asp-controller="Role" asp-action="Index"
-                   class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x me-1"></i>Xoá lọc
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Bảng phân quyền: responsive + table-hover -->
+<!-- Bảng vai trò -->
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -69,72 +45,72 @@
                     <tr>
                         <th class="ps-3">#</th>
                         <th>Tên vai trò</th>
-                        <th>Mô tả</th>
-                        <th>Số quyền</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
+                        <th class="text-center">Người dùng</th>
+                        <th class="text-center">Số quyền</th>
                         <th class="text-end pe-3">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Roles.Any())
+                    @if (Model.Any())
                     {
-                        @foreach (var role in Model.Roles)
+                        int idx = 1;
+                        @foreach (var role in Model)
                         {
-                            int permCount = role.RolePermissions?.Count ?? 0;
+                            var isProtected = new[] { "Admin", "Manager", "User", "WarehouseStaff" }
+                                .Contains(role.Name, StringComparer.OrdinalIgnoreCase);
+                            var badgeColor = role.Name switch
+                            {
+                                "Admin"          => "danger",
+                                "Manager"        => "warning text-dark",
+                                "WarehouseStaff" => "info text-dark",
+                                _                => "secondary"
+                            };
+
                             <tr>
-                                <td class="ps-3 text-muted small">@role.RoleId</td>
+                                <td class="ps-3 text-muted small">@(idx++)</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold"
-                                             style="width:32px;height:32px;font-size:.75rem">
-                                            @(role.RoleName.Length > 0 ? role.RoleName[0].ToString().ToUpper() : "R")
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white bg-primary"
+                                             style="width:34px;height:34px;font-size:.8rem;flex-shrink:0">
+                                            @role.Name[0].ToString().ToUpper()
                                         </div>
-                                        <span class="fw-semibold">@role.RoleName</span>
+                                        <div>
+                                            <span class="fw-semibold">@role.Name</span>
+                                            @if (isProtected)
+                                            {
+                                                <span class="badge bg-light text-secondary border ms-1" style="font-size:.65rem">
+                                                    <i class="bi bi-lock-fill me-1"></i>Hệ thống
+                                                </span>
+                                            }
+                                            <div class="text-muted" style="font-size:.7rem">ID: @role.Id[..8]…</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <small class="text-muted">
-                                        @(string.IsNullOrEmpty(role.Description) ? "—" : role.Description)
-                                    </small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info text-dark">
-                                        <i class="bi bi-key me-1"></i>@permCount quyền
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-people me-1"></i>@role.UserCount
                                     </span>
                                 </td>
-                                <td>
-                                    @if (role.IsActive)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle me-1"></i>Hoạt động
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-pause-circle me-1"></i>Tạm dừng
-                                        </span>
-                                    }
-                                </td>
-                                <td>
-                                    <small class="text-muted">@role.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark">
+                                        <i class="bi bi-key me-1"></i>@role.PermissionCount / @HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions.Count
+                                    </span>
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="btn-group btn-group-sm">
-                                        <a asp-area="Admin" asp-controller="Role" asp-action="Details" asp-route-id="@role.RoleId"
-                                           class="btn btn-outline-secondary" title="Chi tiết">
-                                            <i class="bi bi-eye"></i>
+                                        <a asp-area="Admin" asp-controller="Role" asp-action="ManagePermissions"
+                                           asp-route-roleName="@role.Name"
+                                           class="btn btn-outline-primary" title="Quản lý quyền">
+                                            <i class="bi bi-shield-check me-1"></i>Phân quyền
                                         </a>
-                                        <a asp-area="Admin" asp-controller="Role" asp-action="Edit" asp-route-id="@role.RoleId"
-                                           class="btn btn-outline-primary" title="Chỉnh sửa">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-outline-danger btn-delete-role"
-                                                data-id="@role.RoleId" data-name="@Html.Encode(role.RoleName)"
-                                                title="Xoá">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        @if (!isProtected)
+                                        {
+                                            <button type="button" class="btn btn-outline-danger btn-delete-role"
+                                                    data-id="@role.Id" data-name="@Html.Encode(role.Name)"
+                                                    title="Xoá vai trò">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -143,7 +119,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-5">
+                            <td colspan="5" class="text-center text-muted py-5">
                                 <i class="bi bi-shield-x fs-2 d-block mb-2"></i>
                                 Chưa có vai trò nào.
                                 <a asp-area="Admin" asp-controller="Role" asp-action="Create">Tạo vai trò đầu tiên</a>
@@ -154,42 +130,6 @@
             </table>
         </div>
     </div>
-
-    <!-- Pagination -->
-    @if (Model.TotalPages > 1)
-    {
-        <div class="card-footer bg-white d-flex align-items-center justify-content-between">
-            <small class="text-muted">
-                Trang @Model.CurrentPage / @Model.TotalPages
-            </small>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                        <a class="page-link" asp-area="Admin" asp-controller="Role" asp-action="Index"
-                           asp-route-pageNumber="@(Model.CurrentPage - 1)"
-                           asp-route-searchTerm="@Model.SearchTerm">
-                            <i class="bi bi-chevron-left"></i>
-                        </a>
-                    </li>
-                    @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
-                    {
-                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                            <a class="page-link" asp-area="Admin" asp-controller="Role" asp-action="Index"
-                               asp-route-pageNumber="@i"
-                               asp-route-searchTerm="@Model.SearchTerm">@i</a>
-                        </li>
-                    }
-                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                        <a class="page-link" asp-area="Admin" asp-controller="Role" asp-action="Index"
-                           asp-route-pageNumber="@(Model.CurrentPage + 1)"
-                           asp-route-searchTerm="@Model.SearchTerm">
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    }
 </div>
 
 <!-- Delete Modal -->
@@ -202,10 +142,10 @@
             </div>
             <div class="modal-body">
                 Bạn có chắc muốn xoá vai trò <strong id="deleteRoleName"></strong>?
-                <br><small class="text-muted mt-1 d-block">
-                    <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
-                    Tất cả quyền hạn của vai trò này sẽ bị xoá. Hành động được ghi vào Audit Log.
-                </small>
+                <div class="alert alert-warning mt-3 mb-0 py-2 small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Tất cả quyền hạn (claims) của vai trò này sẽ bị xoá vĩnh viễn. Hành động được ghi vào Audit Log.
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
@@ -218,36 +158,47 @@
 </div>
 
 @section Scripts {
+@Html.AntiForgeryToken()
 <script>
-    let deleteRoleId = null;
+    let deleteRoleId   = null;
+    let deleteModal    = null;
 
     document.querySelectorAll('.btn-delete-role').forEach(btn => {
         btn.addEventListener('click', function () {
             deleteRoleId = this.dataset.id;
             document.getElementById('deleteRoleName').textContent = this.dataset.name;
-            new bootstrap.Modal(document.getElementById('deleteRoleModal')).show();
+            deleteModal  = new bootstrap.Modal(document.getElementById('deleteRoleModal'));
+            deleteModal.show();
         });
     });
 
     document.getElementById('confirmDeleteRole')?.addEventListener('click', async function () {
         if (!deleteRoleId) return;
+        const btn   = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xoá...';
+
         try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             const res   = await fetch('/admin/role/delete', {
-                method: 'POST',
+                method:  'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `roleId=${deleteRoleId}&__RequestVerificationToken=${encodeURIComponent(token ?? '')}`
+                body:    `roleId=${encodeURIComponent(deleteRoleId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
             });
             const data = await res.json();
             if (data.success) {
+                deleteModal?.hide();
                 window.location.reload();
             } else {
                 alert(data.message || 'Lỗi khi xoá vai trò');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1"></i>Xoá';
             }
         } catch (e) {
-            alert('Lỗi kết nối');
+            alert('Lỗi kết nối máy chủ');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i>Xoá';
         }
     });
 </script>
-@Html.AntiForgeryToken()
 }

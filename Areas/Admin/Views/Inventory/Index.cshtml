@@ -1,0 +1,232 @@
+@model List<HDKTech.Areas.Admin.Controllers.InventoryViewModel>
+@{
+    ViewData["Title"] = "Quản lý Kho Hàng";
+    var search     = ViewBag.Search     as string ?? "";
+    var page       = (int)(ViewBag.Page       ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var pageSize   = (int)(ViewBag.PageSize   ?? 25);
+}
+
+@section Styles {
+<style>
+    .stock-badge        { min-width: 60px; font-size: .85rem; }
+    .inline-qty         { width: 90px; text-align: center; }
+    .table-inventory th { background: #343a40; color: #fff; white-space: nowrap; }
+    #toast-container    { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
+</style>
+}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- ── Header ─────────────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-boxes text-primary me-2"></i>Quản lý Kho
+            </h2>
+            <small class="text-muted">
+                Cập nhật tồn kho trực tiếp — mọi thay đổi được ghi AuditLog tự động.
+            </small>
+        </div>
+        <span class="badge bg-secondary fs-6">@totalCount sản phẩm</span>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-1"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ── Toast container ────────────────────────────────────────────── -->
+    <div id="toast-container"></div>
+
+    <!-- ── Search ─────────────────────────────────────────────────────── -->
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-5 col-sm-8">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" name="search" value="@search"
+                       placeholder="Tìm theo tên sản phẩm..."
+                       class="form-control" />
+            </div>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <a href="@Url.Action("Index","Inventory",new{area="Admin"})"
+                   class="btn btn-outline-secondary ms-1">Xóa bộ lọc</a>
+            }
+        </div>
+    </form>
+
+    <!-- ── Table ──────────────────────────────────────────────────────── -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-inventory mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width:42%">Tên sản phẩm</th>
+                            <th style="width:14%">SKU</th>
+                            <th class="text-center" style="width:14%">Tồn kho hiện tại</th>
+                            <th class="text-center" style="width:18%">Cập nhật nhanh</th>
+                            <th class="text-end"   style="width:12%">Lần cập nhật cuối</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                    Không có sản phẩm nào.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model)
+                            {
+                                var badgeClass = item.Stock <= 0  ? "bg-danger"
+                                               : item.Stock <= 10 ? "bg-warning text-dark"
+                                               :                    "bg-success";
+                                <tr id="row-@item.ProductId">
+                                    <td class="fw-semibold">@item.ProductName</td>
+
+                                    <td>
+                                        <code class="text-muted small">@item.SKU</code>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span id="badge-@item.ProductId"
+                                              class="badge stock-badge @badgeClass">
+                                            @item.Stock
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <input  type="number"
+                                                    id="qty-@item.ProductId"
+                                                    value="@item.Stock"
+                                                    min="0"
+                                                    class="form-control form-control-sm inline-qty"
+                                                    onkeydown="if(event.key==='Enter') saveStock(@item.ProductId)" />
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    onclick="saveStock(@item.ProductId)"
+                                                    title="Lưu">
+                                                <i class="fas fa-save"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-end text-muted small"
+                                        id="date-@item.ProductId">
+                                        @item.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Pagination ─────────────────────────────────────────────────── -->
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link"
+                           href="@Url.Action("Index","Inventory",new{area="Admin",page=i,search,pageSize})">
+                            @i
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const TOKEN = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+/**
+ * Gửi AJAX cập nhật tồn kho.
+ * Sau khi thành công: cập nhật badge + ngày in-place (không reload trang).
+ */
+async function saveStock(productId) {
+    const input    = document.getElementById(`qty-${productId}`);
+    const newStock = parseInt(input.value, 10);
+
+    if (isNaN(newStock) || newStock < 0) {
+        showToast('Số lượng không hợp lệ', 'danger');
+        return;
+    }
+
+    const btn = input.nextElementSibling;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    try {
+        const body = new FormData();
+        body.append('productId', productId);
+        body.append('newStock',  newStock);
+        body.append('__RequestVerificationToken', TOKEN);
+
+        const res  = await fetch('@Url.Action("UpdateStock","Inventory",new{area="Admin"})',
+                                  { method: 'POST', body });
+        const data = await res.json();
+
+        if (data.success) {
+            // Cập nhật badge tồn kho
+            const badge = document.getElementById(`badge-${productId}`);
+            badge.textContent = data.newStock;
+            badge.className   = 'badge stock-badge ' +
+                (data.newStock <= 0  ? 'bg-danger'              :
+                 data.newStock <= 10 ? 'bg-warning text-dark'   :
+                                       'bg-success');
+
+            // Cập nhật ngày
+            const dateEl = document.getElementById(`date-${productId}`);
+            if (dateEl) dateEl.textContent = data.updatedAt;
+
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message, 'danger');
+        }
+    } catch {
+        showToast('Lỗi kết nối, vui lòng thử lại.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i>';
+    }
+}
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const id = 'toast-' + Date.now();
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-bg-${type} border-0 show mb-2"
+             role="alert" style="min-width:250px">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        onclick="document.getElementById('${id}').remove()"></button>
+            </div>
+        </div>`);
+    setTimeout(() => document.getElementById(id)?.remove(), 3500);
+}
+</script>
+}

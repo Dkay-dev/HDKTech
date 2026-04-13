@@ -1,332 +1,359 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using HDKTech.Data;
+using Microsoft.AspNetCore.Identity;
 using HDKTech.Models;
-using HDKTech.Areas.Admin.ViewModels;
 using HDKTech.Services;
-using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
+    // ── ViewModel inline: dùng cho Index view ──────────────────────────────────
+    public class IdentityRoleListItem
+    {
+        public string Id              { get; set; } = "";
+        public string Name            { get; set; } = "";
+        public int    UserCount       { get; set; }
+        public int    PermissionCount { get; set; }
+    }
+
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
     [Route("admin/[controller]")]
     public class RoleController : Controller
     {
-        private readonly HDKTechContext _context;
-        private readonly ILogger<RoleController> _logger;
-        private readonly ISystemLogService _logService;
-
-        public RoleController(HDKTechContext context, ILogger<RoleController> logger, ISystemLogService logService)
-        {
-            _context    = context;
-            _logger     = logger;
-            _logService = logService;
-        }
+        private readonly ILogger<RoleController>    _logger;
+        private readonly ISystemLogService          _logService;
+        private readonly RoleManager<IdentityRole>  _roleManager;
+        private readonly UserManager<AppUser>       _userManager;
 
         /// <summary>
-        /// Danh sách vai trò có phân trang, tìm kiếm.
+        /// Danh sách toàn bộ permissions hệ thống — render UI + whitelist validate.
+        /// Format: "Module.Action" — khớp với PermissionRequirement(Module, Action).
+        /// </summary>
+        public static readonly IReadOnlyList<string> AllSystemPermissions = new[]
+        {
+            "Product.Read",    "Product.Create",    "Product.Update",    "Product.Delete",
+            "Inventory.Read",  "Inventory.Update",
+            "Order.Read",      "Order.Update",      "Order.Delete",
+            "Category.Read",   "Category.Create",   "Category.Update",   "Category.Delete",
+            "Brand.Read",      "Brand.Create",      "Brand.Update",      "Brand.Delete",
+            "Banner.Read",     "Banner.Create",     "Banner.Update",     "Banner.Delete",
+            "Promotion.Read",  "Promotion.Create",  "Promotion.Update",  "Promotion.Delete",
+            "Role.Read",       "Role.Update",
+            "Report.Export",
+            "SystemLog.Read",
+        };
+
+        // System-protected roles — cannot be deleted
+        private static readonly HashSet<string> ProtectedRoles =
+            new(StringComparer.OrdinalIgnoreCase) { "Admin", "Manager", "User", "WarehouseStaff" };
+
+        public RoleController(
+            ILogger<RoleController>   logger,
+            ISystemLogService         logService,
+            RoleManager<IdentityRole> roleManager,
+            UserManager<AppUser>      userManager)
+        {
+            _logger      = logger;
+            _logService  = logService;
+            _roleManager = roleManager;
+            _userManager = userManager;
+        }
+
+        // =====================================================================
+        // INDEX — danh sách Identity Roles
+        // =====================================================================
+
+        /// <summary>
+        /// Danh sách tất cả vai trò từ bảng AspNetRoles.
         /// GET: /admin/role
         /// </summary>
         [HttpGet]
         [Route("")]
         [Route("index")]
-        public async Task<IActionResult> Index(string searchTerm = "", int pageNumber = 1, int pageSize = 20)
+        public async Task<IActionResult> Index()
         {
             try
             {
-                IQueryable<Role> query = _context.Roles
-                    .AsNoTracking()
-                    .Include(r => r.RolePermissions);
+                var identityRoles = _roleManager.Roles.OrderBy(r => r.Name).ToList();
 
-                if (!string.IsNullOrEmpty(searchTerm))
-                    query = query.Where(r =>
-                        r.RoleName.Contains(searchTerm) ||
-                        r.Description.Contains(searchTerm));
-
-                var totalCount = await query.CountAsync();
-                var roles      = await query
-                    .OrderBy(r => r.RoleName)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                var vm = new RoleIndexViewModel
+                var list = new List<IdentityRoleListItem>();
+                foreach (var role in identityRoles)
                 {
-                    Roles            = roles,
-                    TotalRoles       = await _context.Roles.AsNoTracking().CountAsync(),
-                    ActiveRoles      = await _context.Roles.AsNoTracking().CountAsync(r => r.IsActive),
-                    TotalPermissions = await _context.Permissions.AsNoTracking().CountAsync(),
-                    CurrentPage      = pageNumber,
-                    PageSize         = pageSize,
-                    TotalPages       = (int)Math.Ceiling((double)totalCount / pageSize),
-                    SearchTerm       = searchTerm
-                };
+                    var users  = await _userManager.GetUsersInRoleAsync(role.Name!);
+                    var claims = await _roleManager.GetClaimsAsync(role);
+                    var permCount = claims.Count(c => c.Type == "Permission");
 
-                return View(vm);
+                    list.Add(new IdentityRoleListItem
+                    {
+                        Id              = role.Id,
+                        Name            = role.Name!,
+                        UserCount       = users.Count,
+                        PermissionCount = permCount
+                    });
+                }
+
+                return View(list);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading roles");
                 TempData["Error"] = "Lỗi khi tải danh sách vai trò";
-                return View(new RoleIndexViewModel());
+                return View(new List<IdentityRoleListItem>());
             }
         }
 
-        /// <summary>
-        /// Chi tiết vai trò + quyền hạn.
-        /// GET: /admin/role/details/1
-        /// </summary>
-        [HttpGet]
-        [Route("details/{id}")]
-        public async Task<IActionResult> Details(int id)
-        {
-            try
-            {
-                var role = await _context.Roles
-                    .Include(r => r.RolePermissions)
-                        .ThenInclude(rp => rp.Permission)
-                    .FirstOrDefaultAsync(r => r.RoleId == id);
-
-                if (role == null)
-                {
-                    TempData["Error"] = "Không tìm thấy vai trò";
-                    return RedirectToAction("Index");
-                }
-
-                var allPermissions = await _context.Permissions
-                    .AsNoTracking()
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Module).ThenBy(p => p.Action)
-                    .ToListAsync();
-
-                ViewBag.Role                = role;
-                ViewBag.AllPermissions      = allPermissions;
-                ViewBag.RolePermissionIds   = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
-                return View();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading role details");
-                TempData["Error"] = "Lỗi khi tải chi tiết vai trò";
-                return RedirectToAction("Index");
-            }
-        }
+        // =====================================================================
+        // CREATE
+        // =====================================================================
 
         /// <summary>
-        /// Tạo vai trò mới.
+        /// Form tạo vai trò mới.
         /// GET: /admin/role/create
         /// </summary>
         [HttpGet]
         [Route("create")]
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            try
-            {
-                ViewBag.Permissions = await _context.Permissions
-                    .AsNoTracking()
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Module).ThenBy(p => p.Action)
-                    .ToListAsync();
-                return View();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading create page");
-                TempData["Error"] = "Lỗi khi tải trang tạo vai trò";
-                return RedirectToAction("Index");
-            }
+            return View();
         }
 
         /// <summary>
-        /// Lưu vai trò mới + ghi AuditLog.
+        /// Lưu vai trò mới vào bảng AspNetRoles + ghi AuditLog.
         /// POST: /admin/role/create
         /// </summary>
         [HttpPost]
         [Route("create")]
-        public async Task<IActionResult> Create(Role role, [FromForm] List<int> selectedPermissions)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([FromForm] string roleName)
         {
             try
             {
-                if (!ModelState.IsValid)
+                roleName = roleName?.Trim() ?? "";
+
+                if (string.IsNullOrWhiteSpace(roleName))
                 {
-                    ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                    return View(role);
+                    ModelState.AddModelError("roleName", "Tên vai trò không được để trống.");
+                    TempData["Error"] = "Tên vai trò không được để trống.";
+                    return View();
                 }
 
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync();
-
-                if (selectedPermissions?.Any() == true)
+                // Kiểm tra trùng tên
+                if (await _roleManager.RoleExistsAsync(roleName))
                 {
-                    var rolePermissions = selectedPermissions.Select(pId => new RolePermission
-                    {
-                        RoleId = role.RoleId, PermissionId = pId
-                    }).ToList();
-                    _context.RolePermissions.AddRange(rolePermissions);
-                    await _context.SaveChangesAsync();
+                    ModelState.AddModelError("roleName", $"Vai trò '{roleName}' đã tồn tại.");
+                    TempData["Error"] = $"Vai trò '{roleName}' đã tồn tại.";
+                    return View();
                 }
 
-                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
+                var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
+
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    TempData["Error"] = $"Lỗi khi tạo vai trò: {errors}";
+                    return View();
+                }
+
+                // AuditLog
                 await _logService.LogActionAsync(
                     username:    User.Identity?.Name ?? "Admin",
                     actionType:  "Create",
                     module:      "PhanQuyen",
-                    description: $"Tạo mới Vai trò: '{role.RoleName}'",
-                    entityId:    role.RoleId.ToString(),
-                    entityName:  role.RoleName,
-                    newValue:    $"Permissions: {selectedPermissions?.Count ?? 0}",
+                    description: $"Tạo mới Vai trò Identity: '{roleName}'",
+                    entityName:  roleName,
                     userRole:    "Admin"
                 );
 
-                TempData["Success"] = $"Tạo vai trò '{role.RoleName}' thành công";
-                return RedirectToAction("Details", new { id = role.RoleId });
+                TempData["Success"] = $"Tạo vai trò '{roleName}' thành công. Hãy gán quyền cho vai trò này.";
+                return RedirectToAction(nameof(ManagePermissions), new { roleName });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating role");
                 TempData["Error"] = "Lỗi khi tạo vai trò";
-                ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                return View(role);
+                return View();
             }
         }
 
-        /// <summary>
-        /// Chỉnh sửa vai trò.
-        /// GET: /admin/role/edit/1
-        /// </summary>
-        [HttpGet]
-        [Route("edit/{id}")]
-        public async Task<IActionResult> Edit(int id)
-        {
-            try
-            {
-                var role = await _context.Roles
-                    .Include(r => r.RolePermissions)
-                    .FirstOrDefaultAsync(r => r.RoleId == id);
-
-                if (role == null)
-                {
-                    TempData["Error"] = "Không tìm thấy vai trò";
-                    return RedirectToAction("Index");
-                }
-
-                ViewBag.Permissions          = await _context.Permissions.AsNoTracking()
-                    .Where(p => p.IsActive).OrderBy(p => p.Module).ThenBy(p => p.Action).ToListAsync();
-                ViewBag.SelectedPermissionIds = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
-                return View(role);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading edit page");
-                TempData["Error"] = "Lỗi khi tải trang chỉnh sửa";
-                return RedirectToAction("Index");
-            }
-        }
+        // =====================================================================
+        // DELETE
+        // =====================================================================
 
         /// <summary>
-        /// Cập nhật vai trò + ghi AuditLog.
-        /// POST: /admin/role/edit/1
-        /// </summary>
-        [HttpPost]
-        [Route("edit/{id}")]
-        public async Task<IActionResult> Edit(int id, Role role, [FromForm] List<int> selectedPermissions)
-        {
-            try
-            {
-                if (id != role.RoleId) return NotFound();
-
-                if (!ModelState.IsValid)
-                {
-                    ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                    return View(role);
-                }
-
-                // Lấy dữ liệu cũ để ghi diff
-                var oldRole = await _context.Roles.AsNoTracking()
-                    .Include(r => r.RolePermissions)
-                    .FirstOrDefaultAsync(r => r.RoleId == id);
-                string oldValue = oldRole != null ? $"RoleName={oldRole.RoleName}, Permissions={oldRole.RolePermissions.Count}" : "N/A";
-
-                _context.Roles.Update(role);
-                await _context.SaveChangesAsync();
-
-                var existingPerms = await _context.RolePermissions.Where(rp => rp.RoleId == id).ToListAsync();
-                _context.RolePermissions.RemoveRange(existingPerms);
-                await _context.SaveChangesAsync();
-
-                if (selectedPermissions?.Any() == true)
-                {
-                    _context.RolePermissions.AddRange(selectedPermissions.Select(pId => new RolePermission
-                    {
-                        RoleId = role.RoleId, PermissionId = pId
-                    }));
-                    await _context.SaveChangesAsync();
-                }
-
-                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
-                await _logService.LogActionAsync(
-                    username:    User.Identity?.Name ?? "Admin",
-                    actionType:  "Update",
-                    module:      "PhanQuyen",
-                    description: $"Cập nhật Vai trò: '{role.RoleName}'",
-                    entityId:    id.ToString(),
-                    entityName:  role.RoleName,
-                    oldValue:    oldValue,
-                    newValue:    $"RoleName={role.RoleName}, Permissions={selectedPermissions?.Count ?? 0}",
-                    userRole:    "Admin"
-                );
-
-                TempData["Success"] = $"Cập nhật vai trò '{role.RoleName}' thành công";
-                return RedirectToAction("Details", new { id = role.RoleId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating role");
-                TempData["Error"] = "Lỗi khi cập nhật vai trò";
-                ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                return View(role);
-            }
-        }
-
-        /// <summary>
-        /// Xoá vai trò + ghi AuditLog.
+        /// Xoá vai trò khỏi AspNetRoles + ghi AuditLog.
         /// POST: /admin/role/delete
         /// </summary>
         [HttpPost]
         [Route("delete")]
-        public async Task<IActionResult> Delete(int roleId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete([FromForm] string roleId)
         {
             try
             {
-                var role = await _context.Roles.FindAsync(roleId);
+                var role = await _roleManager.FindByIdAsync(roleId);
                 if (role == null)
                     return Json(new { success = false, message = "Không tìm thấy vai trò" });
 
-                var rolePerms = await _context.RolePermissions.Where(rp => rp.RoleId == roleId).ToListAsync();
-                _context.RolePermissions.RemoveRange(rolePerms);
-                _context.Roles.Remove(role);
-                await _context.SaveChangesAsync();
+                // Bảo vệ các role hệ thống
+                if (ProtectedRoles.Contains(role.Name ?? ""))
+                    return Json(new { success = false, message = $"Không thể xoá vai trò hệ thống '{role.Name}'" });
 
-                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
+                var roleName = role.Name!;
+                var result   = await _roleManager.DeleteAsync(role);
+
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = $"Lỗi khi xoá: {errors}" });
+                }
+
+                // AuditLog
                 await _logService.LogActionAsync(
                     username:    User.Identity?.Name ?? "Admin",
                     actionType:  "Delete",
                     module:      "PhanQuyen",
-                    description: $"Xoá Vai trò: '{role.RoleName}' (ID: {roleId})",
-                    entityId:    roleId.ToString(),
-                    entityName:  role.RoleName,
-                    oldValue:    $"Permissions={rolePerms.Count}",
+                    description: $"Xoá Vai trò: '{roleName}' (ID: {roleId})",
+                    entityId:    roleId,
+                    entityName:  roleName,
                     userRole:    "Admin"
                 );
 
-                return Json(new { success = true, message = $"Xóa vai trò '{role.RoleName}' thành công" });
+                return Json(new { success = true, message = $"Xóa vai trò '{roleName}' thành công" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting role");
                 return Json(new { success = false, message = "Lỗi khi xóa vai trò" });
             }
+        }
+
+        // =====================================================================
+        // POLICY-BASED PERMISSION MANAGEMENT (AspNetRoleClaims)
+        // =====================================================================
+
+        /// <summary>
+        /// Trang quản lý Permission Claims cho một Identity Role.
+        /// GET: /admin/role/manage-permissions/{roleName}
+        /// </summary>
+        [HttpGet]
+        [Route("manage-permissions/{roleName}")]
+        public async Task<IActionResult> ManagePermissions(string roleName)
+        {
+            try
+            {
+                var identityRole = await _roleManager.FindByNameAsync(roleName);
+                if (identityRole == null)
+                {
+                    TempData["Error"] = $"Không tìm thấy Identity Role '{roleName}'";
+                    return RedirectToAction("Index");
+                }
+
+                // Lấy Permission claims hiện có từ AspNetRoleClaims
+                var existingClaims = await _roleManager.GetClaimsAsync(identityRole);
+                var currentPerms   = existingClaims
+                    .Where(c => c.Type == "Permission")
+                    .Select(c => c.Value)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // Nhóm theo Module để render bảng checkbox
+                var grouped = AllSystemPermissions
+                    .GroupBy(p => p.Split('.')[0])
+                    .OrderBy(g => g.Key)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                ViewBag.RoleName           = roleName;
+                ViewBag.IdentityRoleId     = identityRole.Id;
+                ViewBag.CurrentPermissions = currentPerms;
+                ViewBag.GroupedPermissions = grouped;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading ManagePermissions for {RoleName}", roleName);
+                TempData["Error"] = "Lỗi khi tải trang quản lý quyền";
+                return RedirectToAction("Index");
+            }
+        }
+
+        /// <summary>
+        /// Lưu danh sách Permission Claims vào bảng AspNetRoleClaims.
+        /// Xóa toàn bộ "Permission" claims cũ, sau đó INSERT lại danh sách mới.
+        /// POST: /admin/role/save-permissions/{roleName}
+        /// </summary>
+        [HttpPost]
+        [Route("save-permissions/{roleName}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SavePermissions(
+            string roleName,
+            [FromForm] List<string> permissions)
+        {
+            try
+            {
+                var identityRole = await _roleManager.FindByNameAsync(roleName);
+                if (identityRole == null)
+                {
+                    TempData["Error"] = $"Không tìm thấy Identity Role '{roleName}'";
+                    return RedirectToAction("Index");
+                }
+
+                // Bước 1 — Xóa toàn bộ "Permission" claims cũ khỏi AspNetRoleClaims
+                var existingClaims   = await _roleManager.GetClaimsAsync(identityRole);
+                var permissionClaims = existingClaims.Where(c => c.Type == "Permission").ToList();
+                foreach (var claim in permissionClaims)
+                    await _roleManager.RemoveClaimAsync(identityRole, claim);
+
+                // Bước 2 — Thêm Permission claims mới (chỉ chấp nhận value trong whitelist)
+                var validPerms = (permissions ?? new List<string>())
+                    .Where(p => AllSystemPermissions.Contains(p))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                foreach (var perm in validPerms)
+                    await _roleManager.AddClaimAsync(identityRole, new Claim("Permission", perm));
+
+                // Bước 3 — Ghi AuditLog
+                await _logService.LogActionAsync(
+                    username:    User.Identity?.Name ?? "Admin",
+                    actionType:  "Update",
+                    module:      "PhanQuyen",
+                    description: $"Cập nhật Policy Claims cho Role '{roleName}': {validPerms.Count} quyền",
+                    entityId:    identityRole.Id,
+                    entityName:  roleName,
+                    oldValue:    $"{permissionClaims.Count} claims cũ",
+                    newValue:    string.Join(", ", validPerms),
+                    userRole:    "Admin"
+                );
+
+                _logger.LogInformation(
+                    "SavePermissions: Role '{Role}' — {Count} permissions saved.", roleName, validPerms.Count);
+
+                TempData["Success"] = $"Đã lưu {validPerms.Count} quyền cho role '{roleName}'";
+                return RedirectToAction(nameof(ManagePermissions), new { roleName });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving permissions for role {RoleName}", roleName);
+                TempData["Error"] = "Lỗi khi lưu quyền, vui lòng thử lại";
+                return RedirectToAction(nameof(ManagePermissions), new { roleName });
+            }
+        }
+
+        /// <summary>
+        /// API JSON: Trả về danh sách Permission claims hiện tại của một role.
+        /// GET: /admin/role/get-permissions/{roleName}
+        /// </summary>
+        [HttpGet]
+        [Route("get-permissions/{roleName}")]
+        public async Task<IActionResult> GetPermissions(string roleName)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role == null) return Json(new { success = false, message = "Role not found" });
+
+            var claims = await _roleManager.GetClaimsAsync(role);
+            var perms  = claims.Where(c => c.Type == "Permission").Select(c => c.Value).ToList();
+            return Json(new { success = true, roleName, permissions = perms });
         }
     }
 }

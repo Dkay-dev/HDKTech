@@ -100,7 +100,9 @@ namespace HDKTech.Areas.Identity.Pages.Account
                     var ua = HttpContext.Request.Headers["User-Agent"].ToString();
                     await _logService.LogLoginAsync(Input.Email, ip, ua);
 
-                    return LocalRedirect("~/");
+                    // ── Giai đoạn 4: Redirect đến Admin Dashboard sau khi login ──
+                    // Chuyển hướng đến Dashboard controller trong Admin area
+                    return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
                 }
                 if (result.RequiresTwoFactor)
                 {

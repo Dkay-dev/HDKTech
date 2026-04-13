@@ -122,7 +122,7 @@ namespace HDKTech.Services
         // ─────────────────────────────────────────────────────────────────────
         // GetLowStockProducts — Dữ liệu cảnh báo cho Dashboard
         // ─────────────────────────────────────────────────────────────────────
-        public async Task<List<LowStockProductItem>> GetLowStockProductsAsync(int threshold = 5)
+        public async Task<List<LowStockProductItem>> GetLowStockProductsAsync(int threshold = 10)
         {
             return await _context.Inventories
                 .AsNoTracking()

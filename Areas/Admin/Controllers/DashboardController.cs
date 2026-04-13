@@ -5,7 +5,7 @@ using HDKTech.Areas.Admin.Services;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     [Route("admin/[controller]")]
     public class DashboardController : Controller
     {
@@ -28,7 +28,13 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var vm = await _dashboardService.GetDashboardDataAsync();
+                // Sprint 3: Role-based Experience — truyền role vào Service để lọc dữ liệu
+                var role = User.IsInRole("Admin")         ? "Admin"
+                         : User.IsInRole("Manager")       ? "Manager"
+                         : User.IsInRole("WarehouseStaff")? "WarehouseStaff"
+                         : string.Empty;
+
+                var vm = await _dashboardService.GetDashboardDataAsync(role);
                 return View(vm);
             }
             catch (Exception ex)

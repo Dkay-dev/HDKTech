@@ -28,16 +28,9 @@ namespace HDKTech.Areas.Identity.Pages.Account
         {
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
-            if (returnImageUrl != null)
-            {
-                return LocalRedirect(returnImageUrl);
-            }
-            else
-            {
-                // This needs to be a redirect so that the browser performs a new
-                // request and the identity for the user gets updated.
-                return RedirectToPage();
-            }
+
+            // ── Redirect về Home (cùng tab, không mở tab mới) ──
+            return LocalRedirect("~/");
         }
     }
 }

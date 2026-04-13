@@ -8,6 +8,7 @@ namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "Banner.Read")]     // Sprint 3: Policy guard — chỉ ai có Banner.Read claim mới vào được
     [Route("Admin/[controller]")]
     public class BannerAnalyticsController : Controller
     {
@@ -160,6 +161,7 @@ namespace HDKTech.Areas.Admin.Controllers
         /// Export analytics data as CSV
         /// </summary>
         [HttpGet("export/{bannerId}")]
+        [Authorize(Policy = "Report.Export")]   // Export cần thêm claim Report.Export
         public async Task<IActionResult> ExportAnalytics(int bannerId)
         {
             try
