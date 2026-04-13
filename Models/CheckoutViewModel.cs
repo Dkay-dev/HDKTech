@@ -4,6 +4,8 @@ namespace HDKTech.Models
 {
     public class CheckoutViewModel
     {
+        public string PaymentMethod { get; set; } = "COD";
+
         [Required(ErrorMessage = "Vui lòng nhập họ tên")]
         [Display(Name = "Họ tên")]
         public string RecipientName { get; set; }

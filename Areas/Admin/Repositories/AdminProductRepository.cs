@@ -1,6 +1,7 @@
 ﻿using HDKTech.Models;
 using HDKTech.Data;
-using HDKTech.Repositories.Interfaces;
+// ✅ Fix #4: Dùng đúng namespace IAdminProductRepository của Admin Area
+// (không import HDKTech.Repositories.Interfaces vì sẽ gây nhầm lẫn 2 interface cùng tên)
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
@@ -9,6 +10,8 @@ namespace HDKTech.Areas.Admin.Repositories
     /// <summary>
     /// Admin Product Repository - Handles all product CRUD operations
     /// Uses Entity Framework Core for data access
+    /// ✅ Implements HDKTech.Areas.Admin.Repositories.IAdminProductRepository
+    /// (namespace cùng với ProductController trong Areas/Admin)
     /// </summary>
     public class AdminProductRepository : IAdminProductRepository
     {

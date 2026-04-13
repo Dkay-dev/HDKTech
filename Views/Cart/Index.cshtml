@@ -105,7 +105,7 @@
                             <span class="text-muted d-block mb-1">Tổng cộng (Đã có VAT)</span>
                             <div class="summary-total-value" id="summary-total">@Model.TotalPrice.ToString("#,##0")₫</div>
                         </div>
-                        
+                       
                         @if (!Model.IsEmpty) {
                             <a asp-controller="Checkout" asp-action="Index" class="btn-checkout text-white text-decoration-none">
                                 <i class="bi bi-shield-check me-2"></i>TIẾN HÀNH ĐẶT HÀNG
@@ -114,6 +114,7 @@
                             <button class="btn btn-secondary w-100 py-3 disabled" disabled>GIỎ HÀNG TRỐNG</button>
                         }
                     </div>
+                    
                 </div>
             </div>
         </div>

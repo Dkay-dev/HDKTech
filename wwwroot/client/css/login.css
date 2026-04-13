@@ -1,0 +1,32 @@
+/**
+ * login.css — CSS dành riêng cho trang Đăng nhập (Client)
+ * Tách file riêng theo yêu cầu kỹ thuật - gọi qua @section Styles
+ */
+
+/* Card login */
+.card.rounded-4 {
+    border-radius: 1rem !important;
+}
+
+/* Input focus - màu thương hiệu */
+.form-control:focus {
+    border-color: #e31837;
+    box-shadow: 0 0 0 0.2rem rgba(227, 24, 55, 0.15);
+}
+
+/* Nút đăng nhập */
+.btn-danger {
+    background-color: #e31837;
+    border-color: #e31837;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.btn-danger:hover {
+    background-color: #c0122d;
+    border-color: #c0122d;
+    transform: translateY(-1px);
+}
+
+/* Validation error */
+.text-danger.small {
+    font-size: 0.8rem;
+}

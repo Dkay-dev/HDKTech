@@ -8,7 +8,7 @@ namespace HDKTech.Repositories.Interfaces
         /// Tạo đơn hàng mới và lưu vào database
         /// </summary>
         Task<Order> CreateOrderAsync(string userId, string RecipientName, string soDienThoai, 
-                                       string ShippingAddress, List<CartItem> items, decimal ShippingFee = 0);
+                                       string ShippingAddress, List<CartItem> items, decimal ShippingFee = 0, string paymentMethod = null, string paymentStatus = null);
 
         /// <summary>
         /// Lấy đơn hàng theo mã đơn hàng

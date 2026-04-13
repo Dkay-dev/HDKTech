@@ -1,5 +1,7 @@
-﻿using HDKTech.Models;
+﻿using HDKTech.Areas.Admin.Models;
+using HDKTech.Models;
 using HDKTech.Areas.Admin.Models;
+using HDKTech.Models.Vnpay;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +39,7 @@ public class HDKTechContext : IdentityDbContext<AppUser>
     public DbSet<BannerClickEvent> BannerClickEvents { get; set; }
     public DbSet<Promotion> Promotions { get; set; }
 
+    public DbSet<VNPAYModel> VNPAYModels { get; set; }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

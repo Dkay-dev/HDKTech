@@ -1,4 +1,4 @@
-using HDKTech.Data;
+﻿using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -212,3 +212,5 @@ namespace HDKTech.Repositories
         }
     }
 }
+
+

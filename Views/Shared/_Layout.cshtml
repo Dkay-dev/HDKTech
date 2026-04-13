@@ -35,7 +35,7 @@
                         <a asp-area="" asp-controller="Home" asp-action="About" title="Về chúng tôi" class="nav-link-item">Về chúng tôi</a>
                         <a asp-area="" asp-controller="Home" asp-action="Privacy" title="Chính sách" class="nav-link-item">Chính sách</a>
                         <a asp-area="" asp-controller="Home" asp-action="Hotline" title="Liên hệ" class="nav-link-item">Liên hệ</a>
-                        @if (User.IsInRole("Admin"))
+                        @* @if (User.IsInRole("Admin"))
                         {
                             <div class="col-auto">
                                 <button class="btn btn-outline-light btn-sm hdk-sidebar-toggle" id="sidebarToggle" title="Mở quản trị">
@@ -43,7 +43,7 @@
                                     <span class="ms-1 d-none d-lg-inline">Quản trị</span>
                                 </button>
                             </div>
-                        }
+                        } *@
                     </div>
                 </div>
 
@@ -58,9 +58,11 @@
                     </div>
 
                     <!-- CART ICON -->
+                    @* ✅ Fix #3: Dùng CartSummary ViewComponent để lấy số lượng từ Session (server-side)
+                       Thay thế hardcode "0" bằng số lượng thực tế *@
                     <a asp-area="" asp-controller="Cart" asp-action="Index" class="hdk-cart-container d-inline-flex align-items-center justify-content-center position-relative flex-shrink-0">
                         <i class="bi bi-bag-fill hdk-cart-icon"></i>
-                        <span id="cartBadge" class="hdk-cart-badge">0</span>
+                        @await Component.InvokeAsync("CartSummary")
                     </a>
 
                     <!-- MOBILE MENU TOGGLE -->
@@ -134,7 +136,7 @@
     <!-- ═════════════════════════════════════════════════════════════════ -->
     <!-- ADMIN SIDEBAR (Visible only for admin users) -->
     <!-- ═════════════════════════════════════════════════════════════════ -->
-    @if (User.IsInRole("Admin"))
+    @* @if (User.IsInRole("Admin"))
     {
         <div class="hdk-admin-sidebar" id="adminSidebar">
             <!-- Sidebar Header -->
@@ -194,7 +196,7 @@
 
         <!-- Sidebar Overlay -->
         <div class="hdk-sidebar-overlay" id="sidebarOverlay"></div>
-    }
+    } *@
 
     <!-- ═════════════════════════════════════════════════════════════════ -->
     <!-- MAIN CONTENT AREA -->

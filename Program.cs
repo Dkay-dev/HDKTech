@@ -4,9 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HDKTech.Models;
 using HDKTech.Data;
+using HDKTech.Models;
+using HDKTech.Models.Momo;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
+using HDKTech.Services.Momo;
+using HDKTech.Services.Vnpay;
 using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
@@ -19,7 +23,8 @@ namespace HDKTech
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            var connectionString = builder.Configuration.GetConnectionString("HDKTechContextConnection") ?? throw new InvalidOperationException("Connection string 'HDKTechContextConnection' not found.");
+            var connectionString = builder.Configuration.GetConnectionString("HDKTechContextConnection")
+                ?? throw new InvalidOperationException("Connection string 'HDKTechContextConnection' not found.");
 
             builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
 
@@ -45,6 +50,14 @@ namespace HDKTech
                  .AddDefaultUI()
                  .AddDefaultTokenProviders();
 
+            // ✅ Sửa cookie Identity để hoạt động với VNPay callback
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.HttpOnly = true;
+            });
+
             // Register Repository Pattern
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -56,6 +69,11 @@ namespace HDKTech
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             // Register Admin Repositories
+            // ✅ Fix #4: Đăng ký đúng namespace IAdminProductRepository mà Areas/Admin/Controllers/ProductController sử dụng
+            // ProductController inject: HDKTech.Areas.Admin.Repositories.IAdminProductRepository
+            // => Phải đăng ký interface đúng namespace, map tới implementation tương ứng
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository, HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
+            // Giữ lại registration cũ cho các nơi khác trong project dùng namespace Repositories.Interfaces
             builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository, HDKTech.Repositories.AdminProductRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerClickEventRepository>();
@@ -72,26 +90,24 @@ namespace HDKTech
             // ── Giai đoạn 3: Smart Reporting ─────────────────────────────────
             builder.Services.AddScoped<IReportService, ReportService>();
 
-            // ── Giai đoạn 1: Granular Security — PermissionHandler ───────────
-            // Kích hoạt custom AuthorizationHandler dùng bảng RolePermissions
+            // ── Sprint 1: Policy-based Authorization — PermissionHandler ────────
+            // Handler mới đọc từ AspNetRoleClaims thay vì bảng custom RolePermissions.
+            // RoleManager<IdentityRole> đã được đăng ký sẵn bởi AddIdentity() ở trên.
             builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
-            // ── Giai đoạn 1: Authorization Policies ──────────────────────────
-            // Mỗi Policy ánh xạ đến 1 cặp (Module, Action) trong bảng Permissions
+            // ── Sprint 1: Authorization Policies ─────────────────────────────────
+            // Tự động tạo policy cho mọi permission trong AllSystemPermissions.
+            // Format policy name: "Module.Action" (vd: "Inventory.Update")
+            // Dùng trên controller: [Authorize(Policy = "Inventory.Update")]
             builder.Services.AddAuthorization(options =>
             {
-                // Order
-                options.AddPolicy("Order.Read",   p => p.AddRequirements(new PermissionRequirement("Order",   "Read")));
-                options.AddPolicy("Order.Update", p => p.AddRequirements(new PermissionRequirement("Order",   "Update")));
-                options.AddPolicy("Order.Delete", p => p.AddRequirements(new PermissionRequirement("Order",   "Delete")));
-                // Product
-                options.AddPolicy("Product.Create", p => p.AddRequirements(new PermissionRequirement("Product", "Create")));
-                options.AddPolicy("Product.Update", p => p.AddRequirements(new PermissionRequirement("Product", "Update")));
-                options.AddPolicy("Product.Delete", p => p.AddRequirements(new PermissionRequirement("Product", "Delete")));
-                // Inventory
-                options.AddPolicy("Inventory.Update", p => p.AddRequirements(new PermissionRequirement("Inventory", "Update")));
-                // ── Giai đoạn 3: Smart Reporting ──────────────────────────────
-                options.AddPolicy("Report.Export", p => p.AddRequirements(new PermissionRequirement("Report", "Export")));
+                foreach (var perm in HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions)
+                {
+                    var parts = perm.Split('.');
+                    if (parts.Length == 2)
+                        options.AddPolicy(perm,
+                            p => p.AddRequirements(new PermissionRequirement(parts[0], parts[1])));
+                }
             });
 
             // Register Cart Service (Session) - 7 days
@@ -100,8 +116,10 @@ namespace HDKTech
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SameSite = SameSiteMode.None;    // ✅ Đổi từ Lax → None
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // ✅ Thêm dòng này
             });
+
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICartService, SessionCartService>();
 
@@ -115,6 +133,13 @@ namespace HDKTech
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Connect VNPay API
+            builder.Services.AddScoped<IVnPayService, VnPayService>();
+            
+            // Connect Momo API
+            builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
+            builder.Services.AddHttpClient<IMomoService, MomoService>();
 
             var app = builder.Build();
 
@@ -131,20 +156,24 @@ namespace HDKTech
                 await HDKTech.Data.DbInitializer.InitializeAsync(scope.ServiceProvider, context);
             }
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
             app.UseRouting();
-            app.UseSession();  // Thêm dòng này
 
+            // ✅ Thêm CookiePolicy trước Authentication
+            app.UseCookiePolicy(new CookiePolicyOptions
+            {
+                MinimumSameSitePolicy = SameSiteMode.None,
+                Secure = CookieSecurePolicy.Always
+            });
+
+            app.UseSession();
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -155,15 +184,12 @@ namespace HDKTech
                 name: "MyAreas",
                 pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
 
-            // 2. Route mặc định (Homepage)
-            // Đây là route quan trọng nhất cho Logo và Đăng nhập.
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.MapRazorPages();
             app.Run();
-            
         }
     }
 }

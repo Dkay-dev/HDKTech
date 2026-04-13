@@ -70,6 +70,16 @@ namespace HDKTech.Areas.Admin.ViewModels
 
         /// <summary>Timestamp cache được tạo — hiển thị "cập nhật lần cuối"</summary>
         public DateTime CachedAt { get; set; } = DateTime.Now;
+
+        // ── Sprint 3: Role-based Experience ───────────────────────────────────
+        /// <summary>
+        /// Nếu false (WarehouseStaff), ẩn toàn bộ widget doanh thu &amp; biểu đồ doanh thu.
+        /// Chỉ hiện dữ liệu Tồn kho và Đơn cần xử lý.
+        /// </summary>
+        public bool ShowRevenueData { get; set; } = true;
+
+        /// <summary>Role của người xem — dùng để điều chỉnh UI trong View.</summary>
+        public string ViewerRole { get; set; } = string.Empty;
     }
 
     /// <summary>Dữ liệu doanh thu từng ngày cho biểu đồ</summary>

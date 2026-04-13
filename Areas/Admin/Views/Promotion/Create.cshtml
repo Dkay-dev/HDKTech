@@ -15,79 +15,79 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 <form method="post">
-                    @Html.AntiForgeryToken()
+            @Html.AntiForgeryToken()
 
-                    <!-- Tên chiến dịch -->
+            <!-- Tên chiến dịch -->
                     <div class="mb-3">
                         <label asp-for="CampaignName" class="form-label fw-bold">
                             Tên chiến dịch <span class="text-danger">*</span>
-                        </label>
+                </label>
                         <input type="text" asp-for="CampaignName" class="form-control form-control-sm" placeholder="VD: Back to School 2024" />
                         <span asp-validation-for="CampaignName" class="invalid-feedback d-block"></span>
-                    </div>
+            </div>
 
-                    <!-- Mô tả -->
+            <!-- Mô tả -->
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label fw-bold">Mô tả</label>
                         <textarea asp-for="Description" class="form-control form-control-sm" rows="3" placeholder="Mô tả về chiến dịch..."></textarea>
-                    </div>
+            </div>
 
-                    <!-- Danh mục áp dụng -->
+            <!-- Danh mục áp dụng -->
                     <div class="mb-3">
                         <label asp-for="ApplicableCategory" class="form-label fw-bold">Danh mục áp dụng</label>
                         <input type="text" asp-for="ApplicableCategory" class="form-control form-control-sm" placeholder="VD: Laptop & Accessories" />
-                    </div>
+            </div>
 
                     <!-- Ngày bắt đầu & kết thúc -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="StartDate" class="form-label fw-bold">
                                 Ngày bắt đầu <span class="text-danger">*</span>
-                            </label>
+                    </label>
                             <input type="datetime-local" asp-for="StartDate" class="form-control form-control-sm" />
                             <span asp-validation-for="StartDate" class="invalid-feedback d-block"></span>
-                        </div>
+                </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="EndDate" class="form-label fw-bold">
                                 Ngày kết thúc <span class="text-danger">*</span>
-                            </label>
+                    </label>
                             <input type="datetime-local" asp-for="EndDate" class="form-control form-control-sm" />
                             <span asp-validation-for="EndDate" class="invalid-feedback d-block"></span>
-                        </div>
-                    </div>
+                </div>
+            </div>
 
-                    <!-- Loại khuyến mãi -->
+            <!-- Loại khuyến mãi -->
                     <div class="mb-3">
                         <label asp-for="PromotionType" class="form-label fw-bold">
                             Loại khuyến mãi <span class="text-danger">*</span>
-                        </label>
+                </label>
                         <select asp-for="PromotionType" id="PromotionType" class="form-select form-select-sm">
-                            <option value="">-- Chọn loại --</option>
-                            <option value="Percentage">Giảm giá %</option>
-                            <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
-                            <option value="FreeShip">Miễn phí vận chuyển</option>
-                        </select>
+                    <option value="">-- Chọn loại --</option>
+                    <option value="Percentage">Giảm giá %</option>
+                    <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
+                    <option value="FreeShip">Miễn phí vận chuyển</option>
+                </select>
                         <span asp-validation-for="PromotionType" class="invalid-feedback d-block"></span>
-                    </div>
+            </div>
 
-                    <!-- Giá trị khuyến mãi -->
+            <!-- Giá trị khuyến mãi -->
                     <div class="mb-3">
                         <label asp-for="Value" class="form-label fw-bold">
                             Giá trị <span class="text-danger">*</span>
-                        </label>
+                </label>
                         <div class="input-group input-group-sm">
                             <input type="number" asp-for="Value" step="0.01" class="form-control" placeholder="0" />
                             <span id="unit" class="input-group-text fw-bold">%</span>
-                        </div>
+                </div>
                         <span asp-validation-for="Value" class="invalid-feedback d-block"></span>
-                    </div>
+            </div>
 
-                    <!-- Mã khuyến mãi -->
+            <!-- Mã khuyến mãi -->
                     <div class="mb-3">
                         <label asp-for="PromoCode" class="form-label fw-bold">Mã khuyến mãi</label>
                         <input type="text" asp-for="PromoCode" class="form-control form-control-sm" placeholder="VD: BACK2024" />
                         <small class="text-muted">Để trống nếu không sử dụng mã</small>
-                    </div>
+            </div>
 
                     <!-- Số lượng tối đa & Trạng thái -->
                     <div class="row">
@@ -100,21 +100,27 @@
                             <div class="form-check">
                                 <input type="checkbox" asp-for="IsActive" class="form-check-input" id="IsActive" checked />
                                 <label class="form-check-label" for="IsActive">Kích hoạt</label>
-                            </div>
-                        </div>
-                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-on-surface mb-2">Trạng thái</label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" asp-for="IsActive" class="w-4 h-4 rounded border-outline text-primary" checked />
+                        <span class="text-sm font-medium text-on-surface">Kích hoạt</span>
+                    </label>
+                </div>
+            </div>
 
-                    <!-- Actions -->
+            <!-- Actions -->
                     <div class="d-flex gap-2 pt-3">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-2"></i>Tạo chiến dịch
-                        </button>
+                </button>
                         <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-2"></i>Hủy
-                        </a>
-                    </div>
-                </form>
+                </a>
             </div>
+        </form>
+    </div>
         </div>
     </div>
 

@@ -1,4 +1,4 @@
-@model HDKTech.Areas.Admin.ViewModels.DashboardViewModel
+﻿@model HDKTech.Areas.Admin.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
 
@@ -138,6 +138,19 @@
     </style>
 }
 
+@* ── Sprint 3: WarehouseStaff notice ─────────────────────────────── *@
+@if (!Model.ShowRevenueData)
+{
+    <div class="alert alert-info d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-box-seam fs-4 flex-shrink-0 text-primary"></i>
+        <div>
+            <strong>Chế độ Nhân viên Kho</strong> —
+            Hiển thị dữ liệu tồn kho và đơn hàng cần xử lý.
+            Dữ liệu doanh thu và biểu đồ tài chính bị ẩn theo chính sách phân quyền.
+        </div>
+    </div>
+}
+
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!--  HEADER                                                         -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -172,43 +185,65 @@
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="row g-4 mb-4">
 
-    <!-- CARD 1: Tổng doanh thu -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm stat-card stat-success h-100">
-            <div class="card-body">
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-label">Tổng Doanh Thu</div>
-                    <div class="stat-value text-success">
-                        @((Model.TotalRevenue / 1_000_000m).ToString("F1"))M ₫
+    @* Sprint 3: Ẩn card doanh thu với WarehouseStaff *@
+    @if (Model.ShowRevenueData)
+    {
+        <!-- CARD 1: Tổng doanh thu -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm stat-card stat-success h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-cash-stack"></i>
                     </div>
-                    <div class="stat-desc">Đã giao thành công</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Tổng Doanh Thu</div>
+                        <div class="stat-value text-success">
+                            @((Model.TotalRevenue / 1_000_000m).ToString("F1"))M ₫
+                        </div>
+                        <div class="stat-desc">Đã giao thành công</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- CARD 2: Doanh thu hôm nay -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm stat-card stat-success h-100">
-            <div class="card-body">
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-calendar-check"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-label">DT Hôm nay</div>
-                    <div class="stat-value text-success">
-                        @((Model.TodayRevenue / 1_000_000m).ToString("F2"))M ₫
+        <!-- CARD 2: Doanh thu hôm nay -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm stat-card stat-success h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-calendar-check"></i>
                     </div>
-                    <div class="stat-desc">
-                        <i class="bi bi-bag-check me-1"></i>@Model.TodayOrderCount đơn
+                    <div class="stat-content">
+                        <div class="stat-label">DT Hôm nay</div>
+                        <div class="stat-value text-success">
+                            @((Model.TodayRevenue / 1_000_000m).ToString("F2"))M ₫
+                        </div>
+                        <div class="stat-desc">
+                            <i class="bi bi-bag-check me-1"></i>@Model.TodayOrderCount đơn
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <!-- CARD thay thế: Đơn hôm nay (hiển thị với WarehouseStaff) -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm stat-card stat-primary h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Đơn Hôm nay</div>
+                        <div class="stat-value text-primary">@Model.TodayOrderCount</div>
+                        <div class="stat-desc">Đơn đặt trong ngày</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- CARD 3: Đơn hàng chờ -->
     <div class="col-12 col-sm-6 col-xl-3">
@@ -236,7 +271,14 @@
                 <div class="stat-content">
                     <div class="stat-label">Tổng Đơn</div>
                     <div class="stat-value text-primary">@Model.TotalOrders.ToString("N0")</div>
-                    <div class="stat-desc">AOV @Model.AverageOrderValue.ToString("N0") ₫</div>
+                    @if (Model.ShowRevenueData)
+                    {
+                        <div class="stat-desc">AOV @Model.AverageOrderValue.ToString("N0") ₫</div>
+                    }
+                    else
+                    {
+                        <div class="stat-desc">Tất cả đơn hàng</div>
+                    }
                 </div>
             </div>
         </div>
@@ -258,30 +300,36 @@
         </div>
     </div>
 
-    <!-- CARD 6: Banner Clicks -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm stat-card stat-info h-100">
-            <div class="card-body">
-                <div class="stat-icon bg-info bg-opacity-10 text-info">
-                    <i class="bi bi-cursor-fill"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-label">Banner Clicks</div>
-                    <div class="stat-value text-info">@Model.TotalClicksToday</div>
-                    <div class="stat-desc">Hôm nay · @Model.ActiveBanners đang hiện</div>
+    @* Sprint 3: Banner Clicks — ẩn với WarehouseStaff *@
+    @if (Model.ShowRevenueData)
+    {
+        <!-- CARD 6: Banner Clicks -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm stat-card stat-info h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-cursor-fill"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Banner Clicks</div>
+                        <div class="stat-value text-info">@Model.TotalClicksToday</div>
+                        <div class="stat-desc">Hôm nay · @Model.ActiveBanners đang hiện</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  ROW 2: LINE CHART + QUICK SUMMARY                             -->
+<!--  ROW 2: LINE CHART + QUICK SUMMARY (Sprint 3: ẩn với WH)       -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
+@if (Model.ShowRevenueData)
+{
 <div class="row g-3 mb-4">
 
-    <!-- Line Chart doanh thu 7 ngày ← GĐ2: chuyển từ Bar → Line -->
+    <!-- Line Chart doanh thu 7 ngày -->
     <div class="col-12 col-lg-8">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3 pb-0">
@@ -295,7 +343,6 @@
                     <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
                         Tổng: @((Model.DailyRevenue.Sum(d => d.Revenue) / 1_000_000m).ToString("F1"))M ₫
                     </span>
-                    @* ── GĐ3: Quick Action — Tải báo cáo doanh thu ── *@
                     <a asp-area="Admin"
                        asp-controller="Reports"
                        asp-action="ExportRevenue"
@@ -360,6 +407,50 @@
     </div>
 
 </div>
+}
+else
+{
+<!-- ROW 2 WarehouseStaff: Warehouse KPI summary -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #ffc107!important;">
+            <div class="card-header border-0 pt-3 pb-0" style="background:rgba(255,193,7,.08)">
+                <h6 class="fw-bold mb-0 text-warning">
+                    <i class="bi bi-boxes me-2"></i>Tổng quan Kho &amp; Đơn hàng cần xử lý
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-md-4">
+                        <div class="display-6 fw-bold text-warning">@Model.PendingOrders</div>
+                        <div class="small text-muted mb-2">Đơn chờ xác nhận / đang xử lý</div>
+                        <a asp-area="Admin" asp-controller="Order" asp-action="Index"
+                           class="btn btn-warning btn-sm">
+                            <i class="bi bi-receipt me-1"></i>Xử lý ngay
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="display-6 fw-bold text-danger">@Model.LowStockCount</div>
+                        <div class="small text-muted mb-2">Sản phẩm tồn kho thấp (&lt; 10)</div>
+                        <a asp-area="Admin" asp-controller="Inventory" asp-action="Index"
+                           class="btn btn-danger btn-sm">
+                            <i class="bi bi-box-seam me-1"></i>Kiểm kho
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="display-6 fw-bold text-primary">@Model.TodayOrderCount</div>
+                        <div class="small text-muted mb-2">Đơn đặt hôm nay</div>
+                        <a asp-area="Admin" asp-controller="Order" asp-action="Index"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-calendar-check me-1"></i>Xem đơn hôm nay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!--  ROW 3: LOW STOCK ALERT (đỏ) + TOP 3 BANNER ROI ← GĐ2        -->
@@ -381,7 +472,7 @@
                         <span class="badge bg-danger ms-1">@Model.LowStockProducts.Count SP</span>
                     }
                 </h6>
-                <a asp-area="Admin" asp-controller="Product" asp-action="Index"
+                <a asp-area="Admin" asp-controller="Inventory" asp-action="Index"
                    class="btn btn-danger btn-sm">
                     <i class="bi bi-box-seam me-1"></i>Quản lý kho
                 </a>
@@ -440,14 +531,17 @@
                     <div class="text-center text-success py-4">
                         <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
                         <strong>Tất cả sản phẩm có tồn kho ổn định</strong>
-                        <div class="text-muted small mt-1">Ngưỡng cảnh báo: dưới 5 sản phẩm</div>
+                        <div class="text-muted small mt-1">Ngưỡng cảnh báo: dưới 10 sản phẩm</div>
                     </div>
                 }
             </div>
         </div>
     </div>
 
-    <!-- 📊 TOP 3 BANNER ROI ────────────────────────────────────── -->
+    @* Sprint 3: Banner ROI — ẩn với WarehouseStaff, thay bằng Quick Actions *@
+    @if (Model.ShowRevenueData)
+    {
+    <!-- 📊 TOP 3 BANNER ROI -->
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3 pb-0">
@@ -501,23 +595,17 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="fw-bold">@b.TotalClicks.ToString("N0")</div>
-                                            <div class="text-muted" style="font-size:.68rem">
-                                                @b.UniqueReach reach
-                                            </div>
+                                            <div class="text-muted" style="font-size:.68rem">@b.UniqueReach reach</div>
                                         </td>
                                         <td class="text-center">
                                             <div class="fw-semibold text-info">@b.ClicksLast7Days</div>
-                                            <div class="text-muted" style="font-size:.68rem">
-                                                ~@b.AvgClicksPerDay/ngày
-                                            </div>
+                                            <div class="text-muted" style="font-size:.68rem">~@b.AvgClicksPerDay/ngày</div>
                                         </td>
                                         <td class="text-end pe-3">
                                             <div class="fw-semibold text-success small">
                                                 @b.EstimatedRevenue.ToString("N0") ₫
                                             </div>
-                                            <div class="text-muted" style="font-size:.62rem">
-                                                *ước tính 5% conv.
-                                            </div>
+                                            <div class="text-muted" style="font-size:.62rem">*ước tính 5% conv.</div>
                                         </td>
                                     </tr>
                                 }
@@ -528,7 +616,6 @@
                         <small class="text-muted">
                             <i class="bi bi-info-circle me-1"></i>
                             DT ước tính = ClicksLast7D × 5% × AOV (@Model.AverageOrderValue.ToString("N0") ₫).
-                            Chính xác hơn khi tích hợp session tracking.
                         </small>
                     </div>
                 }
@@ -545,6 +632,42 @@
             </div>
         </div>
     </div>
+    }
+    else
+    {
+    <!-- Thay thế Banner ROI: Quick Actions dành cho WarehouseStaff -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0d6efd!important;">
+            <div class="card-header bg-white border-0 pt-3 pb-0">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-lightning-charge me-2 text-primary"></i>Thao tác nhanh
+                </h6>
+            </div>
+            <div class="card-body d-grid gap-2 pt-3">
+                <a asp-area="Admin" asp-controller="Inventory" asp-action="Index"
+                   class="btn btn-outline-danger d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-exclamation-triangle me-2"></i>Cập nhật tồn kho thấp</span>
+                    @if (Model.LowStockCount > 0)
+                    {
+                        <span class="badge bg-danger">@Model.LowStockCount SP</span>
+                    }
+                </a>
+                <a asp-area="Admin" asp-controller="Order" asp-action="Index"
+                   class="btn btn-outline-warning d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-clock-history me-2"></i>Đơn hàng chờ xử lý</span>
+                    @if (Model.PendingOrders > 0)
+                    {
+                        <span class="badge bg-warning text-dark">@Model.PendingOrders</span>
+                    }
+                </a>
+                <a asp-area="Admin" asp-controller="Product" asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-box-seam me-2"></i>Danh sách sản phẩm
+                </a>
+            </div>
+        </div>
+    </div>
+    }
 
 </div>
 
@@ -697,6 +820,9 @@
 </div>
 
 @section Scripts {
+@* Sprint 3: Chart.js chỉ load khi có quyền xem doanh thu *@
+@if (Model.ShowRevenueData)
+{
 <script>
 (function () {
     // ── Chart.js — LINE CHART doanh thu 7 ngày ──────────────────────────────
@@ -706,7 +832,6 @@
     const ctx = document.getElementById('revenueChart');
     if (!ctx) return;
 
-    // Gradient fill
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
     gradient.addColorStop(0, 'rgba(13,110,253,0.25)');
     gradient.addColorStop(1, 'rgba(13,110,253,0.01)');
@@ -732,9 +857,7 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -749,4 +872,5 @@
     });
 })();
 </script>
+}
 }

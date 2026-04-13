@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
-using HDKTech.Repositories.Interfaces;
 using HDKTech.Data;
 using HDKTech.Utils;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -196,7 +197,7 @@ namespace HDKTech.Areas.Admin.Controllers
 
             try
             {
-                var success = await _productRepo.UpdateProductAsync(product);
+                var updated = await _productRepo.UpdateProductAsync(product);
 
                 // Thêm ảnh mới nếu có upload
                 if (images?.Count > 0)
@@ -205,7 +206,7 @@ namespace HDKTech.Areas.Admin.Controllers
                     await SaveProductImages(product.Id, images, cat?.Name);
                 }
 
-                TempData[success ? "Success" : "Error"] = success
+                TempData[updated ? "Success" : "Error"] = updated
                     ? "Cập nhật sản phẩm thành công!"
                     : "Cập nhật sản phẩm thất bại.";
 
@@ -287,14 +288,15 @@ namespace HDKTech.Areas.Admin.Controllers
                 var product = await _productRepo.GetProductByIdAsync(id);
                 if (product == null) { TempData["Error"] = "Sản phẩm không tìm thấy."; return RedirectToAction(nameof(Index)); }
 
-                // Xóa ảnh vật lý trước
-                if (product.Images != null)
-                    foreach (var img in product.Images) DeletePhysicalFile(img.ImageUrl);
+                var (success, error, imageUrls) = await _productRepo.DeleteProductAsync(id);
 
-                var success = await _productRepo.DeleteProductAsync(id);
+                // Xóa ảnh vật lý sau khi xóa khỏi DB
+                if (imageUrls != null)
+                    foreach (var imgUrl in imageUrls) DeletePhysicalFile(imgUrl);
+
                 TempData[success ? "Success" : "Error"] = success
                     ? $"Đã xóa sản phẩm \"{product.Name}\"."
-                    : "Xóa sản phẩm thất bại.";
+                    : $"Xóa sản phẩm thất bại: {error}";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -388,3 +390,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+
