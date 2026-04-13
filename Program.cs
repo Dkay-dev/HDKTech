@@ -2,9 +2,11 @@
 using HDKTech.Areas.Identity.Data;
 using HDKTech.Data;
 using HDKTech.Models;
+using HDKTech.Models.Momo;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
+using HDKTech.Services.Momo;
 using HDKTech.Services.Vnpay;
 using HDKTech.Utilities;
 using Microsoft.AspNetCore.Identity;
@@ -76,6 +78,10 @@ namespace HDKTech
 
             // Connect VNPay API
             builder.Services.AddScoped<IVnPayService, VnPayService>();
+            
+            // Connect Momo API
+            builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
+            builder.Services.AddHttpClient<IMomoService, MomoService>();
 
             var app = builder.Build();
 

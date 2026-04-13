@@ -20,10 +20,9 @@
             </div>
         }
 
-        <form method="post" id="checkoutForm" novalidate>
+        <form method="post" action="/Checkout" id="checkoutForm" novalidate>
             @Html.AntiForgeryToken()
 
-            {{!-- ✅ Hidden fields để giữ TotalAmount và ShippingFee khi POST --}}
             <input type="hidden" name="TotalAmount" value="@Model.TotalAmount" />
             <input type="hidden" name="ShippingFee" value="@Model.ShippingFee" />
             <input type="hidden" name="SoProduct" value="@Model.SoProduct" />
@@ -105,7 +104,7 @@
                             Phương Thức Thanh Toán
                         </h5>
 
-                        <div class="payment-method active">
+                        <div class="payment-method active" id="pm-cod">
                             <input type="radio" id="cod" name="PaymentMethod" value="COD" checked>
                             <label for="cod" style="margin: 0; cursor: pointer; flex: 1;">
                                 <i class="bi bi-truck"></i>
@@ -115,17 +114,31 @@
                             </label>
                         </div>
 
-                        <div class="payment-method">
+                        <div class="payment-method" id="pm-vnpay">
                             <input type="radio" id="vnpay" name="PaymentMethod" value="VNPAY">
                             <label for="vnpay" style="margin: 0; cursor: pointer; flex: 1;">
-                                <i class="bi bi-credit-card-2-front"></i>
+                                <img src="~/images/payment/vnpay-logo.png" alt="VNPay" height="22"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-credit-card-2-front" style="display:none;"></i>
                                 <strong>Thanh Toán Qua VNPay</strong>
                                 <br>
                                 <small style="color: #666;">ATM, Visa, Mastercard, QR Code</small>
                             </label>
                         </div>
 
-                        <div class="payment-method">
+                        <div class="payment-method" id="pm-momo">
+                            <input type="radio" id="momo" name="PaymentMethod" value="Momo">
+                            <label for="momo" style="margin: 0; cursor: pointer; flex: 1;">
+                                <img src="~/images/payment/momo-logo.png" alt="MoMo" height="22"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-wallet2" style="display:none;"></i>
+                                <strong>Thanh Toán Qua MoMo</strong>
+                                <br>
+                                <small style="color: #666;">Ví MoMo, QR Code</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-bank">
                             <input type="radio" id="bank" name="PaymentMethod" value="BANK" disabled>
                             <label for="bank" style="margin: 0; cursor: not-allowed; flex: 1; color: #999;">
                                 <i class="bi bi-bank"></i>
@@ -174,7 +187,6 @@
                             <span>@((Model.TotalAmount + Model.ShippingFee).ToString("N0"))₫</span>
                         </div>
 
-                        {{!-- Nút submit duy nhất - thay đổi theo phương thức được chọn --}}
                         <button type="submit" id="btnSubmit" class="btn-checkout">
                             <i class="bi bi-check-circle" id="btnIcon"></i>
                             <span id="btnText">XÁC NHẬN ĐẶT HÀNG</span>
@@ -192,28 +204,44 @@
 </div>
 
 <script>
+    // Cập nhật giao diện nút và highlight khi chọn phương thức thanh toán
     document.querySelectorAll('input[name="PaymentMethod"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
-            var isVnpay = this.value === 'VNPAY';
-            var btn = document.getElementById('btnSubmit');
+            var btn  = document.getElementById('btnSubmit');
             var icon = document.getElementById('btnIcon');
             var text = document.getElementById('btnText');
 
-            if (isVnpay) {
+            // Reset tất cả highlight
+            document.querySelectorAll('.payment-method').forEach(function (el) {
+                el.classList.remove('active');
+            });
+            this.closest('.payment-method').classList.add('active');
+
+            // Đổi màu nút theo phương thức
+            if (this.value === 'VNPAY') {
                 btn.style.background = '#005BAA';
                 icon.className = 'bi bi-credit-card-2-front';
                 text.textContent = 'THANH TOÁN QUA VNPAY';
+            } else if (this.value === 'Momo') {
+                btn.style.background = '#A72930';
+                icon.className = 'bi bi-wallet2';
+                text.textContent = 'THANH TOÁN QUA MOMO';
             } else {
                 btn.style.background = '';
                 icon.className = 'bi bi-check-circle';
                 text.textContent = 'XÁC NHẬN ĐẶT HÀNG';
             }
-
-            // Highlight payment method box được chọn
-            document.querySelectorAll('.payment-method').forEach(function (el) {
-                el.classList.remove('active');
-            });
-            this.closest('.payment-method').classList.add('active');
         });
+    });
+
+    // Loading state khi submit
+    document.getElementById('checkoutForm').addEventListener('submit', function () {
+        var btn  = document.getElementById('btnSubmit');
+        var icon = document.getElementById('btnIcon');
+        var text = document.getElementById('btnText');
+
+        btn.disabled = true;
+        icon.className = 'bi bi-hourglass-split';
+        text.textContent = 'ĐANG XỬ LÝ...';
     });
 </script>
