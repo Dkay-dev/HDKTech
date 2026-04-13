@@ -1,9 +1,9 @@
-@using HDKTech.Models
-@model SanPham
+﻿@using HDKTech.Models
+@model Product
 
 @{
-    ViewData["Title"] = Model?.MaSanPham > 0 ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới";
-    var isEdit = Model?.MaSanPham > 0;
+    ViewData["Title"] = Model?.Id > 0 ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới";
+    var isEdit = Model?.Id > 0;
 }
 
 <style>
@@ -277,7 +277,7 @@
                 @(isEdit ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới")
             </h1>
             <p style="color: #666666; font-size: 14px;">
-                @(isEdit ? $"Cập nhật: {Model?.TenSanPham}" : "Thêm sản phẩm vào kho hàng")
+                @(isEdit ? $"Cập nhật: {Model?.Name}" : "Thêm sản phẩm vào kho hàng")
             </p>
         </div>
         <a asp-area="Admin" asp-controller="Product" asp-action="Index" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1.5px solid #ff2222; color: #ff2222; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; font-size: 14px;" onmouseover="this.style.backgroundColor='rgba(255,34,34,0.1)'" onmouseout="this.style.backgroundColor='transparent'">
@@ -288,9 +288,9 @@
 
 <!-- Main Form -->
 <div class="card-custom mb-8">
-    <form asp-area="Admin" asp-controller="Product" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.MaSanPham : (int?)null)" method="post" enctype="multipart/form-data" id="productForm">
+    <form asp-area="Admin" asp-controller="Product" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id : (int?)null)" method="post" enctype="multipart/form-data" id="productForm">
         @if (isEdit) {
-            <input type="hidden" asp-for="MaSanPham" />
+            <input type="hidden" asp-for="Id" />
         }
 
         @Html.AntiForgeryToken()
@@ -324,36 +324,36 @@
                 <!-- Product Name -->
                 <div class="form-group">
                     <label class="form-label">Tên sản phẩm <span class="required">*</span></label>
-                    <input asp-for="TenSanPham" class="form-input" style="width: 100%; font-size: 14px;" placeholder="VD: ASUS ROG Strix G16" />
-                    <span asp-validation-for="TenSanPham" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
+                    <input asp-for="Name" class="form-input" style="width: 100%; font-size: 14px;" placeholder="VD: ASUS ROG Strix G16" />
+                    <span asp-validation-for="Name" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
                 <!-- Category -->
                 <div class="form-group">
                     <label class="form-label">Danh mục <span class="required">*</span></label>
-                    <select asp-for="MaDanhMuc" class="form-input" style="width: 100%;">
+                    <select asp-for="CategoryId" class="form-input" style="width: 100%;">
                         <option value="">-- Chọn danh mục --</option>
                         @if (ViewBag.Categories != null) {
-                            @foreach (var cat in (List<DanhMuc>)ViewBag.Categories) {
-                                <option value="@cat.MaDanhMuc" selected="@(Model?.MaDanhMuc == cat.MaDanhMuc)">@cat.TenDanhMuc</option>
+                            @foreach (var cat in (List<Category>)ViewBag.Categories) {
+                                <option value="@cat.Id" selected="@(Model?.CategoryId == cat.Id)">@cat.Name</option>
                             }
                         }
                     </select>
-                    <span asp-validation-for="MaDanhMuc" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
+                    <span asp-validation-for="CategoryId" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
                 <!-- Brand -->
                 <div class="form-group">
                     <label class="form-label">Thương hiệu <span class="required">*</span></label>
-                    <select asp-for="MaHangSX" class="form-input" style="width: 100%;">
+                    <select asp-for="BrandId" class="form-input" style="width: 100%;">
                         <option value="">-- Chọn thương hiệu --</option>
                         @if (ViewBag.Brands != null) {
-                            @foreach (var brand in (List<HangSX>)ViewBag.Brands) {
-                                <option value="@brand.MaHangSX" selected="@(Model?.MaHangSX == brand.MaHangSX)">@brand.TenHangSX</option>
+                            @foreach (var brand in (List<Brand>)ViewBag.Brands) {
+                                <option value="@brand.Id" selected="@(Model?.BrandId == brand.Id)">@brand.Name</option>
                             }
                         }
                     </select>
-                    <span asp-validation-for="MaHangSX" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
+                    <span asp-validation-for="BrandId" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
                 <!-- Price -->
@@ -361,9 +361,9 @@
                     <label class="form-label">Giá bán (₫) <span class="required">*</span></label>
                     <div style="position: relative;">
                         <span class="currency-symbol">₫</span>
-                        <input asp-for="Gia" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0" />
+                        <input asp-for="Price" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0" />
                     </div>
-                    <span asp-validation-for="Gia" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
+                    <span asp-validation-for="Price" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
                 <!-- Suggested Price -->
@@ -371,7 +371,7 @@
                     <label class="form-label">Giá niêm yết (₫)</label>
                     <div style="position: relative;">
                         <span class="currency-symbol">₫</span>
-                        <input asp-for="GiaNiemYet" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0 (tùy chọn)" />
+                        <input asp-for="ListPrice" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0 (tùy chọn)" />
                     </div>
                     <p class="help-text">Để trống nếu giá bán = giá niêm yết</p>
                 </div>
@@ -379,9 +379,9 @@
                 <!-- Status -->
                 <div class="form-group">
                     <label class="form-label">Trạng thái <span class="required">*</span></label>
-                    <select asp-for="TrangThaiSanPham" class="form-input" style="width: 100%;">
-                        <option value="1" selected="@(Model?.TrangThaiSanPham == 1)">✓ Hoạt động</option>
-                        <option value="0" selected="@(Model?.TrangThaiSanPham == 0)">✗ Ngừng bán</option>
+                    <select asp-for="Status" class="form-input" style="width: 100%;">
+                        <option value="1" selected="@(Model?.Status == 1)">✓ Hoạt động</option>
+                        <option value="0" selected="@(Model?.Status == 0)">✗ Ngừng bán</option>
                     </select>
                 </div>
             </div>
@@ -397,15 +397,15 @@
             <!-- Product Description -->
             <div class="form-group">
                 <label class="form-label">Mô tả sản phẩm <span class="required">*</span></label>
-                <textarea asp-for="MoTaSanPham" rows="5" class="form-input" style="width: 100%; resize: vertical; font-family: monospace;" placeholder="Mô tả chi tiết về tính năng, ưu điểm sản phẩm..."></textarea>
+                <textarea asp-for="Description" rows="5" class="form-input" style="width: 100%; resize: vertical; font-family: monospace;" placeholder="Mô tả chi tiết về tính năng, ưu điểm sản phẩm..."></textarea>
                 <p class="help-text">Hỗ trợ HTML: &lt;h4&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;</p>
-                <span asp-validation-for="MoTaSanPham" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
+                <span asp-validation-for="Description" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
 
             <!-- Technical Specs -->
             <div class="form-group">
                 <label class="form-label">Thông số kỹ thuật</label>
-                <textarea asp-for="ThongSoKyThuat" rows="3" class="form-input" style="width: 100%; resize: vertical; font-family: monospace;" placeholder="VD: Intel Core i9 | RTX 4090 | RAM 32GB | SSD 1TB"></textarea>
+                <textarea asp-for="Specifications" rows="3" class="form-input" style="width: 100%; resize: vertical; font-family: monospace;" placeholder="VD: Intel Core i9 | RTX 4090 | RAM 32GB | SSD 1TB"></textarea>
                 <p class="help-text">Ngăn cách bằng dấu | (pipe) để hiển thị thành danh sách</p>
             </div>
 
@@ -413,15 +413,15 @@
                 <!-- Warranty -->
                 <div class="form-group">
                     <label class="form-label">Thông tin bảo hành</label>
-                    <input asp-for="ThongTinBaoHanh" class="form-input" style="width: 100%;" placeholder="VD: 24 tháng chính hãng" />
+                    <input asp-for="WarrantyInfo" class="form-input" style="width: 100%;" placeholder="VD: 24 tháng chính hãng" />
                 </div>
 
-                <!-- Promotion -->
-                <div class="form-group">
+                @*<!-- Promotion - Removed: Use separate Promotion model instead -->
+                <div class="form-group" style="display: none;">
                     <label class="form-label">Khuyến mãi / Quà tặng</label>
-                    <textarea asp-for="KhuyenMai" rows="2" class="form-input" style="width: 100%; resize: vertical;" placeholder="VD: Giảm 15% | Tặng balo | Vệ sinh máy"></textarea>
+                    <textarea rows="2" class="form-input" style="width: 100%; resize: vertical;" placeholder="VD: Giảm 15% | Tặng balo | Vệ sinh máy"></textarea>
                     <p class="help-text">Ngăn cách bằng dấu |</p>
-                </div>
+                </div>*@
             </div>
         </div>
 
@@ -448,7 +448,7 @@
 
     <!-- Delete Form (Hidden) -->
     @if (isEdit) {
-        <form id="deleteForm" asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@Model.MaSanPham" method="post" style="display: none;">
+        <form id="deleteForm" asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display: none;">
             @Html.AntiForgeryToken()
         </form>
     }
@@ -457,34 +457,34 @@
 <script>
     // Form Validation - Kiểm tra trước khi submit
     document.getElementById('productForm').addEventListener('submit', function(e) {
-        const tenSanPham = document.querySelector('[asp-for="TenSanPham"]').value.trim();
-        const maDanhMuc = document.querySelector('[asp-for="MaDanhMuc"]').value;
-        const maHangSX = document.querySelector('[asp-for="MaHangSX"]').value;
-        const gia = document.querySelector('[asp-for="Gia"]').value;
-        const moTa = document.querySelector('[asp-for="MoTaSanPham"]').value.trim();
+        const Name = document.querySelector('[asp-for="Name"]').value.trim();
+        const Id = document.querySelector('[asp-for="CategoryId"]').value;
+        const Id = document.querySelector('[asp-for="BrandId"]').value;
+        const Price = document.querySelector('[asp-for="Price"]').value;
+        const Description = document.querySelector('[asp-for="Description"]').value.trim();
 
         // Kiểm tra các trường bắt buộc
-        if (!tenSanPham) {
+        if (!Name) {
             alert('⚠️ Vui lòng nhập tên sản phẩm');
             e.preventDefault();
             return false;
         }
-        if (!maDanhMuc) {
+        if (!Id) {
             alert('⚠️ Vui lòng chọn danh mục');
             e.preventDefault();
             return false;
         }
-        if (!maHangSX) {
+        if (!Id) {
             alert('⚠️ Vui lòng chọn thương hiệu');
             e.preventDefault();
             return false;
         }
-        if (!gia || gia <= 0) {
+        if (!Price || Price <= 0) {
             alert('⚠️ Vui lòng nhập giá bán lớn hơn 0');
             e.preventDefault();
             return false;
         }
-        if (!moTa) {
+        if (!Description) {
             alert('⚠️ Vui lòng nhập mô tả sản phẩm');
             e.preventDefault();
             return false;

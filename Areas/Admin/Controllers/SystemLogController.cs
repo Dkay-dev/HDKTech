@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using HDKTech.Models;
 using HDKTech.Repositories;
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -155,16 +157,17 @@ namespace HDKTech.Areas.Admin.Controllers
             return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
         }
 
-        private string GenerateCsv(List<Models.SystemLog> logs)
+        private string GenerateCsv(List<SystemLog> logs)
         {
-            var csv = "Thời gian,Người thực hiện,Hành động,Phần hành,Chi tiết,IP Address,Trạng thái\n";
+            var csv = "Thời gian,Người thực hiện,Hành động,Phần hành,Chi tiết,IP Address\n";
 
             foreach (var log in logs)
             {
-                csv += $"\"{log.Timestamp:dd/MM/yyyy HH:mm:ss}\",\"{log.Username}\",\"{log.ActionType}\",\"{log.Module}\",\"{log.Description}\",\"{log.IpAddress}\",\"{log.Status}\"\n";
+                csv += $"\"{log.CreatedAt:dd/MM/yyyy HH:mm:ss}\",\"{log.UserId}\",\"{log.Action}\",\"{log.LogLevel}\",\"{log.Description}\",\"{log.UserId}\"\n";
             }
 
             return csv;
         }
     }
 }
+

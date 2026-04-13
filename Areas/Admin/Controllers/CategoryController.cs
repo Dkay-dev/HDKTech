@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -31,26 +33,26 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<DanhMuc> query = _context.DanhMucs
+                IQueryable<Category> query = _context.Categories
                     .AsNoTracking()
-                    .Include(c => c.SanPhams)
-                    .Include(c => c.DanhMucCha)
-                    .Include(c => c.DanhMucCon);
+                    .Include(c => c.Products)
+                    .Include(c => c.ParentCategory)
+                    .Include(c => c.SubCategories);
 
                 // Apply search filter
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(c => 
-                        c.TenDanhMuc.Contains(searchTerm) ||
-                        c.MoTaDanhMuc.Contains(searchTerm));
+                        c.Name.Contains(searchTerm) ||
+                        c.Description.Contains(searchTerm));
                 }
 
                 // Filter only parent categories (không có cha)
-                query = query.Where(c => c.MaDanhMucCha == null);
+                query = query.Where(c => c.ParentCategoryId == null);
 
                 var totalCount = await query.CountAsync();
                 var categories = await query
-                    .OrderBy(c => c.TenDanhMuc)
+                    .OrderBy(c => c.Name)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -63,11 +65,11 @@ namespace HDKTech.Areas.Admin.Controllers
                 ViewBag.SearchTerm = searchTerm;
 
                 // Summary statistics
-                var totalCategories = await _context.DanhMucs.AsNoTracking().CountAsync();
-                var totalProducts = await _context.SanPhams.AsNoTracking().CountAsync();
-                var categoriesWithoutProducts = await _context.DanhMucs
+                var totalCategories = await _context.Categories.AsNoTracking().CountAsync();
+                var totalProducts = await _context.Products.AsNoTracking().CountAsync();
+                var categoriesWithoutProducts = await _context.Categories
                     .AsNoTracking()
-                    .Where(c => c.SanPhams.Count == 0)
+                    .Where(c => c.Products.Count == 0)
                     .CountAsync();
 
                 ViewBag.TotalCategories = totalCategories;
@@ -94,15 +96,15 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var category = await _context.DanhMucs
-                    .Include(c => c.SanPhams)
-                        .ThenInclude(p => p.HinhAnhs)
-                    .Include(c => c.SanPhams)
-                        .ThenInclude(p => p.KhoHangs)
-                    .Include(c => c.DanhMucCha)
-                    .Include(c => c.DanhMucCon)
-                        .ThenInclude(dc => dc.SanPhams)
-                    .FirstOrDefaultAsync(c => c.MaDanhMuc == id);
+                var category = await _context.Categories
+                    .Include(c => c.Products)
+                        .ThenInclude(p => p.Images)
+                    .Include(c => c.Products)
+                        .ThenInclude(p => p.Inventories)
+                    .Include(c => c.ParentCategory)
+                    .Include(c => c.SubCategories)
+                        .ThenInclude(dc => dc.Products)
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (category == null)
                 {
@@ -131,10 +133,10 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var parentCategories = await _context.DanhMucs
+                var parentCategories = await _context.Categories
                     .AsNoTracking()
-                    .Where(c => c.MaDanhMucCha == null)
-                    .OrderBy(c => c.TenDanhMuc)
+                    .Where(c => c.ParentCategoryId == null)
+                    .OrderBy(c => c.Name)
                     .ToListAsync();
 
                 ViewBag.ParentCategories = parentCategories;
@@ -154,7 +156,7 @@ namespace HDKTech.Areas.Admin.Controllers
         /// </summary>
         [HttpPost]
         [Route("create")]
-        public async Task<IActionResult> Create(DanhMuc category)
+        public async Task<IActionResult> Create(Category category)
         {
             try
             {
@@ -163,11 +165,11 @@ namespace HDKTech.Areas.Admin.Controllers
                     return View(category);
                 }
 
-                _context.DanhMucs.Add(category);
+                _context.Categories.Add(category);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = $"Tạo danh mục '{category.TenDanhMuc}' thành công";
-                return RedirectToAction("Details", new { id = category.MaDanhMuc });
+                TempData["Success"] = $"Tạo danh mục '{category.Name}' thành công";
+                return RedirectToAction("Details", new { id = category.Id });
             }
             catch (Exception ex)
             {
@@ -187,9 +189,9 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var category = await _context.DanhMucs
-                    .Include(c => c.DanhMucCha)
-                    .FirstOrDefaultAsync(c => c.MaDanhMuc == id);
+                var category = await _context.Categories
+                    .Include(c => c.ParentCategory)
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (category == null)
                 {
@@ -197,10 +199,10 @@ namespace HDKTech.Areas.Admin.Controllers
                     return RedirectToAction("Index");
                 }
 
-                var parentCategories = await _context.DanhMucs
+                var parentCategories = await _context.Categories
                     .AsNoTracking()
-                    .Where(c => c.MaDanhMucCha == null && c.MaDanhMuc != id)
-                    .OrderBy(c => c.TenDanhMuc)
+                    .Where(c => c.ParentCategoryId == null && c.Id != id)
+                    .OrderBy(c => c.Name)
                     .ToListAsync();
 
                 ViewBag.ParentCategories = parentCategories;
@@ -221,11 +223,11 @@ namespace HDKTech.Areas.Admin.Controllers
         /// </summary>
         [HttpPost]
         [Route("edit/{id}")]
-        public async Task<IActionResult> Edit(int id, DanhMuc category)
+        public async Task<IActionResult> Edit(int id, Category category)
         {
             try
             {
-                if (id != category.MaDanhMuc)
+                if (id != category.Id)
                 {
                     return NotFound();
                 }
@@ -235,11 +237,11 @@ namespace HDKTech.Areas.Admin.Controllers
                     return View(category);
                 }
 
-                _context.DanhMucs.Update(category);
+                _context.Categories.Update(category);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = $"Cập nhật danh mục '{category.TenDanhMuc}' thành công";
-                return RedirectToAction("Details", new { id = category.MaDanhMuc });
+                TempData["Success"] = $"Cập nhật danh mục '{category.Name}' thành công";
+                return RedirectToAction("Details", new { id = category.Id });
             }
             catch (Exception ex)
             {
@@ -259,15 +261,15 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var category = await _context.DanhMucs.FindAsync(categoryId);
+                var category = await _context.Categories.FindAsync(categoryId);
                 if (category == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy danh mục" });
                 }
 
                 // Check if category has products
-                var productCount = await _context.SanPhams
-                    .CountAsync(p => p.MaDanhMuc == categoryId);
+                var productCount = await _context.Products
+                    .CountAsync(p => p.Id == categoryId);
 
                 if (productCount > 0)
                 {
@@ -275,18 +277,18 @@ namespace HDKTech.Areas.Admin.Controllers
                 }
 
                 // Check if category has subcategories
-                var subcategoryCount = await _context.DanhMucs
-                    .CountAsync(c => c.MaDanhMucCha == categoryId);
+                var subcategoryCount = await _context.Categories
+                    .CountAsync(c => c.ParentCategoryId == categoryId);
 
                 if (subcategoryCount > 0)
                 {
                     return Json(new { success = false, message = $"Không thể xóa danh mục có {subcategoryCount} danh mục con" });
                 }
 
-                _context.DanhMucs.Remove(category);
+                _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Xóa danh mục '{category.TenDanhMuc}' thành công" });
+                return Json(new { success = true, message = $"Xóa danh mục '{category.Name}' thành công" });
             }
             catch (Exception ex)
             {
@@ -305,27 +307,27 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<DanhMuc> query = _context.DanhMucs
+                IQueryable<Category> query = _context.Categories
                     .AsNoTracking()
-                    .Include(c => c.SanPhams)
-                    .Where(c => c.MaDanhMucCha == null);
+                    .Include(c => c.Products)
+                    .Where(c => c.ParentCategoryId == null);
 
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(c => 
-                        c.TenDanhMuc.Contains(searchTerm) ||
-                        c.MoTaDanhMuc.Contains(searchTerm));
+                        c.Name.Contains(searchTerm) ||
+                        c.Description.Contains(searchTerm));
                 }
 
-                var categories = await query.OrderBy(c => c.TenDanhMuc).ToListAsync();
+                var categories = await query.OrderBy(c => c.Name).ToListAsync();
 
                 var csv = "Tên Danh Mục,Mô Tả,Số Sản Phẩm\n";
 
                 foreach (var category in categories)
                 {
-                    var description = category.MoTaDanhMuc?.Replace("\"", "\"\"") ?? "";
-                    var productCount = category.SanPhams?.Count ?? 0;
-                    csv += $"\"{category.TenDanhMuc}\",\"{description}\",{productCount}\n";
+                    var description = category.Description?.Replace("\"", "\"\"") ?? "";
+                    var productCount = category.Products?.Count ?? 0;
+                    csv += $"\"{category.Name}\",\"{description}\",{productCount}\n";
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
@@ -340,3 +342,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

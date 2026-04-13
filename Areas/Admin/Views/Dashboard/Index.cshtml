@@ -1,4 +1,4 @@
-@using HDKTech.Areas.Admin.Controllers
+﻿@using HDKTech.Areas.Admin.Controllers
 
 @{
     ViewData["Title"] = "Dashboard";
@@ -6,7 +6,7 @@
     var totalOrders = (int)ViewBag.TotalOrders;
     var lowStockCount = (int)ViewBag.LowStockCount;
     var newCustomers = (int)ViewBag.NewCustomers;
-    var recentOrders = (List<HDKTech.Models.DonHang>)ViewBag.RecentOrders;
+    var recentOrders = (List<HDKTech.Models.Order>)ViewBag.RecentOrders;
     var dailyRevenue = (List<DailyRevenueData>)ViewBag.DailyRevenue;
 
     // Calculate max revenue for chart scaling
@@ -167,29 +167,29 @@
                     @foreach (var order in recentOrders)
                     {
                         <tr class="hover:bg-surface-container-low transition-colors group">
-                            <td class="px-6 py-5 text-sm font-mono text-zinc-500">#@order.MaDonHang</td>
+                            <td class="px-6 py-5 text-sm font-mono text-zinc-500">#@order.OrderCode</td>
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600">
-                                        @(order.NguoiDung?.UserName?.Substring(0, 2).ToUpper() ?? "NA")
+                                        @(order.User?.UserName?.Substring(0, 2).ToUpper() ?? "NA")
                                     </div>
                                     <div>
-                                        <p class="text-sm font-semibold">@order.NguoiDung?.HoTen ?? "N/A"</p>
-                                        <p class="text-[10px] text-zinc-400">@order.NguoiDung?.Email ?? "N/A"</p>
+                                        <p class="text-sm font-semibold">@order.User?.FullName ?? "N/A"</p>
+                                        <p class="text-[10px] text-zinc-400">@order.User?.Email ?? "N/A"</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-5 text-sm text-zinc-600">@order.NgayDatHang.ToString("MMM dd, yyyy")</td>
+                            <td class="px-6 py-5 text-sm text-zinc-600">@order.OrderDate.ToString("MMM dd, yyyy")</td>
                             <td class="px-6 py-5">
                                 @{
-                                    string statusColor = order.TrangThaiDonHang switch
+                                    string statusColor = order.Status switch
                                     {
                                         0 => "error-container",
                                         1 => "secondary-container",
                                         2 => "surface-container",
                                         _ => "surface-container"
                                     };
-                                    string statusText = order.TrangThaiDonHang switch
+                                    string statusText = order.Status switch
                                     {
                                         0 => "Chờ xử lý",
                                         1 => "Đang giao",
@@ -202,7 +202,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-5 text-right">
-                                <a asp-area="Admin" asp-controller="Order" asp-action="Details" asp-route-id="@order.MaDonHang" class="text-zinc-400 hover:text-primary transition-colors">
+                                <a asp-area="Admin" asp-controller="Order" asp-action="Details" asp-route-id="@order.OrderCode" class="text-zinc-400 hover:text-primary transition-colors">
                                     <span class="material-symbols-outlined">visibility</span>
                                 </a>
                             </td>

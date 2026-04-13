@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -31,21 +33,21 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<HangSX> query = _context.HangSXs
+                IQueryable<Brand> query = _context.Brands
                     .AsNoTracking()
-                    .Include(b => b.SanPhams);
+                    .Include(b => b.Products);
 
                 // Apply search filter
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(b => 
-                        b.TenHangSX.Contains(searchTerm) ||
-                        b.MoTa.Contains(searchTerm));
+                        b.Name.Contains(searchTerm) ||
+                        b.Description.Contains(searchTerm));
                 }
 
                 var totalCount = await query.CountAsync();
                 var brands = await query
-                    .OrderBy(b => b.TenHangSX)
+                    .OrderBy(b => b.Name)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -58,11 +60,11 @@ namespace HDKTech.Areas.Admin.Controllers
                 ViewBag.SearchTerm = searchTerm;
 
                 // Summary statistics
-                var totalBrands = await _context.HangSXs.AsNoTracking().CountAsync();
-                var totalProducts = await _context.SanPhams.AsNoTracking().CountAsync();
-                var brandsWithoutProducts = await _context.HangSXs
+                var totalBrands = await _context.Brands.AsNoTracking().CountAsync();
+                var totalProducts = await _context.Products.AsNoTracking().CountAsync();
+                var brandsWithoutProducts = await _context.Brands
                     .AsNoTracking()
-                    .Where(b => b.SanPhams.Count == 0)
+                    .Where(b => b.Products.Count == 0)
                     .CountAsync();
 
                 ViewBag.TotalBrands = totalBrands;
@@ -89,12 +91,12 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var brand = await _context.HangSXs
-                    .Include(b => b.SanPhams)
-                        .ThenInclude(p => p.HinhAnhs)
-                    .Include(b => b.SanPhams)
-                        .ThenInclude(p => p.KhoHangs)
-                    .FirstOrDefaultAsync(b => b.MaHangSX == id);
+                var brand = await _context.Brands
+                    .Include(b => b.Products)
+                        .ThenInclude(p => p.Images)
+                    .Include(b => b.Products)
+                        .ThenInclude(p => p.Inventories)
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
                 if (brand == null)
                 {
@@ -130,7 +132,7 @@ namespace HDKTech.Areas.Admin.Controllers
         /// </summary>
         [HttpPost]
         [Route("create")]
-        public async Task<IActionResult> Create(HangSX brand)
+        public async Task<IActionResult> Create(Brand brand)
         {
             try
             {
@@ -139,11 +141,11 @@ namespace HDKTech.Areas.Admin.Controllers
                     return View(brand);
                 }
 
-                _context.HangSXs.Add(brand);
+                _context.Brands.Add(brand);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = $"Tạo thương hiệu '{brand.TenHangSX}' thành công";
-                return RedirectToAction("Details", new { id = brand.MaHangSX });
+                TempData["Success"] = $"Tạo thương hiệu '{brand.Name}' thành công";
+                return RedirectToAction("Details", new { id = brand.Id });
             }
             catch (Exception ex)
             {
@@ -163,7 +165,7 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var brand = await _context.HangSXs.FindAsync(id);
+                var brand = await _context.Brands.FindAsync(id);
                 if (brand == null)
                 {
                     TempData["Error"] = "Không tìm thấy thương hiệu";
@@ -187,11 +189,11 @@ namespace HDKTech.Areas.Admin.Controllers
         /// </summary>
         [HttpPost]
         [Route("edit/{id}")]
-        public async Task<IActionResult> Edit(int id, HangSX brand)
+        public async Task<IActionResult> Edit(int id, Brand brand)
         {
             try
             {
-                if (id != brand.MaHangSX)
+                if (id != brand.Id)
                 {
                     return NotFound();
                 }
@@ -201,11 +203,11 @@ namespace HDKTech.Areas.Admin.Controllers
                     return View(brand);
                 }
 
-                _context.HangSXs.Update(brand);
+                _context.Brands.Update(brand);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = $"Cập nhật thương hiệu '{brand.TenHangSX}' thành công";
-                return RedirectToAction("Details", new { id = brand.MaHangSX });
+                TempData["Success"] = $"Cập nhật thương hiệu '{brand.Name}' thành công";
+                return RedirectToAction("Details", new { id = brand.Id });
             }
             catch (Exception ex)
             {
@@ -225,25 +227,25 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var brand = await _context.HangSXs.FindAsync(brandId);
+                var brand = await _context.Brands.FindAsync(brandId);
                 if (brand == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy thương hiệu" });
                 }
 
                 // Check if brand has products
-                var productCount = await _context.SanPhams
-                    .CountAsync(p => p.MaHangSX == brandId);
+                var productCount = await _context.Products
+                    .CountAsync(p => p.Id == brandId);
 
                 if (productCount > 0)
                 {
                     return Json(new { success = false, message = $"Không thể xóa thương hiệu có {productCount} sản phẩm" });
                 }
 
-                _context.HangSXs.Remove(brand);
+                _context.Brands.Remove(brand);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Xóa thương hiệu '{brand.TenHangSX}' thành công" });
+                return Json(new { success = true, message = $"Xóa thương hiệu '{brand.Name}' thành công" });
             }
             catch (Exception ex)
             {
@@ -262,26 +264,26 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<HangSX> query = _context.HangSXs
+                IQueryable<Brand> query = _context.Brands
                     .AsNoTracking()
-                    .Include(b => b.SanPhams);
+                    .Include(b => b.Products);
 
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     query = query.Where(b => 
-                        b.TenHangSX.Contains(searchTerm) ||
-                        b.MoTa.Contains(searchTerm));
+                        b.Name.Contains(searchTerm) ||
+                        b.Description.Contains(searchTerm));
                 }
 
-                var brands = await query.OrderBy(b => b.TenHangSX).ToListAsync();
+                var brands = await query.OrderBy(b => b.Name).ToListAsync();
 
                 var csv = "Tên Thương Hiệu,Mô Tả,Số Sản Phẩm\n";
 
                 foreach (var brand in brands)
                 {
-                    var description = brand.MoTa?.Replace("\"", "\"\"") ?? "";
-                    var productCount = brand.SanPhams?.Count ?? 0;
-                    csv += $"\"{brand.TenHangSX}\",\"{description}\",{productCount}\n";
+                    var description = brand.Description?.Replace("\"", "\"\"") ?? "";
+                    var productCount = brand.Products?.Count ?? 0;
+                    csv += $"\"{brand.Name}\",\"{description}\",{productCount}\n";
                 }
 
                 var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
@@ -296,3 +298,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

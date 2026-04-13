@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -10,12 +12,12 @@ namespace HDKTech.Controllers
     public class OrderController : Controller
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly UserManager<NguoiDung> _userManager;
+        private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<OrderController> _logger;
 
         public OrderController(
             IOrderRepository orderRepository,
-            UserManager<NguoiDung> userManager,
+            UserManager<AppUser> userManager,
             ILogger<OrderController> logger)
         {
             _orderRepository = orderRepository;
@@ -39,11 +41,11 @@ namespace HDKTech.Controllers
             return View(userOrders);
         }
 
-        // GET: /Order/Details/{maDonHang}
-        [HttpGet("Order/Details/{maDonHang}")]
-        public async Task<IActionResult> Details(string maDonHang)
+        // GET: /Order/Details/{maOrder}
+        [HttpGet("Order/Details/{maOrder}")]
+        public async Task<IActionResult> Details(string maOrder)
         {
-            if (string.IsNullOrEmpty(maDonHang))
+            if (string.IsNullOrEmpty(maOrder))
             {
                 TempData["Error"] = "Mã đơn hàng không hợp lệ.";
                 return RedirectToAction("MyOrders");
@@ -56,22 +58,24 @@ namespace HDKTech.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var donHang = await _orderRepository.GetOrderByMaDonHangAsync(maDonHang);
-            if (donHang == null)
+            var Order = await _orderRepository.GetOrderByMaDonHangAsync(maOrder);
+            if (Order == null)
             {
                 TempData["Error"] = "Không tìm thấy đơn hàng.";
                 return RedirectToAction("MyOrders");
             }
 
             // ✅ Security Check: Verify user owns this order
-            if (donHang.MaNguoiDung != user.Id)
+            if (Order.UserId != user.Id)
             {
-                _logger.LogWarning($"Unauthorized access attempt to order {maDonHang} by user {user.Id}");
+                _logger.LogWarning($"Unauthorized access attempt to order {maOrder} by user {user.Id}");
                 TempData["Error"] = "Bạn không có quyền xem đơn hàng này.";
                 return RedirectToAction("MyOrders");
             }
 
-            return View(donHang);
+            return View(Order);
         }
     }
 }
+
+

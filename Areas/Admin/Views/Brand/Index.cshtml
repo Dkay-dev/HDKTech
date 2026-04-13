@@ -1,7 +1,7 @@
-@{
+﻿@{
     ViewData["Title"] = "Quản lý Thương Hiệu";
 
-    var brands = (List<HDKTech.Models.HangSX>)ViewBag.Brands;
+    var brands = (List<HDKTech.Models.Brand>)ViewBag.Brands;
     var totalCount = (int)ViewBag.TotalCount;
     var pageNumber = (int)ViewBag.PageNumber;
     var pageSize = (int)ViewBag.PageSize;
@@ -132,7 +132,7 @@
                     {
                         @foreach (var brand in brands)
                         {
-                            var productCount = brand.SanPhams?.Count ?? 0;
+                            var productCount = brand.Products?.Count ?? 0;
 
                             <tr>
                                 <td>
@@ -141,14 +141,14 @@
                                             <i class="bi bi-building"></i>
                                         </div>
                                         <div>
-                                            <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="text-danger fw-bold text-decoration-none">
-                                                @brand.TenHangSX
+                                            <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.Id })" class="text-danger fw-bold text-decoration-none">
+                                                @brand.Name
                                             </a>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted" title="@(brand.MoTa ?? "")">@((brand.MoTa?.Length > 50 ? brand.MoTa.Substring(0, 50) + "..." : brand.MoTa) ?? "-")</small>
+                                    <small class="text-muted" title="@(brand.Description ?? "")">@((brand.Description?.Length > 50 ? brand.Description.Substring(0, 50) + "..." : brand.Description) ?? "-")</small>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge @(productCount > 0 ? "bg-info" : "bg-light text-muted")">
@@ -157,13 +157,13 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                        <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.Id })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.MaHangSX })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
+                                        <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.Id })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-brand-id="@brand.MaHangSX" title="Xóa">
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-brand-id="@brand.Id" title="Xóa">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>

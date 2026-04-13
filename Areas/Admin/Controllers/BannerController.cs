@@ -1,7 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HDKTech.Models;
 using HDKTech.Repositories;
+using HDKTech.Areas.Admin.Models;
+
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -61,7 +65,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 if (ModelState.IsValid)
                 {
                     await _bannerRepository.CreateBannerAsync(banner);
-                    _logger.LogInformation($"Banner '{banner.TenBanner}' created successfully");
+                    _logger.LogInformation($"Banner '{banner.Title}' created successfully");
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -88,7 +92,7 @@ namespace HDKTech.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Banner banner, IFormFile? imageFile)
         {
-            if (id != banner.MaBanner)
+            if (id != banner.Id)
                 return BadRequest();
 
             try
@@ -115,12 +119,12 @@ namespace HDKTech.Areas.Admin.Controllers
                     banner.ImageUrl = existingBanner.ImageUrl;
                 }
 
-                banner.NgayTao = existingBanner.NgayTao;
+                banner.CreatedAt = existingBanner.CreatedAt;
 
                 if (ModelState.IsValid)
                 {
                     await _bannerRepository.UpdateBannerAsync(banner);
-                    _logger.LogInformation($"Banner '{banner.TenBanner}' updated successfully");
+                    _logger.LogInformation($"Banner '{banner.Title}' updated successfully");
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -153,7 +157,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 if (banner != null)
                 {
                     await _bannerRepository.DeleteBannerAsync(id);
-                    _logger.LogInformation($"Banner '{banner.TenBanner}' deleted successfully");
+                    _logger.LogInformation($"Banner '{banner.Title}' deleted successfully");
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -187,17 +191,17 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 int id = request.id;
-                bool isActive = request.isActive;
+                bool IsActive = request.IsActive;
 
                 var banner = await _bannerRepository.GetBannerByIdAsync(id);
                 if (banner == null)
                     return NotFound();
 
-                banner.IsActive = isActive;
-                banner.NgayCapNhat = DateTime.Now;
+                banner.IsActive = IsActive;
+                banner.UpdatedAt = DateTime.Now;
                 await _bannerRepository.UpdateBannerAsync(banner);
 
-                _logger.LogInformation($"Banner '{banner.TenBanner}' toggled to {(isActive ? "active" : "inactive")}");
+                _logger.LogInformation($"Banner '{banner.Title}' toggled to {(IsActive ? "active" : "inactive")}");
                 return Ok();
             }
             catch (Exception ex)
@@ -207,3 +211,4 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }    }
 }
+

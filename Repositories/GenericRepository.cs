@@ -1,4 +1,4 @@
-using HDKTech.Data;
+﻿using HDKTech.Data;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,3 +32,5 @@ namespace HDKTech.Repositories
         public async Task<bool> SaveAsync() => await _context.SaveChangesAsync() > 0;
     }
 }
+
+

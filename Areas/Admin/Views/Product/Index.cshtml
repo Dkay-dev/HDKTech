@@ -1,6 +1,6 @@
-@using HDKTech.Models
+﻿@using HDKTech.Models
 @using HDKTech.Utils
-@model IEnumerable<SanPham>
+@model IEnumerable<Product>
 
 @{
     ViewData["Title"] = "Quản lý Sản phẩm";
@@ -91,10 +91,10 @@
                             <td>
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="flex-shrink-0">
-                                        @if (product.HinhAnhs?.FirstOrDefault() != null)
+                                        @if (product.Images?.FirstOrDefault() != null)
                                         {
-                                            <img src="@ImageHelper.GetImagePath(product.HinhAnhs.FirstOrDefault().Url)" 
-                                                 alt="@product.TenSanPham" class="rounded-2" style="width: 44px; height: 44px; object-fit: cover; border: 1px solid #dee2e6;" />
+                                            <img src="@ImageHelper.GetImagePath(product.Images.FirstOrDefault().ImageUrl)" 
+                                                 alt="@product.Name" class="rounded-2" style="width: 44px; height: 44px; object-fit: cover; border: 1px solid #dee2e6;" />
                                         }
                                         else
                                         {
@@ -104,29 +104,29 @@
                                         }
                                     </div>
                                     <div class="flex-grow-1">
-                                        <p class="mb-1 fw-bold product-name-clamp" title="@product.TenSanPham">@product.TenSanPham</p>
-                                        <small class="text-danger fw-bold font-monospace">#@product.MaSanPham</small>
+                                        <p class="mb-1 fw-bold product-name-clamp" title="@product.Name">@product.Name</p>
+                                        <small class="text-danger fw-bold font-monospace">#@product.Id</small>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 <span class="badge bg-info badge-sm">
-                                    @product.DanhMuc?.TenDanhMuc
+                                    @product.Category?.Name
                                 </span>
                             </td>
                             <td>
-                                <small class="text-muted">@product.HangSX?.TenHangSX</small>
+                                <small class="text-muted">@product.Brand?.Name</small>
                             </td>
                             <td>
-                                <span class="fw-bold">₫@product.Gia.ToString("N0")</span>
+                                <span class="fw-bold">₫@product.Price.ToString("N0")</span>
                             </td>
                             <td class="text-center">
-                                <span class="fw-bold @(product.KhoHangs?.FirstOrDefault()?.SoLuong > 10 ? "text-success" : product.KhoHangs?.FirstOrDefault()?.SoLuong > 0 ? "text-warning" : "text-danger")">
-                                    @(product.KhoHangs?.FirstOrDefault()?.SoLuong ?? 0)
+                                <span class="fw-bold @(product.Inventories?.FirstOrDefault()?.Quantity > 10 ? "text-success" : product.Inventories?.FirstOrDefault()?.Quantity > 0 ? "text-warning" : "text-danger")">
+                                    @(product.Inventories?.FirstOrDefault()?.Quantity ?? 0)
                                 </span>
                             </td>
                             <td class="text-center">
-                                @if (product.TrangThaiSanPham == 1)
+                                @if (product.Status == 1)
                                 {
                                     <span class="badge bg-success badge-sm">Hoạt động</span>
                                 }
@@ -137,11 +137,11 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a asp-area="Admin" asp-controller="Product" asp-action="Details" asp-route-id="@product.MaSanPham" 
+                                    <a asp-area="Admin" asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" 
                                        class="btn btn-outline-primary btn-icon" title="Sửa">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@product.MaSanPham" method="POST"
+                                    <form asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@product.Id" method="POST"
                                           style="display:inline;" onsubmit="return confirm('Xóa vĩnh viễn sản phẩm này?');">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-outline-danger btn-icon" title="Xóa">

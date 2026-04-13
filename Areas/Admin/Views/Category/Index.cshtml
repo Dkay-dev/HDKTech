@@ -1,7 +1,7 @@
-@{
+﻿@{
     ViewData["Title"] = "Quản lý Danh Mục";
 
-    var categories = (List<HDKTech.Models.DanhMuc>)ViewBag.Categories;
+    var categories = (List<HDKTech.Models.Category>)ViewBag.Categories;
     var totalCount = (int)ViewBag.TotalCount;
     var pageNumber = (int)ViewBag.PageNumber;
     var pageSize = (int)ViewBag.PageSize;
@@ -132,8 +132,8 @@
                     {
                         @foreach (var category in categories)
                         {
-                            var productCount = category.SanPhams?.Count ?? 0;
-                            var subcategoryCount = category.DanhMucCon?.Count ?? 0;
+                            var productCount = category.Products?.Count ?? 0;
+                            var subcategoryCount = category.SubCategories?.Count ?? 0;
 
                             <tr>
                                 <td>
@@ -142,8 +142,8 @@
                                             <i class="bi bi-folder"></i>
                                         </div>
                                         <div>
-                                            <a href="@Url.Action("Details", "Category", new { area = "Admin", id = category.MaDanhMuc })" class="text-danger fw-bold text-decoration-none">
-                                                @category.TenDanhMuc
+                                            <a href="@Url.Action("Details", "Category", new { area = "Admin", id = category.Id })" class="text-danger fw-bold text-decoration-none">
+                                                @category.Name
                                             </a>
                                             @if (subcategoryCount > 0)
                                             {
@@ -153,7 +153,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted" title="@(category.MoTaDanhMuc ?? "")">@((category.MoTaDanhMuc?.Length > 50 ? category.MoTaDanhMuc.Substring(0, 50) + "..." : category.MoTaDanhMuc) ?? "-")</small>
+                                    <small class="text-muted" title="@(category.Description ?? "")">@((category.Description?.Length > 50 ? category.Description.Substring(0, 50) + "..." : category.Description) ?? "-")</small>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge @(productCount > 0 ? "bg-info" : "bg-light text-muted")">
@@ -162,13 +162,13 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="@Url.Action("Details", "Category", new { area = "Admin", id = category.MaDanhMuc })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
+                                        <a href="@Url.Action("Details", "Category", new { area = "Admin", id = category.Id })" class="btn btn-outline-secondary btn-icon-sm" title="Xem chi tiết">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="@Url.Action("Edit", "Category", new { area = "Admin", id = category.MaDanhMuc })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
+                                        <a href="@Url.Action("Edit", "Category", new { area = "Admin", id = category.Id })" class="btn btn-outline-primary btn-icon-sm" title="Chỉnh sửa">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-category-id="@category.MaDanhMuc" title="Xóa">
+                                        <button type="button" class="btn btn-outline-danger btn-icon-sm delete-btn" data-category-id="@category.Id" title="Xóa">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>

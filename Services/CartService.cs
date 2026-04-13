@@ -1,5 +1,7 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 using System.Text.Json;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Services
 {
@@ -102,3 +104,4 @@ namespace HDKTech.Services
         }
     }
 }
+

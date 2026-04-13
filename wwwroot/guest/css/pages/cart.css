@@ -1,0 +1,123 @@
+/* ============================================
+   CART PAGE - Styling
+   ============================================ */
+
+:root {
+    --hdk-red: #ef4444;
+    --hdk-black: #1a1a1a;
+}
+
+.cart-container {
+    background-color: #f8f9fa;
+    min-height: 80vh;
+    padding: 40px 0;
+}
+
+.cart-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    background: #fff;
+    overflow: hidden;
+}
+
+.cart-header {
+    padding: 25px;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    padding: 5px;
+    background: #fff;
+}
+
+.qty-group {
+    display: flex;
+    align-items: center;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 2px;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.btn-qty {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: white;
+    border-radius: 8px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.btn-qty:hover {
+    background: var(--hdk-red);
+    color: white;
+}
+
+.qty-input {
+    width: 45px;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.summary-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 100px;
+    border-top: 4px solid var(--hdk-red);
+}
+
+.summary-total-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--hdk-red);
+    letter-spacing: -1px;
+}
+
+.btn-checkout {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-weight: 700;
+    transition: 0.3s;
+    color: white;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+
+.btn-checkout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.remove-btn {
+    color: #d1d5db;
+    transition: 0.3s;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.remove-btn:hover {
+    color: var(--hdk-red);
+    transform: scale(1.1);
+}

@@ -1,4 +1,4 @@
-@model IEnumerable<HDKTech.Models.DonHang>
+﻿@model IEnumerable<HDKTech.Models.Order>
 
 @{
     ViewData["Title"] = "Đơn Hàng Của Tôi";
@@ -37,13 +37,13 @@
                             {
                                 <tr>
                                     <td>
-                                        <strong>@order.MaDonHangChuoi</strong>
+                                        <strong>@order.OrderCode</strong>
                                     </td>
                                     <td>
-                                        @order.NgayDatHang.ToString("dd/MM/yyyy HH:mm")
+                                        @order.OrderDate.ToString("dd/MM/yyyy HH:mm")
                                     </td>
                                     <td>
-                                        @switch (order.TrangThaiDonHang)
+                                        @switch (order.Status)
                                         {
                                             case 0:
                                                 <span class="badge bg-warning text-dark">Chờ Xác Nhận</span>
@@ -67,11 +67,11 @@
                                     </td>
                                     <td>
                                         <strong class="text-danger">
-                                            @order.TongTien.ToString("C0").Replace("₫", "").Trim()₫
+                                            @order.TotalAmount.ToString("C0").Replace("₫", "").Trim()₫
                                         </strong>
                                     </td>
                                     <td>
-                                        <a asp-action="Details" asp-route-maDonHang="@order.MaDonHangChuoi" 
+                                        <a asp-action="Details" asp-route-maDonHang="@order.OrderCode" 
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-eye"></i> Xem Chi Tiết
                                         </a>
@@ -97,3 +97,5 @@
         background-color: #f8f9fa;
     }
 </style>
+
+

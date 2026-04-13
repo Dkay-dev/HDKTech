@@ -1,4 +1,4 @@
-using Bogus;
+﻿using Bogus;
 using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Data;
 using HDKTech.Models;
@@ -9,20 +9,20 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HDKTech.Areas.Identity.Data
 {
     /// <summary>
-    /// Chỉ chứa logic seed SẢN PHẨM với ThongSoKyThuat chuẩn
+    /// Chỉ chứa logic seed SẢN PHẨM với Specifications chuẩn
     /// </summary>
     public static class DataSeedProducts
     {
         public static async Task SeedProductsWithSpecs(HDKTechContext context)
         {
-            if (await context.SanPhams.AnyAsync())
+            if (await context.Products.AnyAsync())
                 return;
 
-            var brands = await context.HangSXs.ToListAsync();
-            var categories = await context.DanhMucs.Where(c => c.MaDanhMucCha == null).ToListAsync();
+            var brands = await context.Brands.ToListAsync();
+            var categories = await context.Categories.Where(c => c.ParentCategoryId == null).ToListAsync();
             var random = new Random();
 
-            // 44 SẢN PHẨM THỰC TẾ với ThongSoKyThuat định dạng "Key: Value | Key: Value"
+            // 44 SẢN PHẨM THỰC TẾ với Specifications định dạng "Key: Value | Key: Value"
             var products = new List<(string name, decimal price, decimal? msrp, string categoryName, string brand, string description, string specs, string imageFolder, string imageFile, int discount)>
             {
                 // ===== LAPTOP ULTRABOOK (6 sản phẩm) =====
@@ -272,8 +272,8 @@ namespace HDKTech.Areas.Identity.Data
             };
 
             // Tạo brand map
-            var brandMap = brands.ToDictionary(b => b.TenHangSX, b => b.MaHangSX);
-            var categoryMap = categories.ToDictionary(c => c.TenDanhMuc, c => c.MaDanhMuc);
+            var brandMap = brands.ToDictionary(b => b.Name, b => b.Id);
+            var categoryMap = categories.ToDictionary(c => c.Name, c => c.Id);
 
             // Seed sản phẩm
             foreach (var prod in products)
@@ -282,47 +282,47 @@ namespace HDKTech.Areas.Identity.Data
                     !categoryMap.TryGetValue(prod.categoryName, out var catId))
                     continue;
 
-                var sp = new SanPham
+                var sp = new Product
                 {
-                    TenSanPham = prod.name,
-                    Gia = prod.price,
-                    GiaNiemYet = prod.msrp,
-                    MaDanhMuc = catId,
-                    MaHangSX = brandId,
-                    TrangThaiSanPham = 1,
-                    ThoiGianTaoSP = DateTime.Now.AddDays(-random.Next(1, 60)),
-                    KhuyenMai = prod.discount > 0 
+                    Name = prod.name,
+                    Price = prod.price,
+                    ListPrice = prod.msrp,
+                    CategoryId = catId,
+                    BrandId = brandId,
+                    Status = 1,
+                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60)),
+                    DiscountNote = prod.discount > 0 
                         ? $"Giảm {prod.discount}% hôm nay|Tặng Balo Gaming HDK|Vệ sinh máy miễn phí" 
                         : "Tặng Balo Gaming HDK|Giao hàng nhanh trong 24h",
-                    ThongTinBaoHanh = "24 Tháng chính hãng",
-                    MoTaSanPham = $"<h5 class='text-danger fw-bold'>🎯 Đặc điểm nổi bật</h5><ul><li>✓ {prod.description}</li><li>✓ Bảo hành chính hãng 24 tháng từ HDKTech</li><li>✓ Giao hàng toàn quốc trong 24-48 giờ</li><li>✓ Hỗ trợ trả góp 0% lãi suất</li></ul>",
-                    ThongSoKyThuat = prod.specs
+                    WarrantyInfo = "24 Tháng chính hãng",
+                    Description = $"<h5 class='text-danger fw-bold'>🎯 Đặc điểm nổi bật</h5><ul><li>✓ {prod.description}</li><li>✓ Bảo hành chính hãng 24 tháng từ HDKTech</li><li>✓ Giao hàng toàn quốc trong 24-48 giờ</li><li>✓ Hỗ trợ trả góp 0% lãi suất</li></ul>",
+                    Specifications = prod.specs
                 };
 
-                context.SanPhams.Add(sp);
+                context.Products.Add(sp);
             }
 
             await context.SaveChangesAsync();
 
             // Seed ảnh cho từng sản phẩm
-            var spList = await context.SanPhams.ToListAsync();
+            var spList = await context.Products.ToListAsync();
             foreach (var sp in spList.Take(44)) // 44 sản phẩm
             {
                 var prodData = products[spList.IndexOf(sp)];
-                context.HinhAnhs.Add(new HinhAnh
+                context.ProductImages.Add(new ProductImage
                 {
-                    MaSanPham = sp.MaSanPham,
-                    Url = $"{prodData.imageFolder}/{prodData.imageFile}",
+                    ProductId = sp.Id,
+                    ImageUrl = $"{prodData.imageFolder}/{prodData.imageFile}",
                     IsDefault = true,
-                    NgayTao = DateTime.Now
+                    CreatedAt = DateTime.Now
                 });
 
                 // Thêm kho hàng
-                context.KhoHangs.Add(new KhoHang
+                context.Inventories.Add(new Inventory
                 {
-                    MaSanPham = sp.MaSanPham,
-                    SoLuong = random.Next(10, 100),
-                    NgayCapNhat = DateTime.Now
+                    ProductId = sp.Id,
+                    Quantity = random.Next(10, 100),
+                    UpdatedAt = DateTime.Now
                 });
             }
 
@@ -330,3 +330,4 @@ namespace HDKTech.Areas.Identity.Data
         }
     }
 }
+

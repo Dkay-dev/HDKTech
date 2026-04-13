@@ -1,7 +1,9 @@
-using HDKTech.Repositories;
+﻿using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Models;
 using Microsoft.AspNetCore.Mvc;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -28,12 +30,12 @@ namespace HDKTech.Controllers
             int rootCategoryId = id;
             var currentCategory = category;
 
-            while (currentCategory.MaDanhMucCha.HasValue && currentCategory.MaDanhMucCha > 0)
+            while (currentCategory.ParentCategoryId.HasValue && currentCategory.ParentCategoryId > 0)
             {
-                var parent = await _categoryRepo.GetByIdAsync(currentCategory.MaDanhMucCha.Value);
+                var parent = await _categoryRepo.GetByIdAsync(currentCategory.ParentCategoryId.Value);
                 if (parent != null)
                 {
-                    rootCategoryId = parent.MaDanhMuc;
+                    rootCategoryId = parent.Id;
                     currentCategory = parent;
                 }
                 else
@@ -50,83 +52,83 @@ namespace HDKTech.Controllers
             if (id != rootCategoryId)
             {
                 var filterCategory = category;
-                var parentCategory = filterCategory.MaDanhMucCha.HasValue 
-                    ? await _categoryRepo.GetByIdAsync(filterCategory.MaDanhMucCha.Value) 
+                var parentCategory = filterCategory.ParentCategoryId.HasValue 
+                    ? await _categoryRepo.GetByIdAsync(filterCategory.ParentCategoryId.Value) 
                     : null;
 
                 // Map từ parent category ID để xác định loại filter
                 // ID 15 = Thương hiệu (Brand)
-                if (parentCategory?.MaDanhMuc == 15)
+                if (parentCategory?.Id == 15)
                 {
-                    var brandName = filterCategory.TenDanhMuc.ToLower();
+                    var brandName = filterCategory.Name.ToLower();
                     products = products.Where(p => 
-                        p.HangSX?.TenHangSX?.ToLower().Contains(brandName) ?? false
+                        p.Brand?.Name?.ToLower().Contains(brandName) ?? false
                     ).ToList();
                 }
                 // ID 21 = Giá bán (Price)
-                else if (parentCategory?.MaDanhMuc == 21)
+                else if (parentCategory?.Id == 21)
                 {
-                    var priceRangeName = filterCategory.TenDanhMuc.ToLower();
+                    var priceRangeName = filterCategory.Name.ToLower();
 
                     if (priceRangeName.Contains("dưới") || priceRangeName.Contains("under"))
                     {
-                        if (priceRangeName.Contains("15")) products = products.Where(p => p.Gia < 15000000).ToList();
+                        if (priceRangeName.Contains("15")) products = products.Where(p => p.Price < 15000000).ToList();
                     }
                     else if (priceRangeName.Contains("15") && priceRangeName.Contains("20"))
                     {
-                        products = products.Where(p => p.Gia >= 15000000 && p.Gia <= 20000000).ToList();
+                        products = products.Where(p => p.Price >= 15000000 && p.Price <= 20000000).ToList();
                     }
                     else if (priceRangeName.Contains("trên") || priceRangeName.Contains("above"))
                     {
-                        if (priceRangeName.Contains("20")) products = products.Where(p => p.Gia > 20000000).ToList();
+                        if (priceRangeName.Contains("20")) products = products.Where(p => p.Price > 20000000).ToList();
                     }
                 }
                 // ID 25 = CPU Intel
-                else if (parentCategory?.MaDanhMuc == 25)
+                else if (parentCategory?.Id == 25)
                 {
-                    var cpuName = filterCategory.TenDanhMuc;
+                    var cpuName = filterCategory.Name;
                     products = products.Where(p => 
-                        p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(cpuName)
+                        p.Specifications != null && p.Specifications.Contains(cpuName)
                     ).ToList();
                 }
                 // ID 26 = VGA
-                else if (parentCategory?.MaDanhMuc == 26)
+                else if (parentCategory?.Id == 26)
                 {
-                    var vgaName = filterCategory.TenDanhMuc;
+                    var vgaName = filterCategory.Name;
                     products = products.Where(p => 
-                        p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(vgaName)
+                        p.Specifications != null && p.Specifications.Contains(vgaName)
                     ).ToList();
                 }
                 // ID 27 = RAM
-                else if (parentCategory?.MaDanhMuc == 27)
+                else if (parentCategory?.Id == 27)
                 {
-                    var ramName = filterCategory.TenDanhMuc;
+                    var ramName = filterCategory.Name;
                     products = products.Where(p => 
-                        p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(ramName)
+                        p.Specifications != null && p.Specifications.Contains(ramName)
                     ).ToList();
                 }
             }
 
             // Filter từ dropdown/query params
             if (brandId.HasValue && brandId > 0)
-                products = products.Where(p => p.MaHangSX == brandId.Value).ToList();
+                products = products.Where(p => p.Id == brandId.Value).ToList();
 
             if (minPrice.HasValue)
-                products = products.Where(p => p.Gia >= minPrice.Value).ToList();
+                products = products.Where(p => p.Price >= minPrice.Value).ToList();
             if (maxPrice.HasValue)
-                products = products.Where(p => p.Gia <= maxPrice.Value).ToList();
+                products = products.Where(p => p.Price <= maxPrice.Value).ToList();
 
             if (!string.IsNullOrWhiteSpace(cpuLine))
-                products = products.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(cpuLine)).ToList();
+                products = products.Where(p => p.Specifications != null && p.Specifications.Contains(cpuLine)).ToList();
 
             if (!string.IsNullOrWhiteSpace(vgaLine))
-                products = products.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(vgaLine)).ToList();
+                products = products.Where(p => p.Specifications != null && p.Specifications.Contains(vgaLine)).ToList();
 
             if (!string.IsNullOrWhiteSpace(ramType))
-                products = products.Where(p => p.ThongSoKyThuat != null && p.ThongSoKyThuat.Contains(ramType)).ToList();
+                products = products.Where(p => p.Specifications != null && p.Specifications.Contains(ramType)).ToList();
 
             if (status.HasValue)
-                products = products.Where(p => p.TrangThaiSanPham == status.Value).ToList();
+                products = products.Where(p => p.Status == status.Value).ToList();
 
             // Áp dụng sắp xếp
             products = ApplySorting(products, sortBy);
@@ -147,7 +149,7 @@ namespace HDKTech.Controllers
             var brands = await _productRepo.GetUniqueBrandsByCategory(id);
             var cpuLines = await _productRepo.GetUniqueCpuLines();
 
-            ViewBag.CategoryName = category.TenDanhMuc;
+            ViewBag.CategoryName = category.Name;
             ViewBag.CategoryId = id;
             ViewBag.Brands = brands;
             ViewBag.CpuLines = cpuLines;
@@ -159,17 +161,19 @@ namespace HDKTech.Controllers
             return View(paginatedProducts);
         }
 
-        private List<SanPham> ApplySorting(List<SanPham> products, string sortBy)
+        private List<Product> ApplySorting(List<Product> products, string sortBy)
         {
             return sortBy?.ToLower() switch
             {
-                "name_asc" => products.OrderBy(p => p.TenSanPham).ToList(),
-                "name_desc" => products.OrderByDescending(p => p.TenSanPham).ToList(),
-                "price_asc" => products.OrderBy(p => p.Gia).ToList(),
-                "price_desc" => products.OrderByDescending(p => p.Gia).ToList(),
-                "new" => products.OrderByDescending(p => p.ThoiGianTaoSP).ToList(),
-                _ => products.OrderByDescending(p => p.ThoiGianTaoSP).ToList()
+                "name_asc" => products.OrderBy(p => p.Name).ToList(),
+                "name_desc" => products.OrderByDescending(p => p.Name).ToList(),
+                "price_asc" => products.OrderBy(p => p.Price).ToList(),
+                "price_desc" => products.OrderByDescending(p => p.Price).ToList(),
+                "new" => products.OrderByDescending(p => p.CreatedAt).ToList(),
+                _ => products.OrderByDescending(p => p.CreatedAt).ToList()
             };
         }
     }
 }
+
+

@@ -1,4 +1,4 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 
 namespace HDKTech.Repositories.Interfaces
 {
@@ -38,3 +38,5 @@ namespace HDKTech.Repositories.Interfaces
         Task SaveCartAsync(string userId, Cart cart);
     }
 }
+
+

@@ -1,7 +1,9 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 using HDKTech.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Controllers
 {
@@ -60,11 +62,11 @@ namespace HDKTech.Controllers
                     userAgent: userAgent,
                     referer: referer,
                     userId: string.IsNullOrEmpty(userId) ? null : int.TryParse(userId, out var id) ? id : null,
-                    bannerName: banner.TenBanner,
-                    bannerType: banner.LoaiBanner
+                    bannerName: banner.Title,
+                    bannerType: banner.BannerType
                 );
 
-                _logger.LogInformation($"Banner click logged: {banner.TenBanner} (ID: {request.BannerId}) from {userIpAddress}");
+                _logger.LogInformation($"Banner click logged: {banner.Title} (ID: {request.BannerId}) from {userIpAddress}");
 
                 return Ok(new
                 {
@@ -115,11 +117,11 @@ namespace HDKTech.Controllers
                     userAgent: userAgent,
                     referer: referer,
                     userId: string.IsNullOrEmpty(userId) ? null : int.TryParse(userId, out var id) ? id : null,
-                    bannerName: banner.TenBanner,
-                    bannerType: banner.LoaiBanner
+                    bannerName: banner.Title,
+                    bannerType: banner.BannerType
                 );
 
-                _logger.LogInformation($"Banner click tracked: {banner.TenBanner} (ID: {bannerId}) from {userIpAddress}");
+                _logger.LogInformation($"Banner click tracked: {banner.Title} (ID: {bannerId}) from {userIpAddress}");
 
                 return Ok(new
                 {
@@ -183,3 +185,5 @@ namespace HDKTech.Controllers
         public int BannerId { get; set; }
     }
 }
+
+

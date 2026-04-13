@@ -1,12 +1,14 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace HDKTech.Models
 {
     public class CheckoutViewModel
     {
+        public string PaymentMethod { get; set; } = "COD";
+
         [Required(ErrorMessage = "Vui lòng nhập họ tên")]
         [Display(Name = "Họ tên")]
-        public string TenNguoiNhan { get; set; }
+        public string RecipientName { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập email")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
@@ -20,16 +22,16 @@ namespace HDKTech.Models
 
         [Required(ErrorMessage = "Vui lòng nhập địa chỉ giao hàng")]
         [Display(Name = "Địa chỉ giao hàng")]
-        public string DiaChiGiaoHang { get; set; }
+        public string ShippingAddress { get; set; }
 
         [Display(Name = "Ghi chú đơn hàng")]
         public string GhiChu { get; set; }
 
         // Summary info (read-only)
-        public decimal TongTien { get; set; }
-        public decimal PhiVanChuyen { get; set; }
-        public decimal TongCong => TongTien + PhiVanChuyen;
-        public int SoSanPham { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal ShippingFee { get; set; }
+        public decimal TongCong => TotalAmount + ShippingFee;
+        public int SoProduct { get; set; }
         public List<CartItem> Items { get; set; } = new();
     }
 }

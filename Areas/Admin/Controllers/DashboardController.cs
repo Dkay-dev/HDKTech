@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -32,34 +34,34 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 // Get total revenue (sum of all orders)
-                var totalRevenue = await _context.DonHangs
+                var totalRevenue = await _context.Orders
                     .AsNoTracking()
-                    .SumAsync(o => o.TongTien);
+                    .SumAsync(o => o.TotalAmount);
 
                 // Get total orders count
-                var totalOrders = await _context.DonHangs
+                var totalOrders = await _context.Orders
                     .AsNoTracking()
                     .CountAsync();
 
                 // Get low stock products (quantity < 10)
-                var lowStockCount = await _context.KhoHangs
+                var lowStockCount = await _context.Inventories
                     .AsNoTracking()
-                    .Where(k => k.SoLuong < 10)
+                    .Where(k => k.Quantity < 10)
                     .CountAsync();
 
                 // Get new customers (registered in last 30 days)
                 var thirtyDaysAgo = DateTime.Now.AddDays(-30);
                 var newCustomers = await _context.Users
                     .AsNoTracking()
-                    .OfType<NguoiDung>()
-                    .Where(u => u.NgayTao >= thirtyDaysAgo)
+                    .OfType<AppUser>()
+                    .Where(u => u.CreatedAt >= thirtyDaysAgo)
                     .CountAsync();
 
                 // Get recent orders (last 5)
-                var recentOrders = await _context.DonHangs
+                var recentOrders = await _context.Orders
                     .AsNoTracking()
-                    .Include(o => o.NguoiDung)
-                    .OrderByDescending(o => o.NgayDatHang)
+                    .Include(o => o.User)
+                    .OrderByDescending(o => o.OrderDate)
                     .Take(5)
                     .ToListAsync();
 
@@ -69,10 +71,10 @@ namespace HDKTech.Areas.Admin.Controllers
                 {
                     var date = DateTime.Now.AddDays(-i);
                     var dateOnly = date.Date;
-                    var revenue = await _context.DonHangs
+                    var revenue = await _context.Orders
                         .AsNoTracking()
-                        .Where(o => o.NgayDatHang.Date == dateOnly)
-                        .SumAsync(o => o.TongTien);
+                        .Where(o => o.OrderDate.Date == dateOnly)
+                        .SumAsync(o => o.TotalAmount);
 
                     dailyRevenueData.Add(new DailyRevenueData
                     {
@@ -107,3 +109,4 @@ namespace HDKTech.Areas.Admin.Controllers
         public decimal Revenue { get; set; }
     }
 }
+

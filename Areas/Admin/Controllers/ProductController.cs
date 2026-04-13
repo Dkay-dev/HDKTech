@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Data;
 using HDKTech.Utils;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -18,12 +20,12 @@ namespace HDKTech.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class ProductController : Controller
     {
-        private readonly IAdminProductRepository _productRepository;
+        private readonly HDKTech.Repositories.Interfaces.IAdminProductRepository _productRepository;
         private readonly ILogger<ProductController> _logger;
         private readonly HDKTechContext _context;
 
         public ProductController(
-            IAdminProductRepository productRepository,
+            HDKTech.Repositories.Interfaces.IAdminProductRepository productRepository,
             ILogger<ProductController> logger,
             HDKTechContext context)
         {
@@ -56,7 +58,7 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 _logger.LogError(ex, "Error loading products list");
                 TempData["Error"] = "Lỗi khi tải danh sách sản phẩm";
-                return View(new List<SanPham>());
+                return View(new List<Product>());
             }
         }
 
@@ -97,7 +99,7 @@ namespace HDKTech.Areas.Admin.Controllers
         public async Task<IActionResult> Create()
         {
             await LoadViewBagData();
-            return View("Details", new SanPham());
+            return View("Details", new Product());
         }
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace HDKTech.Areas.Admin.Controllers
         [HttpPost]
         [Route("create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SanPham product)
+        public async Task<IActionResult> Create(Product product)
         {
             try
             {
@@ -118,12 +120,12 @@ namespace HDKTech.Areas.Admin.Controllers
                 }
 
                 // Set timestamps
-                product.ThoiGianTaoSP = DateTime.Now;
+                product.CreatedAt = DateTime.Now;
 
                 var createdProduct = await _productRepository.CreateProductAsync(product);
 
-                TempData["Success"] = $"Sản phẩm '{product.TenSanPham}' đã được tạo thành công";
-                return RedirectToAction(nameof(Details), new { id = createdProduct.MaSanPham });
+                TempData["Success"] = $"Sản phẩm '{product.Name}' đã được tạo thành công";
+                return RedirectToAction(nameof(Details), new { id = createdProduct.Id });
             }
             catch (Exception ex)
             {
@@ -141,11 +143,11 @@ namespace HDKTech.Areas.Admin.Controllers
         [HttpPost]
         [Route("edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, SanPham product)
+        public async Task<IActionResult> Edit(int id, Product product)
         {
             try
             {
-                if (id != product.MaSanPham)
+                if (id != product.Id)
                 {
                     return BadRequest("Mismatch product ID");
                 }
@@ -200,7 +202,7 @@ namespace HDKTech.Areas.Admin.Controllers
 
                 if (success)
                 {
-                    TempData["Success"] = $"Sản phẩm '{product.TenSanPham}' đã được xóa thành công";
+                    TempData["Success"] = $"Sản phẩm '{product.Name}' đã được xóa thành công";
                 }
                 else
                 {
@@ -354,13 +356,13 @@ namespace HDKTech.Areas.Admin.Controllers
         /// </summary>
         private async Task LoadViewBagData()
         {
-            var categories = await _context.DanhMucs
-                .Where(c => c.MaDanhMucCha == null)
-                .OrderBy(c => c.TenDanhMuc)
+            var categories = await _context.Categories
+                .Where(c => c.ParentCategoryId == null)
+                .OrderBy(c => c.Name)
                 .ToListAsync();
 
-            var brands = await _context.HangSXs
-                .OrderBy(b => b.TenHangSX)
+            var brands = await _context.Brands
+                .OrderBy(b => b.Name)
                 .ToListAsync();
 
             ViewBag.Categories = categories;
@@ -368,3 +370,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

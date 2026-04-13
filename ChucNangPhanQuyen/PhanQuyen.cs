@@ -1,4 +1,4 @@
-namespace HDKTech.ChucNangPhanQuyen
+﻿namespace HDKTech.ChucNangPhanQuyen
 {
     public enum PhanQuyen
     {

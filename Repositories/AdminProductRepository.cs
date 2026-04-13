@@ -1,4 +1,4 @@
-using HDKTech.Models;
+﻿using HDKTech.Models;
 using HDKTech.Data;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -23,34 +23,34 @@ namespace HDKTech.Repositories
 
         #region Read Operations
 
-        public async Task<IEnumerable<SanPham>> GetAllProductsAsync()
+        public async Task<IEnumerable<Product>> GetAllProductsAsync()
         {
             try
             {
-                return await _context.SanPhams
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .Include(p => p.HinhAnhs)
-                    .OrderBy(p => p.TenSanPham)
+                return await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .Include(p => p.Images)
+                    .OrderBy(p => p.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all products");
-                return new List<SanPham>();
+                return new List<Product>();
             }
         }
 
-        public async Task<SanPham> GetProductByIdAsync(int id)
+        public async Task<Product> GetProductByIdAsync(int id)
         {
             try
             {
-                return await _context.SanPhams
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .Include(p => p.HinhAnhs)
-                    .Include(p => p.KhoHangs)
-                    .FirstOrDefaultAsync(p => p.MaSanPham == id);
+                return await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .Include(p => p.Images)
+                    .Include(p => p.Inventories)
+                    .FirstOrDefaultAsync(p => p.Id == id);
             }
             catch (Exception ex)
             {
@@ -59,54 +59,54 @@ namespace HDKTech.Repositories
             }
         }
 
-        public async Task<IEnumerable<SanPham>> GetProductsByCategoryAsync(int categoryId)
+        public async Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId)
         {
             try
             {
-                return await _context.SanPhams
-                    .Where(p => p.MaDanhMuc == categoryId)
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .OrderBy(p => p.TenSanPham)
+                return await _context.Products
+                    .Where(p => p.Id == categoryId)
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .OrderBy(p => p.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving products by category: {CategoryId}", categoryId);
-                return new List<SanPham>();
+                return new List<Product>();
             }
         }
 
-        public async Task<IEnumerable<SanPham>> GetProductsByBrandAsync(int brandId)
+        public async Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId)
         {
             try
             {
-                return await _context.SanPhams
-                    .Where(p => p.MaHangSX == brandId)
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .OrderBy(p => p.TenSanPham)
+                return await _context.Products
+                    .Where(p => p.Id == brandId)
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .OrderBy(p => p.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving products by brand: {BrandId}", brandId);
-                return new List<SanPham>();
+                return new List<Product>();
             }
         }
 
-        public async Task<(IEnumerable<SanPham> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize)
+        public async Task<(IEnumerable<Product> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize)
         {
             try
             {
-                var query = _context.SanPhams
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .Include(p => p.HinhAnhs);
+                var query = _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .Include(p => p.Images);
 
                 var totalCount = await query.CountAsync();
                 var products = await query
-                    .OrderBy(p => p.TenSanPham)
+                    .OrderBy(p => p.Name)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -116,7 +116,7 @@ namespace HDKTech.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving paged products");
-                return (new List<SanPham>(), 0);
+                return (new List<Product>(), 0);
             }
         }
 
@@ -124,7 +124,7 @@ namespace HDKTech.Repositories
 
         #region Create Operations
 
-        public async Task<SanPham> CreateProductAsync(SanPham product)
+        public async Task<Product> CreateProductAsync(Product product)
         {
             try
             {
@@ -133,10 +133,10 @@ namespace HDKTech.Repositories
                     throw new ArgumentNullException(nameof(product));
                 }
 
-                _context.SanPhams.Add(product);
+                _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Product created successfully: {ProductName}", product.TenSanPham);
+                _logger.LogInformation("Product created successfully: {ProductName}", product.Name);
                 return product;
             }
             catch (Exception ex)
@@ -150,7 +150,7 @@ namespace HDKTech.Repositories
 
         #region Update Operations
 
-        public async Task<bool> UpdateProductAsync(SanPham product)
+        public async Task<bool> UpdateProductAsync(Product product)
         {
             try
             {
@@ -159,34 +159,34 @@ namespace HDKTech.Repositories
                     throw new ArgumentNullException(nameof(product));
                 }
 
-                var existingProduct = await _context.SanPhams.FindAsync(product.MaSanPham);
+                var existingProduct = await _context.Products.FindAsync(product.Id);
                 if (existingProduct == null)
                 {
-                    _logger.LogWarning("Product not found for update: {ProductId}", product.MaSanPham);
+                    _logger.LogWarning("Product not found for update: {ProductId}", product.Id);
                     return false;
                 }
 
                 // Update properties
-                existingProduct.TenSanPham = product.TenSanPham;
-                existingProduct.MoTaSanPham = product.MoTaSanPham;
-                existingProduct.Gia = product.Gia;
-                existingProduct.MaDanhMuc = product.MaDanhMuc;
-                existingProduct.MaHangSX = product.MaHangSX;
-                existingProduct.TrangThaiSanPham = product.TrangThaiSanPham;
-                existingProduct.ThongSoKyThuat = product.ThongSoKyThuat;
-                existingProduct.ThongTinBaoHanh = product.ThongTinBaoHanh;
-                existingProduct.KhuyenMai = product.KhuyenMai;
-                existingProduct.GiaNiemYet = product.GiaNiemYet;
+                existingProduct.Name = product.Name;
+                existingProduct.Description = product.Description;
+                existingProduct.Price = product.Price;
+                existingProduct.Id = product.Id;
+                existingProduct.Id = product.Id;
+                existingProduct.Status = product.Status;
+                existingProduct.Specifications = product.Specifications;
+                existingProduct.WarrantyInfo = product.WarrantyInfo;
+                existingProduct.DiscountNote = product.DiscountNote;
+                existingProduct.ListPrice = product.ListPrice;
 
-                _context.SanPhams.Update(existingProduct);
+                _context.Products.Update(existingProduct);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Product updated successfully: {ProductName}", product.TenSanPham);
+                _logger.LogInformation("Product updated successfully: {ProductName}", product.Name);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating product: {ProductId}", product.MaSanPham);
+                _logger.LogError(ex, "Error updating product: {ProductId}", product.Id);
                 return false;
             }
         }
@@ -195,20 +195,20 @@ namespace HDKTech.Repositories
         {
             try
             {
-                var product = await _context.SanPhams.FindAsync(productId);
+                var product = await _context.Products.FindAsync(productId);
                 if (product == null)
                 {
                     _logger.LogWarning("Product not found for stock update: {ProductId}", productId);
                     return false;
                 }
 
-                // Update stock in KhoHang table (inventory is managed separately)
-                var khoHang = await _context.KhoHangs.FirstOrDefaultAsync(k => k.MaSanPham == productId);
-                if (khoHang != null)
+                // Update stock in Inventory table (inventory is managed separately)
+                var Inventory = await _context.Inventories.FirstOrDefaultAsync(k => k.ProductId == productId);
+                if (Inventory != null)
                 {
-                    khoHang.SoLuong = quantity;
-                    khoHang.NgayCapNhat = DateTime.Now;
-                    _context.KhoHangs.Update(khoHang);
+                    Inventory.Quantity = quantity;
+                    Inventory.UpdatedAt = DateTime.Now;
+                    _context.Inventories.Update(Inventory);
                     await _context.SaveChangesAsync();
                 }
 
@@ -226,15 +226,15 @@ namespace HDKTech.Repositories
         {
             try
             {
-                var product = await _context.SanPhams.FindAsync(productId);
+                var product = await _context.Products.FindAsync(productId);
                 if (product == null)
                 {
                     _logger.LogWarning("Product not found for price update: {ProductId}", productId);
                     return false;
                 }
 
-                product.Gia = price;
-                _context.SanPhams.Update(product);
+                product.Price = price;
+                _context.Products.Update(product);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Product price updated: {ProductId}, Price: {Price}", productId, price);
@@ -255,14 +255,14 @@ namespace HDKTech.Repositories
         {
             try
             {
-                var product = await _context.SanPhams.FindAsync(id);
+                var product = await _context.Products.FindAsync(id);
                 if (product == null)
                 {
                     _logger.LogWarning("Product not found for deletion: {ProductId}", id);
                     return false;
                 }
 
-                _context.SanPhams.Remove(product);
+                _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Product deleted successfully: {ProductId}", id);
@@ -279,8 +279,8 @@ namespace HDKTech.Repositories
         {
             try
             {
-                var products = await _context.SanPhams
-                    .Where(p => ids.Contains(p.MaSanPham))
+                var products = await _context.Products
+                    .Where(p => ids.Contains(p.Id))
                     .ToListAsync();
 
                 if (products.Count == 0)
@@ -289,7 +289,7 @@ namespace HDKTech.Repositories
                     return false;
                 }
 
-                _context.SanPhams.RemoveRange(products);
+                _context.Products.RemoveRange(products);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Products deleted successfully: Count: {Count}", products.Count);
@@ -306,7 +306,7 @@ namespace HDKTech.Repositories
 
         #region Search and Filter
 
-        public async Task<IEnumerable<SanPham>> SearchProductsAsync(string searchTerm)
+        public async Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm)
         {
             try
             {
@@ -316,82 +316,82 @@ namespace HDKTech.Repositories
                 }
 
                 var lowerSearchTerm = searchTerm.ToLower();
-                return await _context.SanPhams
-                    .Where(p => p.TenSanPham.ToLower().Contains(lowerSearchTerm) ||
-                                p.MoTaSanPham.ToLower().Contains(lowerSearchTerm))
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .OrderBy(p => p.TenSanPham)
+                return await _context.Products
+                    .Where(p => p.Name.ToLower().Contains(lowerSearchTerm) ||
+                                p.Description.ToLower().Contains(lowerSearchTerm))
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .OrderBy(p => p.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error searching products: {SearchTerm}", searchTerm);
-                return new List<SanPham>();
+                return new List<Product>();
             }
         }
 
-        public async Task<IEnumerable<SanPham>> FilterProductsAsync(ProductFilterCriteria criteria)
+        public async Task<IEnumerable<Product>> FilterProductsAsync(ProductFilterCriteria criteria)
         {
             try
             {
-                var query = _context.SanPhams.AsQueryable();
+                var query = _context.Products.AsQueryable();
 
                 // Search term filter
                 if (!string.IsNullOrWhiteSpace(criteria.SearchTerm))
                 {
                     var lowerSearchTerm = criteria.SearchTerm.ToLower();
-                    query = query.Where(p => p.TenSanPham.ToLower().Contains(lowerSearchTerm) ||
-                                            p.MoTaSanPham.ToLower().Contains(lowerSearchTerm));
+                    query = query.Where(p => p.Name.ToLower().Contains(lowerSearchTerm) ||
+                                            p.Description.ToLower().Contains(lowerSearchTerm));
                 }
 
                 // Category filter
                 if (criteria.CategoryId.HasValue)
                 {
-                    query = query.Where(p => p.MaDanhMuc == criteria.CategoryId.Value);
+                    query = query.Where(p => p.Id == criteria.CategoryId.Value);
                 }
 
                 // Brand filter
                 if (criteria.BrandId.HasValue)
                 {
-                    query = query.Where(p => p.MaHangSX == criteria.BrandId.Value);
+                    query = query.Where(p => p.Id == criteria.BrandId.Value);
                 }
 
                 // Price range filter
                 if (criteria.MinPrice.HasValue)
                 {
-                    query = query.Where(p => p.Gia >= criteria.MinPrice.Value);
+                    query = query.Where(p => p.Price >= criteria.MinPrice.Value);
                 }
 
                 if (criteria.MaxPrice.HasValue)
                 {
-                    query = query.Where(p => p.Gia <= criteria.MaxPrice.Value);
+                    query = query.Where(p => p.Price <= criteria.MaxPrice.Value);
                 }
 
                 // In stock filter
                 if (criteria.InStock.HasValue && criteria.InStock.Value)
                 {
-                    query = query.Where(p => p.KhoHangs.Any(k => k.SoLuong > 0));
+                    query = query.Where(p => p.Inventories.Any(k => k.Quantity > 0));
                 }
 
                 // Active filter
                 if (criteria.IsActive.HasValue && criteria.IsActive.Value)
                 {
-                    query = query.Where(p => p.TrangThaiSanPham == 1); // Assuming 1 = active
+                    query = query.Where(p => p.Status == 1); // Assuming 1 = active
                 }
 
                 return await query
-                    .Include(p => p.DanhMuc)
-                    .Include(p => p.HangSX)
-                    .Include(p => p.HinhAnhs)
-                    .Include(p => p.KhoHangs)
-                    .OrderBy(p => p.TenSanPham)
+                    .Include(p => p.Category)
+                    .Include(p => p.Brand)
+                    .Include(p => p.Images)
+                    .Include(p => p.Inventories)
+                    .OrderBy(p => p.Name)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error filtering products");
-                return new List<SanPham>();
+                return new List<Product>();
             }
         }
 
@@ -403,7 +403,7 @@ namespace HDKTech.Repositories
         {
             try
             {
-                return await _context.SanPhams.AnyAsync(p => p.MaSanPham == id);
+                return await _context.Products.AnyAsync(p => p.Id == id);
             }
             catch (Exception ex)
             {
@@ -416,8 +416,8 @@ namespace HDKTech.Repositories
         {
             try
             {
-                // Note: SanPham model doesn't have SKU property. This method is here for interface compliance.
-                // If SKU is needed, it should be added to the SanPham model.
+                // Note: Product model doesn't have SKU property. This method is here for interface compliance.
+                // If SKU is needed, it should be added to the Product model.
                 return false;
             }
             catch (Exception ex)
@@ -430,3 +430,5 @@ namespace HDKTech.Repositories
         #endregion
     }
 }
+
+

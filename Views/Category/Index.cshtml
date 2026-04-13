@@ -1,4 +1,4 @@
-@model IEnumerable<HDKTech.Models.SanPham>
+﻿@model IEnumerable<HDKTech.Models.Product>
 @{
     ViewData["Title"] = "Danh mục - HDKTech";
     var categoryId = ViewBag.CategoryId as int?;
@@ -180,28 +180,28 @@
                     <div class="product-card">
                         <!-- IMAGE SECTION -->
                         <div class="product-image-container">
-                            <a asp-controller="Product" asp-action="Details" asp-route-id="@item.MaSanPham" class="product-image-link">
+                            <a asp-controller="Product" asp-action="Details" asp-route-id="@item.Id" class="product-image-link">
                                 @{
-                                    var fileName = item.HinhAnhs?.FirstOrDefault(h => h.IsDefault)?.Url
-                                                   ?? item.HinhAnhs?.FirstOrDefault()?.Url
+                                    var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+                                                   ?? item.Images?.FirstOrDefault()?.ImageUrl
                                                    ?? "no-image.png";
                                     var fullPath = "/images/products/" + fileName;
                                 }
                                 <img src="@fullPath"
-                                     alt="@item.TenSanPham"
+                                     alt="@item.Name"
                                      class="product-image"
                                      onerror="this.onerror=null; this.src='/images/products/no-image.png';">
                             </a>
 
                             <!-- BADGES -->
                             <span class="product-badge-new">MỚI</span>
-                            @if (item.PhanTramGiamGia > 0)
+                            @if (item.DiscountPercent > 0)
                             {
-                                <span class="product-badge-discount">-@item.PhanTramGiamGia%</span>
+                                <span class="product-badge-discount">-@item.DiscountPercent%</span>
                             }
 
                             <!-- ADD TO CART BUTTON -->
-                            <button type="button" class="product-add-btn" onclick="addToCartAjax(@item.MaSanPham, '@item.TenSanPham')">
+                            <button type="button" class="product-add-btn" onclick="addToCartAjax(@item.Id, '@item.Name')">
                                 <i class="bi bi-cart-plus"></i> Thêm Giỏ
                             </button>
                         </div>
@@ -209,8 +209,8 @@
                         <!-- PRODUCT INFO -->
                         <div class="product-info">
                             <h5 class="product-name">
-                                <a asp-controller="Product" asp-action="Details" asp-route-id="@item.MaSanPham">
-                                    @item.TenSanPham
+                                <a asp-controller="Product" asp-action="Details" asp-route-id="@item.Id">
+                                    @item.Name
                                 </a>
                             </h5>
 
@@ -227,11 +227,11 @@
                             </div>
 
                             <div class="product-price-group">
-                                @if (item.GiaNiemYet.HasValue && item.GiaNiemYet > item.Gia)
+                                @if (item.ListPrice.HasValue && item.ListPrice > item.Price)
                                 {
-                                    <span class="product-price-old">@item.GiaNiemYet.Value.ToString("#,##0")₫</span>
+                                    <span class="product-price-old">@item.ListPrice.Value.ToString("#,##0")₫</span>
                                 }
-                                <span class="product-price-current">@item.Gia.ToString("#,##0")₫</span>
+                                <span class="product-price-current">@item.Price.ToString("#,##0")₫</span>
                             </div>
 
                             <!-- Installment button -->
@@ -326,3 +326,5 @@
                             </div>
                         }
                     </div>
+
+
