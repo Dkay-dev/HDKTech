@@ -315,12 +315,27 @@ namespace HDKTech.Areas.Admin.Controllers
                 foreach (var perm in validPerms)
                     await _roleManager.AddClaimAsync(identityRole, new Claim("Permission", perm));
 
-                // Bước 3 — Ghi AuditLog
+                // ✅ Bước 3 — UpdateSecurityStampAsync cho TẤT CẢ user thuộc role này
+                // Mục đích: buộc user đang đăng nhập phải refresh token → nhận quyền mới ngay lập tức
+                // Không cần user phải đăng xuất rồi đăng nhập lại thủ công
+                var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+                int stampUpdated = 0;
+                foreach (var roleUser in usersInRole)
+                {
+                    var stampResult = await _userManager.UpdateSecurityStampAsync(roleUser);
+                    if (stampResult.Succeeded) stampUpdated++;
+                    else _logger.LogWarning("Không thể cập nhật SecurityStamp cho user {UserId}", roleUser.Id);
+                }
+                _logger.LogInformation(
+                    "SavePermissions: Cập nhật SecurityStamp cho {Count}/{Total} user trong role '{Role}'",
+                    stampUpdated, usersInRole.Count, roleName);
+
+                // Bước 4 — Ghi AuditLog
                 await _logService.LogActionAsync(
                     username:    User.Identity?.Name ?? "Admin",
                     actionType:  "Update",
                     module:      "PhanQuyen",
-                    description: $"Cập nhật Policy Claims cho Role '{roleName}': {validPerms.Count} quyền",
+                    description: $"Cập nhật Policy Claims cho Role '{roleName}': {validPerms.Count} quyền. SecurityStamp đã reset cho {stampUpdated}/{usersInRole.Count} user.",
                     entityId:    identityRole.Id,
                     entityName:  roleName,
                     oldValue:    $"{permissionClaims.Count} claims cũ",
@@ -331,7 +346,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 _logger.LogInformation(
                     "SavePermissions: Role '{Role}' — {Count} permissions saved.", roleName, validPerms.Count);
 
-                TempData["Success"] = $"Đã lưu {validPerms.Count} quyền cho role '{roleName}'";
+                TempData["Success"] = $"Đã lưu {validPerms.Count} quyền cho role '{roleName}'. Phiên đăng nhập của {stampUpdated} người dùng sẽ được cập nhật ngay.";
                 return RedirectToAction(nameof(ManagePermissions), new { roleName });
             }
             catch (Exception ex)

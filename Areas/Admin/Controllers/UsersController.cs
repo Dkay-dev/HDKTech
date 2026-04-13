@@ -191,12 +191,17 @@ namespace HDKTech.Areas.Admin.Controllers
             await _userManager.SetLockoutEndDateAsync(user, null);
             await _userManager.ResetAccessFailedCountAsync(user);
 
+            // ✅ Identity Sync: Cập nhật SecurityStamp khi mở khoá
+            // Điều này đảm bảo nếu cookie session cũ vẫn còn (từ trước khi khoá),
+            // nó sẽ bị vô hiệu hoá. User cần đăng nhập lại với tài khoản đã được mở khoá.
+            await _userManager.UpdateSecurityStampAsync(user);
+
             var actor = User.Identity?.Name ?? "System";
             await _logService.LogActionAsync(
                 username   : actor,
                 actionType : "Unlock",
                 module     : "User",
-                description: $"Mở khoá tài khoản của '{user.FullName}' ({user.Email})",
+                description: $"Mở khoá tài khoản của '{user.FullName}' ({user.Email}). SecurityStamp đã reset.",
                 entityId   : user.Id,
                 entityName : user.FullName,
                 oldValue   : "Locked",

@@ -5,85 +5,316 @@
     ViewData["Title"] = "Chỉnh sửa Banner";
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Chỉnh sửa Banner</h1>
-    <p class="text-zinc-500">Cập nhật thông tin banner</p>
+<style>
+    .banner-form-header {
+        margin-bottom: 2rem;
+    }
+
+    .banner-form-header h1 {
+        font-size: 1.875rem;
+        font-weight: 900;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+
+    .banner-form-header p {
+        color: #7b7b7b;
+        font-size: 0.9rem;
+    }
+
+    .banner-form-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    /* Responsive Grid */
+    @@media (min-width: 992px) {
+        .banner-form-container {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+
+    .banner-form {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        padding: 2rem;
+    }
+
+    .banner-form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .banner-form-label {
+        display: block;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .banner-form-label .required {
+        color: #ef4444;
+        font-weight: 900;
+    }
+
+    .banner-form-input,
+    .banner-form-textarea,
+    .banner-form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #dddddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+    }
+
+    .banner-form-input:focus,
+    .banner-form-textarea:focus,
+    .banner-form-select:focus {
+        border-color: #bc000c;
+        box-shadow: 0 0 0 3px rgba(188, 0, 12, 0.1);
+        outline: none;
+    }
+
+    .banner-form-textarea {
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-hint {
+        font-size: 0.8rem;
+        color: #7b7b7b;
+        margin-top: 0.5rem;
+    }
+
+    .validation-error {
+        font-size: 0.8rem;
+        color: #ef4444;
+        margin-top: 0.5rem;
+        display: block;
+    }
+
+    .banner-image-dropzone {
+        border: 2px dashed #dddddd;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #fafafa;
+        cursor: pointer;
+    }
+
+    .banner-image-dropzone:hover {
+        border-color: #bc000c;
+        background-color: rgba(188, 0, 12, 0.02);
+    }
+
+    .banner-image-dropzone.active {
+        border-color: #bc000c;
+        background-color: rgba(188, 0, 12, 0.05);
+    }
+
+    .dropzone-icon {
+        font-size: 2.5rem;
+        color: #999999;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .dropzone-text {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #666666;
+        margin-bottom: 0.25rem;
+    }
+
+    .dropzone-hint {
+        font-size: 0.8rem;
+        color: #999999;
+    }
+
+    .banner-form-actions {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #eeeeee;
+    }
+
+    .btn-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background-color: #bc000c;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        background-color: #9a000a;
+        box-shadow: 0 2px 8px rgba(188, 0, 12, 0.2);
+    }
+
+    .btn-cancel {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border: 1.5px solid #dddddd;
+        background-color: #ffffff;
+        color: #1a1a1a;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background-color: #f8f6f4;
+    }
+
+    .banner-preview-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+        position: sticky;
+        top: 6rem;
+    }
+
+    .preview-title {
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: #1a1a1a;
+        margin-bottom: 1rem;
+    }
+
+    .preview-image-container {
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        height: 14rem;
+    }
+
+    .preview-image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .preview-item {
+        margin-bottom: 1rem;
+    }
+
+    .preview-label {
+        font-weight: 500;
+        color: #7b7b7b;
+        font-size: 0.9rem;
+    }
+
+    .preview-value {
+        color: #1a1a1a;
+        font-weight: 900;
+        margin-top: 0.25rem;
+    }
+
+    .preview-status-active {
+        color: #16a34a;
+    }
+
+    .preview-status-inactive {
+        color: #7b7b7b;
+    }
+</style>
+
+<div class="banner-form-header">
+    <h1>Chỉnh sửa Banner</h1>
+    <p>Cập nhật thông tin banner</p>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="banner-form-container">
     <!-- Form -->
-    <div class="lg:col-span-2">
-        <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+    <div>
+        <form method="post" enctype="multipart/form-data" class="banner-form">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
             <!-- Tên Banner -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">
-                    Tên Banner <span class="text-red-500">*</span>
+            <div class="banner-form-group">
+                <label class="banner-form-label">
+                    Tên Banner <span class="required">*</span>
                 </label>
-                <input type="text" asp-for="Title" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                <span asp-validation-for="Title" class="text-xs text-red-500 mt-1 block"></span>
+                <input type="text" asp-for="Title" class="banner-form-input" />
+                <span asp-validation-for="Title" class="validation-error"></span>
             </div>
 
             <!-- Ảnh Banner -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Hình ảnh</label>
-                <div class="border-2 border-dashed border-outline rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all" id="imageDropZone">
-                    <span class="material-symbols-outlined text-4xl text-zinc-400 mx-auto block mb-2">cloud_upload</span>
-                    <p class="text-sm font-medium text-zinc-600 mb-1">Kéo thả hoặc click để thay đổi ảnh</p>
-                    <p class="text-xs text-zinc-500">PNG, JPG tối đa 5MB</p>
-                    <input type="file" id="imageFile" name="imageFile" class="hidden" accept="image/*" />
+            <div class="banner-form-group">
+                <label class="banner-form-label">Hình ảnh</label>
+                <div class="banner-image-dropzone" id="imageDropZone">
+                    <span class="material-symbols-outlined dropzone-icon">cloud_upload</span>
+                    <p class="dropzone-text">Kéo thả hoặc click để thay đổi ảnh</p>
+                    <p class="dropzone-hint">PNG, JPG tối đa 5MB</p>
+                    <input type="file" id="imageFile" name="imageFile" style="display: none;" accept="image/*" />
                 </div>
             </div>
 
             <!-- Mô tả -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Mô tả</label>
-                <textarea asp-for="Description" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" rows="3"></textarea>
-                <span asp-validation-for="Description" class="text-xs text-red-500 mt-1 block"></span>
+            <div class="banner-form-group">
+                <label class="banner-form-label">Mô tả</label>
+                <textarea asp-for="Description" class="banner-form-textarea" rows="3"></textarea>
+                <span asp-validation-for="Description" class="validation-error"></span>
             </div>
 
             <!-- Link Banner -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Link Banner</label>
-                <input type="url" asp-for="LinkUrl" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                <span asp-validation-for="LinkUrl" class="text-xs text-red-500 mt-1 block"></span>
+            <div class="banner-form-group">
+                <label class="banner-form-label">Link Banner</label>
+                <input type="url" asp-for="LinkUrl" class="banner-form-input" />
+                <span asp-validation-for="LinkUrl" class="validation-error"></span>
             </div>
 
             <!-- Loại Banner -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Loại Banner</label>
-                <select asp-for="BannerType" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+            <div class="banner-form-group">
+                <label class="banner-form-label">Loại Banner</label>
+                <select asp-for="BannerType" class="banner-form-select">
                     <option value="">-- Chọn loại banner --</option>
                     <option value="Main">Trang Chủ (Main)</option>
                     <option value="Side">Sidebar</option>
                     <option value="Bottom">Footer (Bottom)</option>
                 </select>
-                <span asp-validation-for="BannerType" class="text-xs text-red-500 mt-1 block"></span>
+                <span asp-validation-for="BannerType" class="validation-error"></span>
             </div>
 
             <!-- Thứ tự hiển thị -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Thứ tự hiển thị</label>
-                <input type="number" asp-for="DisplayOrder" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                <p class="text-xs text-zinc-500 mt-1">Số nhỏ hơn sẽ hiển thị trước</p>
+            <div class="banner-form-group">
+                <label class="banner-form-label">Thứ tự hiển thị</label>
+                <input type="number" asp-for="DisplayOrder" class="banner-form-input" />
+                <p class="form-hint">Số nhỏ hơn sẽ hiển thị trước</p>
             </div>
 
             <!-- Trạng thái -->
-            <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" asp-for="IsActive" class="w-4 h-4 rounded border-outline text-primary" />
-                    <span class="text-sm font-medium text-on-surface">Kích hoạt</span>
+            <div class="banner-form-group">
+                <label class="form-check-label">
+                    <input type="checkbox" asp-for="IsActive" class="form-check-input" />
+                    <span class="banner-form-label" style="margin-bottom: 0; display: inline-block; margin-left: 0.5rem;">Kích hoạt</span>
                 </label>
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-4 pt-6">
-                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
-                    <span class="material-symbols-outlined inline mr-2">save</span>Cập nhật
+            <div class="banner-form-actions">
+                <button type="submit" class="btn-save">
+                    <span class="material-symbols-outlined">save</span>Cập nhật
                 </button>
-                <a href="@Url.Action("Index")" class="px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all">
+                <a href="@Url.Action("Index")" class="btn-cancel">
                     Hủy
                 </a>
             </div>
@@ -92,25 +323,23 @@
 
     <!-- Preview -->
     <div>
-        <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
-            <h3 class="text-lg font-bold text-on-surface mb-4">Xem trước</h3>
-            <div class="bg-gray-100 rounded-lg overflow-hidden mb-6 h-56">
-                <img id="previewImage" src="@Model.ImageUrl" alt="Preview" class="w-full h-full object-cover" />
+        <div class="banner-preview-card">
+            <h3 class="preview-title">Xem trước</h3>
+            <div class="preview-image-container">
+                <img id="previewImage" src="@Model.ImageUrl" alt="Preview" />
             </div>
 
-            <div class="space-y-3 text-sm">
-                <div>
-                    <span class="font-medium text-zinc-600">Tên:</span>
-                    <p id="previewName" class="text-on-surface font-bold">@Model.Title</p>
-                </div>
-                <div>
-                    <span class="font-medium text-zinc-600">Loại:</span>
-                    <p id="previewType" class="text-on-surface font-bold">@(Model.BannerType == "Main" ? "Trang Chủ" : Model.BannerType == "Side" ? "Sidebar" : "Footer")</p>
-                </div>
-                <div>
-                    <span class="font-medium text-zinc-600">Trạng thái:</span>
-                    <p id="previewStatus" class="@(Model.IsActive ? "text-green-600" : "text-zinc-500") font-bold">@(Model.IsActive ? "Kích hoạt" : "Vô hiệu hóa")</p>
-                </div>
+            <div class="preview-item">
+                <span class="preview-label">Tên:</span>
+                <p id="previewName" class="preview-value">@Model.Title</p>
+            </div>
+            <div class="preview-item">
+                <span class="preview-label">Loại:</span>
+                <p id="previewType" class="preview-value">@(Model.BannerType == "Main" ? "Trang Chủ" : Model.BannerType == "Side" ? "Sidebar" : "Footer")</p>
+            </div>
+            <div class="preview-item">
+                <span class="preview-label">Trạng thái:</span>
+                <p id="previewStatus" class="preview-value @(Model.IsActive ? "preview-status-active" : "preview-status-inactive")">@(Model.IsActive ? "Kích hoạt" : "Vô hiệu hóa")</p>
             </div>
         </div>
     </div>
@@ -122,16 +351,19 @@
     const previewImage = document.getElementById('previewImage');
 
     imageDropZone.addEventListener('click', () => imageFile.click());
+
     imageDropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        imageDropZone.classList.add('border-primary', 'bg-primary/5');
+        imageDropZone.classList.add('active');
     });
+
     imageDropZone.addEventListener('dragleave', () => {
-        imageDropZone.classList.remove('border-primary', 'bg-primary/5');
+        imageDropZone.classList.remove('active');
     });
+
     imageDropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        imageDropZone.classList.remove('border-primary', 'bg-primary/5');
+        imageDropZone.classList.remove('active');
         if (e.dataTransfer.files.length) {
             imageFile.files = e.dataTransfer.files;
             handleImageSelect();

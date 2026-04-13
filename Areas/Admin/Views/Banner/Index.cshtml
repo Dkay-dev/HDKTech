@@ -1,24 +1,21 @@
 ﻿@model HDKTech.Areas.Admin.ViewModels.BannerIndexViewModel
 @{
     ViewData["Title"] = "Quản lý Banner";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
 }
 
 @section Styles {
-<style>
-    .banner-card { transition: transform .2s, box-shadow .2s; }
-    .banner-card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.12) !important; }
-    .banner-thumb { width:72px; height:45px; object-fit:cover; border-radius:6px; }
-</style>
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
-<!-- Header -->
-<div class="d-flex align-items-center justify-content-between mb-4">
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-image me-2 text-info"></i>Quản lý Banner</h4>
-        <small class="text-muted">Tổng cộng @Model.TotalBanners banner trong hệ thống</small>
+        <h1><i class="bi bi-image-fill text-danger me-2"></i>Quản lý Banner</h1>
+        <p>Quản lý các banner được hiển thị trên website HDKTech</p>
     </div>
-    <a asp-area="Admin" asp-controller="Banner" asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Thêm Banner mới
+    <a asp-area="Admin" asp-controller="Banner" asp-action="Create" class="btn btn-save">
+        <i class="bi bi-plus-lg me-1"></i>Thêm Banner mới
     </a>
 </div>
 
