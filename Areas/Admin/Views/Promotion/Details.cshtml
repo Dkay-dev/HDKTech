@@ -2,238 +2,251 @@
 
 @{
     ViewData["Title"] = "Chi tiết Khuyến mãi";
-    var discount = Model.PromotionType == "Percentage" ? $"{Model.Value}%" : $"₫{Model.Value:N0}";
-    var statusText = Model.Status == "Running" ? "Đang chạy" : (Model.Status == "Scheduled" ? "Sắp diễn ra" : "Đã kết thúc");
-    var statusColor = Model.Status == "Running" ? "text-green-600 bg-green-50" : (Model.Status == "Scheduled" ? "text-amber-600 bg-amber-50" : "text-zinc-600 bg-zinc-100");
+    var discount = Model.PromotionType == "Percentage" ? $"{Model.Value}%" : $"-{Model.Value:N0}₫";
     var daysLeft = (Model.EndDate - DateTime.Now).TotalDays;
 }
 
 <!-- Header -->
-<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-5 gap-3">
     <div>
-        <h1 class="text-4xl font-extrabold tracking-tight text-on-surface">@Model.CampaignName</h1>
-        <p class="text-on-surface-variant mt-2">Chi tiết đầy đủ về chương trình khuyến mãi</p>
+        <h1 class="display-4 fw-bold mb-2">@Model.CampaignName</h1>
+        <p class="text-muted">Chi tiết đầy đủ về chương trình khuyến mãi</p>
     </div>
-    <div class="flex gap-3">
-        <a href="@Url.Action("Edit", new { id = Model.PromoCode })" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
-            <span class="material-symbols-outlined">edit</span>
-            Chỉnh sửa
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Chỉnh sửa
         </a>
-        <a href="@Url.Action("Index")" class="inline-flex items-center gap-2 px-6 py-3 bg-surface-container text-on-surface rounded-lg font-bold hover:bg-surface-container-high transition-all">
-            <span class="material-symbols-outlined">arrow_back</span>
-            Quay lại
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Quay lại
         </a>
     </div>
 </div>
 
-<!-- Main Content Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<!-- Main Content -->
+<div class="row mb-4">
     <!-- Left: Main Info -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="col-lg-8 col-xl-9">
         <!-- Status Card -->
-        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-on-surface">Trạng thái</h3>
-                <span class="px-3 py-1.5 @statusColor text-xs font-bold rounded-full uppercase">@statusText</span>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title fw-bold mb-0">Trạng thái</h5>
+                    @if (Model.IsCurrentlyActive)
+                    {
+                        <span class="badge bg-success rounded-pill">
+                            <i class="fas fa-play me-1"></i>Đang chạy
+                        </span>
+                    }
+                    else if (Model.StartDate > DateTime.Now)
+                    {
+                        <span class="badge bg-warning rounded-pill text-dark">
+                            <i class="fas fa-clock me-1"></i>Sắp diễn ra
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary rounded-pill">
+                            <i class="fas fa-check me-1"></i>Kết thúc
+                        </span>
+                    }
+                </div>
+
+                @if (Model.IsCurrentlyActive)
+                {
+                    <div class="alert alert-success mb-0" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Khuyến mãi đang hoạt động</strong> - Sẽ kết thúc sau <strong>@Math.Ceiling(daysLeft) ngày</strong>
+                    </div>
+                }
+                else if (Model.StartDate > DateTime.Now)
+                {
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <i class="fas fa-calendar me-2"></i>
+                        <strong>Khuyến mãi sắp diễn ra</strong> - Sẽ bắt đầu sau <strong>@Math.Ceiling((Model.StartDate - DateTime.Now).TotalDays) ngày</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary mb-0" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Khuyến mãi đã kết thúc</strong> vào <strong>@Model.EndDate.ToString("dd/MM/yyyy HH:mm")</strong>
+                    </div>
+                }
             </div>
-            @if (Model.Status == "Running")
-            {
-                <div class="p-4 bg-green-50/50 rounded-lg border border-green-200 mb-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="material-symbols-outlined text-green-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                        <span class="font-semibold text-green-700">Khuyến mãi đang hoạt động</span>
-                    </div>
-                    <p class="text-sm text-green-600">Sẽ kết thúc sau <span class="font-bold">@Math.Ceiling(daysLeft) ngày</span></p>
-                </div>
-            }
-            else if (Model.Status == "Scheduled")
-            {
-                <div class="p-4 bg-amber-50/50 rounded-lg border border-amber-200 mb-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="material-symbols-outlined text-amber-600" style="font-variation-settings: 'FILL' 1;">schedule</span>
-                        <span class="font-semibold text-amber-700">Khuyến mãi sắp diễn ra</span>
-                    </div>
-                    <p class="text-sm text-amber-600">Sẽ bắt đầu sau <span class="font-bold">@Math.Ceiling((Model.StartDate - DateTime.Now).TotalDays) ngày</span></p>
-                </div>
-            }
-            else
-            {
-                <div class="p-4 bg-zinc-100/50 rounded-lg border border-zinc-300 mb-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="material-symbols-outlined text-zinc-600" style="font-variation-settings: 'FILL' 1;">event_available</span>
-                        <span class="font-semibold text-zinc-700">Khuyến mãi đã kết thúc</span>
-                    </div>
-                    <p class="text-sm text-zinc-600">Kết thúc vào @Model.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
-            }
         </div>
 
         <!-- Details Grid -->
-        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-            <h3 class="text-lg font-bold text-on-surface mb-4">Thông tin chi tiết</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Discount Value -->
-                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-primary">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Mức giảm giá</p>
-                    <p class="text-3xl font-extrabold text-primary">@discount</p>
-                    <p class="text-xs text-on-surface-variant mt-2">@(Model.PromotionType == "Percentage" ? "Phần trăm giảm" : "Số tiền giảm")</p>
-                </div>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-details me-2"></i>Thông tin chi tiết
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <!-- Discount Value -->
+                    <div class="col-md-6">
+                        <div class="border-start border-primary border-4 ps-3">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-percentage me-1"></i>Mức giảm giá
+                            </small>
+                            <p class="mb-0 fs-3 fw-bold text-primary">@discount</p>
+                            <small class="text-muted d-block mt-1">@(Model.PromotionType == "Percentage" ? "Phần trăm giảm" : "Số tiền giảm")</small>
+                        </div>
+                    </div>
 
-                <!-- Campaign Code -->
-                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-tertiary">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Mã chiến dịch</p>
-                    <p class="text-2xl font-extrabold text-tertiary font-mono">@Model.PromoCode</p>
-                    <p class="text-xs text-on-surface-variant mt-2">Dùng mã này khi tạo đơn hàng</p>
-                </div>
+                    <!-- Campaign Code -->
+                    <div class="col-md-6">
+                        <div class="border-start border-info border-4 ps-3">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-barcode me-1"></i>Mã chiến dịch
+                            </small>
+                            <p class="mb-0 fs-5 fw-bold font-monospace text-info">@Model.PromoCode</p>
+                            <small class="text-muted d-block mt-1">Dùng mã này khi tạo đơn hàng</small>
+                        </div>
+                    </div>
 
-                <!-- Start Date -->
-                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-secondary">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Ngày bắt đầu</p>
-                    <p class="text-lg font-bold text-on-surface">@Model.StartDate.ToString("dd/MM/yyyy")</p>
-                    <p class="text-xs text-on-surface-variant mt-2">@Model.StartDate.ToString("HH:mm:ss")</p>
-                </div>
+                    <!-- Start Date -->
+                    <div class="col-md-6">
+                        <div class="border-start border-success border-4 ps-3">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-play-circle me-1"></i>Ngày bắt đầu
+                            </small>
+                            <p class="mb-0 fw-bold">@Model.StartDate.ToString("dd/MM/yyyy")</p>
+                            <small class="text-muted d-block">@Model.StartDate.ToString("HH:mm:ss")</small>
+                        </div>
+                    </div>
 
-                <!-- End Date -->
-                <div class="p-4 bg-surface-container rounded-lg border-l-4 border-error">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Ngày kết thúc</p>
-                    <p class="text-lg font-bold text-on-surface">@Model.EndDate.ToString("dd/MM/yyyy")</p>
-                    <p class="text-xs text-on-surface-variant mt-2">@Model.EndDate.ToString("HH:mm:ss")</p>
+                    <!-- End Date -->
+                    <div class="col-md-6">
+                        <div class="border-start border-danger border-4 ps-3">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-stop-circle me-1"></i>Ngày kết thúc
+                            </small>
+                            <p class="mb-0 fw-bold">@Model.EndDate.ToString("dd/MM/yyyy")</p>
+                            <small class="text-muted d-block">@Model.EndDate.ToString("HH:mm:ss")</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Description -->
-        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-            <h3 class="text-lg font-bold text-on-surface mb-4">Mô tả</h3>
-            <p class="text-on-surface-variant leading-relaxed whitespace-pre-wrap">@Model.Description</p>
-        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-file-alt me-2"></i>Mô tả
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted" style="white-space: pre-wrap;">@Model.Description</p>
+                </div>
+            </div>
+        }
 
         <!-- Usage Stats -->
-        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-            <h3 class="text-lg font-bold text-on-surface mb-4">Thống kê sử dụng</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Số lần sử dụng</p>
-                    <p class="text-2xl font-extrabold text-primary">@Model.UsageCount</p>
-                </div>
-                <div class="p-4 bg-tertiary/5 rounded-lg border border-tertiary/20">
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Giá trị khuyến mãi</p>
-                    <p class="text-2xl font-extrabold text-tertiary">@(Model.PromotionType == "Percentage" ? Model.Value + "%" : "₫" + Model.Value.ToString("N0"))</p>
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-chart-bar me-2"></i>Thống kê sử dụng
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border border-primary border-2">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-history me-1"></i>Số lần sử dụng
+                            </small>
+                            <p class="mb-0 fs-4 fw-bold text-primary">@Model.UsageCount</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border border-info border-2">
+                            <small class="text-muted fw-bold d-block mb-1">
+                                <i class="fas fa-money-bill-wave me-1"></i>Giá trị khuyến mãi
+                            </small>
+                            <p class="mb-0 fs-4 fw-bold text-info">@(Model.PromotionType == "Percentage" ? Model.Value + "%" : "₫" + Model.Value.ToString("N0"))</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Right: Quick Info Sidebar -->
-    <div class="lg:col-span-1">
-        <!-- Quick Info Card -->
-        <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 sticky top-24 space-y-4">
-            <div class="flex items-center gap-2 pb-4 border-b border-outline-variant/20">
-                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">info</span>
-                <h4 class="font-bold text-on-surface">Thông tin nhanh</h4>
-            </div>
+    <div class="col-lg-4 col-xl-3">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-4">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin nhanh
+                </h5>
 
-            <!-- Loại khuyến mãi -->
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Loại khuyến mãi</p>
-                <p class="text-sm font-semibold text-on-surface">@(Model.PromotionType == "Percentage" ? "Giảm theo %" : "Giảm tiền cố định")</p>
-            </div>
-
-            <!-- Duration -->
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Thời gian chạy</p>
-                <p class="text-sm font-semibold text-on-surface">@((Model.EndDate - Model.StartDate).TotalDays.ToString("F0")) ngày</p>
-            </div>
-
-            <!-- Created Date -->
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Ngày tạo</p>
-                <p class="text-sm font-semibold text-on-surface">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-            </div>
-
-            <!-- Updated Date -->
-            @if (Model.UpdatedAt.HasValue)
-            {
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Cập nhật lần cuối</p>
-                    <p class="text-sm font-semibold text-on-surface">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">
+                        <i class="fas fa-tag me-1"></i>Loại khuyến mãi
+                    </small>
+                    <p class="mb-0 small fw-semibold">
+                        @if (Model.PromotionType == "Percentage")
+                        {
+                            <span class="badge bg-danger">Giảm theo %</span>
+                        }
+                        else if (Model.PromotionType == "FixedAmount")
+                        {
+                            <span class="badge bg-primary">Giảm tiền cố định</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Miễn phí vận chuyển</span>
+                        }
+                    </p>
                 </div>
-            }
 
-            <!-- Actions -->
-            <div class="pt-4 border-t border-outline-variant/20 space-y-2">
-                <a href="@Url.Action("Edit", new { id = Model.PromoCode })" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95">
-                    <span class="material-symbols-outlined text-sm">edit</span>
-                    Chỉnh sửa
-                </a>
-                <form method="post" action="@Url.Action("Delete", new { id = Model.PromoCode })" onsubmit="return confirm('Bạn chắc chắn muốn xóa khuyến mãi này?');">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-error/10 text-error rounded-lg font-semibold hover:bg-error/20 transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-sm">delete</span>
-                        Xóa
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+                <hr>
 
-<!-- Timeline -->
-<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-    <h3 class="text-lg font-bold text-on-surface mb-6">Dòng thời gian</h3>
-    <div class="relative space-y-8">
-        @if (Model.Status == "Scheduled")
-        {
-            <!-- Upcoming -->
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="w-4 h-4 rounded-full bg-amber-500 z-10 relative"></div>
-                    <div class="w-0.5 h-16 bg-gradient-to-b from-amber-500 to-transparent"></div>
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">
+                        <i class="fas fa-hourglass-half me-1"></i>Thời gian chạy
+                    </small>
+                    <p class="mb-0 small">@((Model.EndDate - Model.StartDate).TotalDays.ToString("F0")) ngày</p>
                 </div>
-                <div class="pb-8">
-                    <p class="font-bold text-on-surface">Sắp bắt đầu</p>
-                    <p class="text-sm text-on-surface-variant">@Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
-            </div>
-        }
-        else
-        {
-            <!-- Started -->
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="w-4 h-4 rounded-full bg-green-500 z-10 relative"></div>
-                    <div class="w-0.5 h-16 bg-gradient-to-b from-green-500 to-gray-300"></div>
-                </div>
-                <div class="pb-8">
-                    <p class="font-bold text-on-surface">Đã bắt đầu</p>
-                    <p class="text-sm text-on-surface-variant">@Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
-            </div>
-        }
 
-        <!-- Current/Ended -->
-        @if (Model.Status == "Running")
-        {
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="w-4 h-4 rounded-full bg-primary animate-pulse z-10 relative"></div>
-                    <div class="w-0.5 h-16 bg-gradient-to-b from-primary to-primary/20"></div>
-                </div>
-                <div class="pb-8">
-                    <p class="font-bold text-primary">Đang chạy</p>
-                    <p class="text-sm text-on-surface-variant">Hôm nay</p>
-                </div>
-            </div>
-        }
+                <hr>
 
-        <!-- End -->
-        <div class="flex gap-4">
-            <div class="flex flex-col items-center">
-                <div class="w-4 h-4 rounded-full @(Model.Status == "Ended" ? "bg-error" : "bg-gray-300") z-10 relative"></div>
-            </div>
-            <div>
-                <p class="font-bold @(Model.Status == "Ended" ? "text-error" : "text-on-surface-variant")">@(Model.Status == "Ended" ? "Đã kết thúc" : "Sẽ kết thúc")</p>
-                <p class="text-sm text-on-surface-variant">@Model.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">
+                        <i class="fas fa-calendar-alt me-1"></i>Ngày tạo
+                    </small>
+                    <p class="mb-0 small">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <hr>
+                    <div class="mb-3">
+                        <small class="text-muted fw-bold d-block mb-1">
+                            <i class="fas fa-sync me-1"></i>Cập nhật lần cuối
+                        </small>
+                        <p class="mb-0 small">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                }
+
+                <hr>
+
+                <!-- Actions -->
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Chỉnh sửa
+                    </a>
+                    <form method="post" action="@Url.Action("Delete", new { id = Model.Id })" onsubmit="return confirm('Bạn chắc chắn muốn xóa khuyến mãi này?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i>Xóa
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

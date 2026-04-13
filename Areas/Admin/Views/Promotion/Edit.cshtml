@@ -4,128 +4,162 @@
     ViewData["Title"] = "Chỉnh sửa Khuyến mãi";
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Chỉnh sửa Khuyến mãi</h1>
-    <p class="text-zinc-500">Cập nhật thông tin chiến dịch khuyến mãi</p>
+<div class="mb-4">
+    <h1 class="display-5 fw-bold mb-2">Chỉnh sửa Khuyến mãi</h1>
+    <p class="text-muted">Cập nhật thông tin chiến dịch khuyến mãi</p>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="row">
     <!-- Form -->
-    <div class="lg:col-span-2">
-        <form method="post" class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="PromoCode" />
+    <div class="col-lg-8 col-xl-9">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
 
-            <!-- Tên chiến dịch -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">
-                    Tên chiến dịch <span class="text-red-500">*</span>
-                </label>
-                <input type="text" asp-for="CampaignName" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                <span asp-validation-for="CampaignName" class="text-xs text-red-500 mt-1 block"></span>
-            </div>
+                    <!-- Tên chiến dịch -->
+                    <div class="mb-3">
+                        <label asp-for="CampaignName" class="form-label fw-bold">
+                            Tên chiến dịch <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" asp-for="CampaignName" class="form-control form-control-sm" />
+                        <span asp-validation-for="CampaignName" class="invalid-feedback d-block"></span>
+                    </div>
 
-            <!-- Mô tả -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Mô tả</label>
-                <textarea asp-for="Description" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" rows="3"></textarea>
-            </div>
+                    <!-- Mô tả -->
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-bold">Mô tả</label>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
+                    </div>
 
-            <!-- Danh mục áp dụng -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Danh mục áp dụng</label>
-                <input type="text" asp-for="ApplicableCategory" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-            </div>
+                    <!-- Danh mục áp dụng -->
+                    <div class="mb-3">
+                        <label asp-for="ApplicableCategory" class="form-label fw-bold">Danh mục áp dụng</label>
+                        <input type="text" asp-for="ApplicableCategory" class="form-control form-control-sm" />
+                    </div>
 
-            <!-- Ngày -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">Ngày bắt đầu</label>
-                    <input type="datetime-local" asp-for="StartDate" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">Ngày kết thúc</label>
-                    <input type="datetime-local" asp-for="EndDate" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                </div>
-            </div>
+                    <!-- Ngày -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDate" class="form-label fw-bold">Ngày bắt đầu</label>
+                            <input type="datetime-local" asp-for="StartDate" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDate" class="form-label fw-bold">Ngày kết thúc</label>
+                            <input type="datetime-local" asp-for="EndDate" class="form-control form-control-sm" />
+                        </div>
+                    </div>
 
-            <!-- Loại khuyến mãi -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Loại khuyến mãi</label>
-                <select asp-for="PromotionType" id="PromotionType" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                    <option value="Percentage">Giảm giá %</option>
-                    <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
-                    <option value="FreeShip">Miễn phí vận chuyển</option>
-                </select>
-            </div>
+                    <!-- Loại khuyến mãi -->
+                    <div class="mb-3">
+                        <label asp-for="PromotionType" class="form-label fw-bold">Loại khuyến mãi</label>
+                        <select asp-for="PromotionType" id="PromotionType" class="form-select form-select-sm">
+                            <option value="Percentage">Giảm giá %</option>
+                            <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
+                            <option value="FreeShip">Miễn phí vận chuyển</option>
+                        </select>
+                    </div>
 
-            <!-- Giá trị -->
-            <div id="Value-container">
-                <label class="block text-sm font-bold text-on-surface mb-2">Giá trị</label>
-                <div class="flex gap-2">
-                    <input type="number" asp-for="Value" step="0.01" class="flex-1 px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    <span id="unit" class="px-4 py-2.5 bg-surface-container text-on-surface rounded-lg font-bold">@(Model.PromotionType == "Percentage" ? "%" : Model.PromotionType == "FixedAmount" ? "₫" : "")</span>
-                </div>
-            </div>
+                    <!-- Giá trị -->
+                    <div class="mb-3">
+                        <label asp-for="Value" class="form-label fw-bold">Giá trị</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" asp-for="Value" step="0.01" class="form-control" />
+                            <span id="unit" class="input-group-text fw-bold">@(Model.PromotionType == "Percentage" ? "%" : Model.PromotionType == "FixedAmount" ? "₫" : "")</span>
+                        </div>
+                    </div>
 
-            <!-- Mã khuyến mãi -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Mã khuyến mãi</label>
-                <input type="text" asp-for="PromoCode" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-            </div>
+                    <!-- Mã khuyến mãi -->
+                    <div class="mb-3">
+                        <label asp-for="PromoCode" class="form-label fw-bold">Mã khuyến mãi</label>
+                        <input type="text" asp-for="PromoCode" class="form-control form-control-sm" />
+                    </div>
 
-            <!-- Số lượng -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">Số lượng tối đa</label>
-                    <input type="number" asp-for="MaxUsageCount" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">Trạng thái</label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" asp-for="IsActive" class="w-4 h-4 rounded border-outline text-primary" />
-                        <span class="text-sm font-medium text-on-surface">Kích hoạt</span>
-                    </label>
-                </div>
-            </div>
+                    <!-- Số lượng & Trạng thái -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MaxUsageCount" class="form-label fw-bold">Số lượng tối đa</label>
+                            <input type="number" asp-for="MaxUsageCount" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Trạng thái</label>
+                            <div class="form-check">
+                                <input type="checkbox" asp-for="IsActive" class="form-check-input" id="IsActive" />
+                                <label class="form-check-label" for="IsActive">Kích hoạt</label>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Actions -->
-            <div class="flex gap-4 pt-6">
-                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
-                    <span class="material-symbols-outlined inline mr-2">save</span>Cập nhật
-                </button>
-                <a href="@Url.Action("Index")" class="px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all">
-                    Hủy
-                </a>
+                    <!-- Actions -->
+                    <div class="d-flex gap-2 pt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Cập nhật
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </a>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 
-    <!-- Info -->
-    <div>
-        <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24 space-y-4">
-            <div>
-                <span class="text-xs font-bold text-zinc-600 uppercase">Trạng thái hiện tại</span>
-                <p class="text-lg font-bold text-on-surface">@Model.Status</p>
-            </div>
+    <!-- Info Sidebar -->
+    <div class="col-lg-4 col-xl-3">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-4">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin
+                </h5>
 
-            <div class="border-t border-surface-container pt-4">
-                <span class="text-xs font-bold text-zinc-600 uppercase">Số lần sử dụng</span>
-                <p class="text-lg font-bold text-on-surface">@Model.UsageCount @(Model.MaxUsageCount.HasValue ? $"/ {Model.MaxUsageCount}" : "")</p>
-            </div>
-
-            <div class="border-t border-surface-container pt-4">
-                <span class="text-xs font-bold text-zinc-600 uppercase">Ngày tạo</span>
-                <p class="text-sm text-on-surface">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-            </div>
-
-            @if (Model.UpdatedAt.HasValue)
-            {
-                <div class="border-t border-surface-container pt-4">
-                    <span class="text-xs font-bold text-zinc-600 uppercase">Cập nhật lần cuối</span>
-                    <p class="text-sm text-on-surface">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Trạng thái hiện tại</small>
+                    <p class="mb-0 fw-bold">
+                        @if (Model.IsCurrentlyActive)
+                        {
+                            <span class="badge bg-success rounded-pill">
+                                <i class="fas fa-play me-1"></i>Đang chạy
+                            </span>
+                        }
+                        else if (Model.StartDate > DateTime.Now)
+                        {
+                            <span class="badge bg-warning rounded-pill text-dark">
+                                <i class="fas fa-clock me-1"></i>Sắp diễn ra
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary rounded-pill">
+                                <i class="fas fa-check me-1"></i>Kết thúc
+                            </span>
+                        }
+                    </p>
                 </div>
-            }
+
+                <hr>
+
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Số lần sử dụng</small>
+                    <p class="mb-0 fw-bold">@Model.UsageCount @(Model.MaxUsageCount.HasValue ? $"/ {Model.MaxUsageCount}" : "")</p>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Ngày tạo</small>
+                    <small class="d-block">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <hr>
+                    <div>
+                        <small class="text-muted fw-bold d-block mb-1">Cập nhật lần cuối</small>
+                        <small class="d-block">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>

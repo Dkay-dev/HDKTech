@@ -131,5 +131,86 @@ namespace HDKTech.Utilities
             if (_logService == null) return;
             await _logService.LogErrorAsync(username, module, description, errorMessage);
         }
+
+        // ════════════════════════════════════════════════════════════════════
+        // Giai đoạn 1 — Audit Log Helpers (Auto-hóa ghi nhật ký)
+        // Mọi thao tác thay đổi kho / trạng thái đơn hàng đều dùng các hàm dưới đây
+        // ════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Auto-log khi trừ kho (ReserveStock tại thời điểm đặt hàng).
+        /// </summary>
+        public static async Task LogInventoryReserveAsync(
+            string username,
+            int    productId,
+            string productName,
+            int    reservedQty,
+            int    remainingQty,
+            string orderCode,
+            string userId = null)
+        {
+            await LogAsync(
+                username   : username,
+                actionType : "InventoryReserve",
+                module     : "Inventory",
+                description: $"[ĐẶT HÀNG #{orderCode}] Trừ kho SP '{productName}' (ID:{productId}): " +
+                             $"-{reservedQty} → còn {remainingQty}",
+                entityId   : productId.ToString(),
+                entityName : productName,
+                oldValue   : new { Quantity = remainingQty + reservedQty },
+                newValue   : new { Quantity = remainingQty },
+                userId     : userId);
+        }
+
+        /// <summary>
+        /// Auto-log khi hoàn kho (ReleaseStock khi hủy đơn hàng).
+        /// </summary>
+        public static async Task LogInventoryReleaseAsync(
+            string username,
+            int    productId,
+            string productName,
+            int    releasedQty,
+            int    newQty,
+            string orderCode,
+            string userId = null)
+        {
+            await LogAsync(
+                username   : username,
+                actionType : "InventoryRelease",
+                module     : "Inventory",
+                description: $"[HỦY ĐƠN #{orderCode}] Hoàn kho SP '{productName}' (ID:{productId}): " +
+                             $"+{releasedQty} → còn {newQty}",
+                entityId   : productId.ToString(),
+                entityName : productName,
+                oldValue   : new { Quantity = newQty - releasedQty },
+                newValue   : new { Quantity = newQty },
+                userId     : userId);
+        }
+
+        /// <summary>
+        /// Auto-log khi cập nhật trạng thái đơn hàng.
+        /// Gọi sau mỗi thay đổi Status trong OrderController.
+        /// </summary>
+        public static async Task LogOrderStatusChangeAsync(
+            string username,
+            int    orderId,
+            string orderCode,
+            string oldStatus,
+            string newStatus,
+            string userId   = null,
+            string userRole = null)
+        {
+            await LogAsync(
+                username   : username,
+                actionType : "OrderStatusChange",
+                module     : "Order",
+                description: $"Đơn #{orderCode} (ID:{orderId}): {oldStatus} → {newStatus}",
+                entityId   : orderId.ToString(),
+                entityName : orderCode,
+                oldValue   : new { Status = oldStatus },
+                newValue   : new { Status = newStatus },
+                userRole   : userRole,
+                userId     : userId);
+        }
     }
 }

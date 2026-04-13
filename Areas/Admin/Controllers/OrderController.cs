@@ -1,35 +1,52 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
+using HDKTech.Services;
+using HDKTech.Utilities;
 using Microsoft.EntityFrameworkCore;
-
-using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager")]   // Fallback: chỉ Admin/Manager vào được
     [Route("admin/[controller]")]
     public class OrderController : Controller
     {
-        private readonly HDKTechContext _context;
+        private readonly HDKTechContext          _context;
         private readonly ILogger<OrderController> _logger;
+        private readonly ISystemLogService        _logService;
+        // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────────
+        private readonly IInventoryService        _inventoryService;
 
-        public OrderController(HDKTechContext context, ILogger<OrderController> logger)
+        private static readonly string[] StatusNames =
+            { "Chờ xác nhận", "Đang xử lý", "Đang giao", "Đã giao", "Đã hủy" };
+
+        public OrderController(
+            HDKTechContext context,
+            ILogger<OrderController> logger,
+            ISystemLogService logService,
+            IInventoryService inventoryService)
         {
-            _context = context;
-            _logger = logger;
+            _context          = context;
+            _logger           = logger;
+            _logService       = logService;
+            _inventoryService = inventoryService;
         }
 
-        /// <summary>
-        /// Display all orders with filtering and sorting
-        /// GET: /admin/order
-        /// </summary>
-        [HttpGet]
-        [Route("")]
-        [Route("index")]
-        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 20, string searchTerm = "", int statusFilter = -1, string sortBy = "date")
+        // ──────────────────────────────────────────────────────────────
+        // INDEX — danh sách đơn hàng với filter + phân trang
+        // GET: /admin/order
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("")]
+        [HttpGet("index")]
+        [Authorize(Policy = "Order.Read")]   // ← Granular Security
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 20,
+            string searchTerm = "",
+            int statusFilter = -1,
+            string sortBy = "date")
         {
             try
             {
@@ -38,234 +55,248 @@ namespace HDKTech.Areas.Admin.Controllers
                     .Include(o => o.User)
                     .Include(o => o.Items);
 
-                // Apply search filter
-                if (!string.IsNullOrEmpty(searchTerm))
-                {
-                    query = query.Where(o => 
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                    query = query.Where(o =>
                         o.OrderCode.Contains(searchTerm) ||
-                        o.User.FullName.Contains(searchTerm) ||
+                        o.RecipientName.Contains(searchTerm) ||
                         o.RecipientPhone.Contains(searchTerm));
-                }
 
-                // Apply status filter
                 if (statusFilter >= 0)
-                {
                     query = query.Where(o => o.Status == statusFilter);
-                }
 
-                // Apply sorting
                 query = sortBy switch
                 {
                     "amount_high" => query.OrderByDescending(o => o.TotalAmount),
-                    "amount_low" => query.OrderBy(o => o.TotalAmount),
-                    "customer" => query.OrderBy(o => o.User.FullName),
-                    _ => query.OrderByDescending(o => o.OrderDate)
+                    "amount_low"  => query.OrderBy(o => o.TotalAmount),
+                    "customer"    => query.OrderBy(o => o.RecipientName),
+                    _             => query.OrderByDescending(o => o.OrderDate)
                 };
 
                 var totalCount = await query.CountAsync();
                 var orders = await query
-                    .Skip((pageNumber - 1) * pageSize)
+                    .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                ViewBag.Orders = orders;
-                ViewBag.TotalCount = totalCount;
-                ViewBag.PageNumber = pageNumber;
-                ViewBag.PageSize = pageSize;
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-                ViewBag.SearchTerm = searchTerm;
+                ViewBag.Orders       = orders;
+                ViewBag.TotalCount   = totalCount;
+                ViewBag.Page         = page;
+                ViewBag.PageSize     = pageSize;
+                ViewBag.TotalPages   = (int)Math.Ceiling((double)totalCount / pageSize);
+                ViewBag.SearchTerm   = searchTerm;
                 ViewBag.StatusFilter = statusFilter;
-                ViewBag.SortBy = sortBy;
+                ViewBag.SortBy       = sortBy;
 
-                // Summary statistics
-                var pendingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 0);
-                var processingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 1);
-                var shippingCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 2);
-                var deliveredCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 3);
-                var cancelledCount = await _context.Orders.AsNoTracking().CountAsync(o => o.Status == 4);
-
-                ViewBag.PendingCount = pendingCount;
-                ViewBag.ProcessingCount = processingCount;
-                ViewBag.ShippingCount = shippingCount;
-                ViewBag.DeliveredCount = deliveredCount;
-                ViewBag.CancelledCount = cancelledCount;
-
-                // Today's statistics
-                var today = DateTime.Now.Date;
-                var todayOrders = await _context.Orders
-                    .AsNoTracking()
-                    .Where(o => o.OrderDate.Date == today)
+                // Stats per status (single query)
+                var stats = await _context.Orders.AsNoTracking()
+                    .GroupBy(o => o.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
                     .ToListAsync();
 
-                ViewBag.TodayOrderCount = todayOrders.Count;
-                ViewBag.TodayRevenue = todayOrders.Sum(o => o.TotalAmount);
+                ViewBag.PendingCount    = stats.FirstOrDefault(s => s.Status == 0)?.Count ?? 0;
+                ViewBag.ProcessingCount = stats.FirstOrDefault(s => s.Status == 1)?.Count ?? 0;
+                ViewBag.ShippingCount   = stats.FirstOrDefault(s => s.Status == 2)?.Count ?? 0;
+                ViewBag.DeliveredCount  = stats.FirstOrDefault(s => s.Status == 3)?.Count ?? 0;
+                ViewBag.CancelledCount  = stats.FirstOrDefault(s => s.Status == 4)?.Count ?? 0;
+
+                // Today
+                var today = DateTime.Now.Date;
+                var todayRevenue = await _context.Orders.AsNoTracking()
+                    .Where(o => o.OrderDate.Date == today && o.Status == 3)
+                    .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+                var todayCount = await _context.Orders.AsNoTracking()
+                    .Where(o => o.OrderDate.Date == today)
+                    .CountAsync();
+
+                ViewBag.TodayRevenue    = todayRevenue;
+                ViewBag.TodayOrderCount = todayCount;
 
                 return View();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading orders");
-                TempData["Error"] = "Lỗi khi tải danh sách đơn hàng";
+                _logger.LogError(ex, "Lỗi tải danh sách đơn hàng");
+                TempData["Error"] = "Lỗi khi tải danh sách đơn hàng.";
                 return View();
             }
         }
 
-        /// <summary>
-        /// Display order details
-        /// GET: /admin/order/details/5
-        /// </summary>
-        [HttpGet]
-        [Route("details/{id}")]
+        // ──────────────────────────────────────────────────────────────
+        // DETAILS
+        // GET: /admin/order/details/{id}
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("details/{id:int}")]
+        [Authorize(Policy = "Order.Read")]   // ← Granular Security
         public async Task<IActionResult> Details(int id)
         {
             try
             {
                 var order = await _context.Orders
+                    .AsNoTracking()
                     .Include(o => o.User)
                     .Include(o => o.Items)
-                        .ThenInclude(od => od.Product)
+                        .ThenInclude(i => i.Product)
+                            .ThenInclude(p => p!.Images)
                     .FirstOrDefaultAsync(o => o.Id == id);
 
                 if (order == null)
                 {
-                    TempData["Error"] = "Không tìm thấy đơn hàng";
-                    return RedirectToAction("Index");
+                    TempData["Error"] = "Không tìm thấy đơn hàng.";
+                    return RedirectToAction(nameof(Index));
                 }
 
-                ViewBag.Order = order;
-                return View();
+                return View(order);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading order details");
-                TempData["Error"] = "Lỗi khi tải chi tiết đơn hàng";
-                return RedirectToAction("Index");
+                _logger.LogError(ex, "Lỗi tải chi tiết đơn hàng Id: {Id}", id);
+                TempData["Error"] = "Lỗi khi tải chi tiết đơn hàng.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        /// <summary>
-        /// Update order status
-        /// POST: /admin/order/update-status
-        /// </summary>
-        [HttpPost]
-        [Route("update-status")]
+        // ──────────────────────────────────────────────────────────────
+        // UPDATE STATUS (AJAX)
+        // POST: /admin/order/update-status
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("update-status")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = "Order.Update")]   // ← Granular Security
         public async Task<IActionResult> UpdateStatus(int orderId, int newStatus)
         {
+            if (newStatus < 0 || newStatus > 4)
+                return Json(new { success = false, message = "Trạng thái không hợp lệ." });
+
             try
             {
-                var order = await _context.Orders.FindAsync(orderId);
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
                 if (order == null)
-                {
-                    return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
-                }
+                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
+
+                // Guard: đơn đã giao chỉ có thể chuyển sang Đã hủy
+                if (order.Status == 3 && newStatus != 4)
+                    return Json(new { success = false, message = "Đơn hàng đã giao không thể thay đổi trạng thái." });
+
+                var oldStatusName = GetStatusName(order.Status);
+                var username      = User.Identity?.Name ?? "System";
+                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userRole      = User.IsInRole("Admin") ? "Admin" : "Manager";
 
                 order.Status = newStatus;
-                _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
-                var statusName = GetStatusName(newStatus);
-                return Json(new { success = true, message = $"Cập nhật trạng thái thành '{statusName}' thành công" });
+                // ── NOTE: Kho đã được trừ tại CreateOrderAsync (ReserveStock).
+                //    Không cần trừ lại ở đây. Chỉ ghi Audit Log trạng thái đơn hàng.
+                await LoggingHelper.LogOrderStatusChangeAsync(
+                    username   : username,
+                    orderId    : order.Id,
+                    orderCode  : order.OrderCode,
+                    oldStatus  : oldStatusName,
+                    newStatus  : GetStatusName(newStatus),
+                    userId     : userId,
+                    userRole   : userRole);
+
+                return Json(new { success = true, message = $"Cập nhật trạng thái → \"{GetStatusName(newStatus)}\" thành công." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating order status");
-                return Json(new { success = false, message = "Lỗi khi cập nhật trạng thái" });
+                _logger.LogError(ex, "Lỗi cập nhật trạng thái đơn hàng Id: {Id}", orderId);
+                return Json(new { success = false, message = "Lỗi khi cập nhật trạng thái." });
             }
         }
 
-        /// <summary>
-        /// Cancel order
-        /// POST: /admin/order/cancel
-        /// </summary>
-        [HttpPost]
-        [Route("cancel")]
+        // ──────────────────────────────────────────────────────────────
+        // CANCEL ORDER (AJAX)
+        // POST: /admin/order/cancel
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost("cancel")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = "Order.Delete")]   // ← Granular Security
         public async Task<IActionResult> CancelOrder(int orderId)
         {
             try
             {
-                var order = await _context.Orders.FindAsync(orderId);
+                // Cần Include Items để hoàn kho
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
                 if (order == null)
-                {
-                    return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
-                }
+                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
 
-                if (order.Status == 3) // Delivered
-                {
-                    return Json(new { success = false, message = "Không thể hủy đơn hàng đã giao" });
-                }
+                if (order.Status == 3)
+                    return Json(new { success = false, message = "Không thể hủy đơn hàng đã giao thành công." });
 
-                order.Status = 4; // Cancelled
-                _context.Orders.Update(order);
+                if (order.Status == 4)
+                    return Json(new { success = false, message = "Đơn hàng đã bị hủy trước đó." });
+
+                var oldStatusName = GetStatusName(order.Status);
+                var username      = User.Identity?.Name ?? "System";
+                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                // ── [1] Cập nhật trạng thái đơn hàng ─────────────────────────
+                order.Status = 4;
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "Hủy đơn hàng thành công" });
+                // ── [2] Hoàn kho: ReleaseStock + auto Audit Log ───────────────
+                if (order.Items != null && order.Items.Any())
+                {
+                    await _inventoryService.ReleaseStockAsync(
+                        items    : order.Items.ToList(),
+                        username : username,
+                        userId   : userId);
+                }
+
+                // ── [3] Audit Log trạng thái đơn hàng ────────────────────────
+                await LoggingHelper.LogOrderStatusChangeAsync(
+                    username  : username,
+                    orderId   : order.Id,
+                    orderCode : order.OrderCode,
+                    oldStatus : oldStatusName,
+                    newStatus : "Đã hủy",
+                    userId    : userId,
+                    userRole  : User.IsInRole("Admin") ? "Admin" : "Manager");
+
+                return Json(new { success = true, message = "Đã hủy đơn hàng và hoàn kho thành công." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error cancelling order");
-                return Json(new { success = false, message = "Lỗi khi hủy đơn hàng" });
+                _logger.LogError(ex, "Lỗi hủy đơn hàng Id: {Id}", orderId);
+                return Json(new { success = false, message = "Lỗi khi hủy đơn hàng." });
             }
         }
 
-        /// <summary>
-        /// Export orders to CSV
-        /// GET: /admin/order/export
-        /// </summary>
-        [HttpGet]
-        [Route("export")]
+        // ──────────────────────────────────────────────────────────────
+        // EXPORT CSV
+        // GET: /admin/order/export
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet("export")]
         public async Task<IActionResult> Export(string searchTerm = "", int statusFilter = -1)
         {
-            try
-            {
-                IQueryable<Order> query = _context.Orders
-                    .AsNoTracking()
-                    .Include(o => o.User);
+            var query = _context.Orders.AsNoTracking().Include(o => o.User).AsQueryable();
 
-                if (!string.IsNullOrEmpty(searchTerm))
-                {
-                    query = query.Where(o => 
-                        o.OrderCode.Contains(searchTerm) ||
-                        o.User.FullName.Contains(searchTerm));
-                }
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+                query = query.Where(o => o.OrderCode.Contains(searchTerm) || o.RecipientName.Contains(searchTerm));
 
-                if (statusFilter >= 0)
-                {
-                    query = query.Where(o => o.Status == statusFilter);
-                }
+            if (statusFilter >= 0)
+                query = query.Where(o => o.Status == statusFilter);
 
-                var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+            var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+            var csv = "Mã Đơn Hàng,Người Nhận,Số ĐT,Địa chỉ,Tổng Tiền,Phí Ship,Trạng Thái,Ngày Đặt\n";
 
-                var csv = "Mã Đơn Hàng,Khách Hàng,Số Điện Thoại,Địa Chỉ,Tổng Tiền,Phí Vận Chuyển,Trạng Thái,Ngày Đặt\n";
+            foreach (var o in orders)
+                csv += $"\"{o.OrderCode}\",\"{o.RecipientName}\",\"{o.RecipientPhone}\",\"{o.ShippingAddress}\"," +
+                       $"{o.TotalAmount},{o.ShippingFee},\"{GetStatusName(o.Status)}\",{o.OrderDate:yyyy-MM-dd}\n";
 
-                foreach (var order in orders)
-                {
-                    var status = GetStatusName(order.Status);
-                    csv += $"\"{order.OrderCode}\",\"{order.RecipientName}\",\"{order.RecipientPhone}\",\"{order.ShippingAddress}\",{order.TotalAmount},{order.ShippingFee},\"{status}\",{order.OrderDate:yyyy-MM-dd}\n";
-                }
-
-                var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
-                return File(bytes, "text/csv", $"orders_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error exporting orders");
-                TempData["Error"] = "Lỗi khi xuất dữ liệu";
-                return RedirectToAction("Index");
-            }
+            return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv",
+                        $"orders_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
-        private string GetStatusName(int status)
-        {
-            return status switch
-            {
-                0 => "Chờ xác nhận",
-                1 => "Đang xử lý",
-                2 => "Đang giao",
-                3 => "Đã giao",
-                4 => "Đã hủy",
-                _ => "Không xác định"
-            };
-        }
+        // ── Helper ────────────────────────────────────────────────────
+        private static string GetStatusName(int status) =>
+            status >= 0 && status < StatusNames.Length ? StatusNames[status] : "Không xác định";
     }
 }
-

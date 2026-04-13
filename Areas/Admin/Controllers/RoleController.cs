@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
+using HDKTech.Areas.Admin.ViewModels;
+using HDKTech.Services;
 using Microsoft.EntityFrameworkCore;
-
-using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -15,15 +15,17 @@ namespace HDKTech.Areas.Admin.Controllers
     {
         private readonly HDKTechContext _context;
         private readonly ILogger<RoleController> _logger;
+        private readonly ISystemLogService _logService;
 
-        public RoleController(HDKTechContext context, ILogger<RoleController> logger)
+        public RoleController(HDKTechContext context, ILogger<RoleController> logger, ISystemLogService logService)
         {
-            _context = context;
-            _logger = logger;
+            _context    = context;
+            _logger     = logger;
+            _logService = logService;
         }
 
         /// <summary>
-        /// Display all roles with search and filter
+        /// Danh sách vai trò có phân trang, tìm kiếm.
         /// GET: /admin/role
         /// </summary>
         [HttpGet]
@@ -37,49 +39,42 @@ namespace HDKTech.Areas.Admin.Controllers
                     .AsNoTracking()
                     .Include(r => r.RolePermissions);
 
-                // Apply search filter
                 if (!string.IsNullOrEmpty(searchTerm))
-                {
-                    query = query.Where(r => 
+                    query = query.Where(r =>
                         r.RoleName.Contains(searchTerm) ||
                         r.Description.Contains(searchTerm));
-                }
 
                 var totalCount = await query.CountAsync();
-                var roles = await query
+                var roles      = await query
                     .OrderBy(r => r.RoleName)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                ViewBag.Roles = roles;
-                ViewBag.TotalCount = totalCount;
-                ViewBag.PageNumber = pageNumber;
-                ViewBag.PageSize = pageSize;
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-                ViewBag.SearchTerm = searchTerm;
+                var vm = new RoleIndexViewModel
+                {
+                    Roles            = roles,
+                    TotalRoles       = await _context.Roles.AsNoTracking().CountAsync(),
+                    ActiveRoles      = await _context.Roles.AsNoTracking().CountAsync(r => r.IsActive),
+                    TotalPermissions = await _context.Permissions.AsNoTracking().CountAsync(),
+                    CurrentPage      = pageNumber,
+                    PageSize         = pageSize,
+                    TotalPages       = (int)Math.Ceiling((double)totalCount / pageSize),
+                    SearchTerm       = searchTerm
+                };
 
-                // Summary statistics
-                var totalRoles = await _context.Roles.AsNoTracking().CountAsync();
-                var totalPermissions = await _context.Permissions.AsNoTracking().CountAsync();
-                var activeRoles = await _context.Roles.AsNoTracking().Where(r => r.IsActive).CountAsync();
-
-                ViewBag.TotalRoles = totalRoles;
-                ViewBag.TotalPermissions = totalPermissions;
-                ViewBag.ActiveRoles = activeRoles;
-
-                return View();
+                return View(vm);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading roles");
                 TempData["Error"] = "Lỗi khi tải danh sách vai trò";
-                return View();
+                return View(new RoleIndexViewModel());
             }
         }
 
         /// <summary>
-        /// Display role details with permissions
+        /// Chi tiết vai trò + quyền hạn.
         /// GET: /admin/role/details/1
         /// </summary>
         [HttpGet]
@@ -102,14 +97,12 @@ namespace HDKTech.Areas.Admin.Controllers
                 var allPermissions = await _context.Permissions
                     .AsNoTracking()
                     .Where(p => p.IsActive)
-                    .OrderBy(p => p.Module)
-                    .ThenBy(p => p.Action)
+                    .OrderBy(p => p.Module).ThenBy(p => p.Action)
                     .ToListAsync();
 
-                ViewBag.Role = role;
-                ViewBag.AllPermissions = allPermissions;
-                ViewBag.RolePermissionIds = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
-
+                ViewBag.Role                = role;
+                ViewBag.AllPermissions      = allPermissions;
+                ViewBag.RolePermissionIds   = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
                 return View();
             }
             catch (Exception ex)
@@ -121,7 +114,7 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         /// <summary>
-        /// Create new role
+        /// Tạo vai trò mới.
         /// GET: /admin/role/create
         /// </summary>
         [HttpGet]
@@ -130,14 +123,11 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var permissions = await _context.Permissions
+                ViewBag.Permissions = await _context.Permissions
                     .AsNoTracking()
                     .Where(p => p.IsActive)
-                    .OrderBy(p => p.Module)
-                    .ThenBy(p => p.Action)
+                    .OrderBy(p => p.Module).ThenBy(p => p.Action)
                     .ToListAsync();
-
-                ViewBag.Permissions = permissions;
                 return View();
             }
             catch (Exception ex)
@@ -149,7 +139,7 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         /// <summary>
-        /// Save new role
+        /// Lưu vai trò mới + ghi AuditLog.
         /// POST: /admin/role/create
         /// </summary>
         [HttpPost]
@@ -160,26 +150,34 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    var permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                    ViewBag.Permissions = permissions;
+                    ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
                     return View(role);
                 }
 
                 _context.Roles.Add(role);
                 await _context.SaveChangesAsync();
 
-                // Add permissions to role
-                if (selectedPermissions != null && selectedPermissions.Any())
+                if (selectedPermissions?.Any() == true)
                 {
                     var rolePermissions = selectedPermissions.Select(pId => new RolePermission
                     {
-                        RoleId = role.RoleId,
-                        PermissionId = pId
+                        RoleId = role.RoleId, PermissionId = pId
                     }).ToList();
-
                     _context.RolePermissions.AddRange(rolePermissions);
                     await _context.SaveChangesAsync();
                 }
+
+                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
+                await _logService.LogActionAsync(
+                    username:    User.Identity?.Name ?? "Admin",
+                    actionType:  "Create",
+                    module:      "PhanQuyen",
+                    description: $"Tạo mới Vai trò: '{role.RoleName}'",
+                    entityId:    role.RoleId.ToString(),
+                    entityName:  role.RoleName,
+                    newValue:    $"Permissions: {selectedPermissions?.Count ?? 0}",
+                    userRole:    "Admin"
+                );
 
                 TempData["Success"] = $"Tạo vai trò '{role.RoleName}' thành công";
                 return RedirectToAction("Details", new { id = role.RoleId });
@@ -188,14 +186,13 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 _logger.LogError(ex, "Error creating role");
                 TempData["Error"] = "Lỗi khi tạo vai trò";
-                var permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                ViewBag.Permissions = permissions;
+                ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
                 return View(role);
             }
         }
 
         /// <summary>
-        /// Edit role
+        /// Chỉnh sửa vai trò.
         /// GET: /admin/role/edit/1
         /// </summary>
         [HttpGet]
@@ -214,16 +211,9 @@ namespace HDKTech.Areas.Admin.Controllers
                     return RedirectToAction("Index");
                 }
 
-                var permissions = await _context.Permissions
-                    .AsNoTracking()
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Module)
-                    .ThenBy(p => p.Action)
-                    .ToListAsync();
-
-                ViewBag.Permissions = permissions;
+                ViewBag.Permissions          = await _context.Permissions.AsNoTracking()
+                    .Where(p => p.IsActive).OrderBy(p => p.Module).ThenBy(p => p.Action).ToListAsync();
                 ViewBag.SelectedPermissionIds = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
-
                 return View(role);
             }
             catch (Exception ex)
@@ -235,7 +225,7 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         /// <summary>
-        /// Update role
+        /// Cập nhật vai trò + ghi AuditLog.
         /// POST: /admin/role/edit/1
         /// </summary>
         [HttpPost]
@@ -244,41 +234,48 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                if (id != role.RoleId)
-                {
-                    return NotFound();
-                }
+                if (id != role.RoleId) return NotFound();
 
                 if (!ModelState.IsValid)
                 {
-                    var permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                    ViewBag.Permissions = permissions;
+                    ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
                     return View(role);
                 }
 
-                // Update role
+                // Lấy dữ liệu cũ để ghi diff
+                var oldRole = await _context.Roles.AsNoTracking()
+                    .Include(r => r.RolePermissions)
+                    .FirstOrDefaultAsync(r => r.RoleId == id);
+                string oldValue = oldRole != null ? $"RoleName={oldRole.RoleName}, Permissions={oldRole.RolePermissions.Count}" : "N/A";
+
                 _context.Roles.Update(role);
                 await _context.SaveChangesAsync();
 
-                // Update permissions
-                var existingPermissions = await _context.RolePermissions
-                    .Where(rp => rp.RoleId == id)
-                    .ToListAsync();
-
-                _context.RolePermissions.RemoveRange(existingPermissions);
+                var existingPerms = await _context.RolePermissions.Where(rp => rp.RoleId == id).ToListAsync();
+                _context.RolePermissions.RemoveRange(existingPerms);
                 await _context.SaveChangesAsync();
 
-                if (selectedPermissions != null && selectedPermissions.Any())
+                if (selectedPermissions?.Any() == true)
                 {
-                    var rolePermissions = selectedPermissions.Select(pId => new RolePermission
+                    _context.RolePermissions.AddRange(selectedPermissions.Select(pId => new RolePermission
                     {
-                        RoleId = role.RoleId,
-                        PermissionId = pId
-                    }).ToList();
-
-                    _context.RolePermissions.AddRange(rolePermissions);
+                        RoleId = role.RoleId, PermissionId = pId
+                    }));
                     await _context.SaveChangesAsync();
                 }
+
+                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
+                await _logService.LogActionAsync(
+                    username:    User.Identity?.Name ?? "Admin",
+                    actionType:  "Update",
+                    module:      "PhanQuyen",
+                    description: $"Cập nhật Vai trò: '{role.RoleName}'",
+                    entityId:    id.ToString(),
+                    entityName:  role.RoleName,
+                    oldValue:    oldValue,
+                    newValue:    $"RoleName={role.RoleName}, Permissions={selectedPermissions?.Count ?? 0}",
+                    userRole:    "Admin"
+                );
 
                 TempData["Success"] = $"Cập nhật vai trò '{role.RoleName}' thành công";
                 return RedirectToAction("Details", new { id = role.RoleId });
@@ -287,14 +284,13 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 _logger.LogError(ex, "Error updating role");
                 TempData["Error"] = "Lỗi khi cập nhật vai trò";
-                var permissions = await _context.Permissions.AsNoTracking().ToListAsync();
-                ViewBag.Permissions = permissions;
+                ViewBag.Permissions = await _context.Permissions.AsNoTracking().ToListAsync();
                 return View(role);
             }
         }
 
         /// <summary>
-        /// Delete role
+        /// Xoá vai trò + ghi AuditLog.
         /// POST: /admin/role/delete
         /// </summary>
         [HttpPost]
@@ -305,18 +301,24 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 var role = await _context.Roles.FindAsync(roleId);
                 if (role == null)
-                {
                     return Json(new { success = false, message = "Không tìm thấy vai trò" });
-                }
 
-                // Remove role permissions first
-                var rolePermissions = await _context.RolePermissions
-                    .Where(rp => rp.RoleId == roleId)
-                    .ToListAsync();
-
-                _context.RolePermissions.RemoveRange(rolePermissions);
+                var rolePerms = await _context.RolePermissions.Where(rp => rp.RoleId == roleId).ToListAsync();
+                _context.RolePermissions.RemoveRange(rolePerms);
                 _context.Roles.Remove(role);
                 await _context.SaveChangesAsync();
+
+                // ── AUTO AUDIT LOG ─────────────────────────────────────────────
+                await _logService.LogActionAsync(
+                    username:    User.Identity?.Name ?? "Admin",
+                    actionType:  "Delete",
+                    module:      "PhanQuyen",
+                    description: $"Xoá Vai trò: '{role.RoleName}' (ID: {roleId})",
+                    entityId:    roleId.ToString(),
+                    entityName:  role.RoleName,
+                    oldValue:    $"Permissions={rolePerms.Count}",
+                    userRole:    "Admin"
+                );
 
                 return Json(new { success = true, message = $"Xóa vai trò '{role.RoleName}' thành công" });
             }
@@ -328,4 +330,3 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
-

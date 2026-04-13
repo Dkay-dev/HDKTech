@@ -49,5 +49,13 @@ namespace HDKTech.Models
                 return 0;
             }
         }
+
+        /// <summary>
+        /// Giá thực tế hiển thị cho khách hàng.
+        /// Price đã là giá bán sau mọi điều chỉnh thủ công (ListPrice là giá niêm yết gốc).
+        /// Dùng CurrentPrice nhất quán trên toàn hệ thống thay vì gọi trực tiếp Price.
+        /// </summary>
+        [NotMapped]
+        public decimal CurrentPrice => Price;
     }
 }

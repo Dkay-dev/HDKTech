@@ -1,261 +1,752 @@
-﻿@using HDKTech.Areas.Admin.Controllers
-
+@model HDKTech.Areas.Admin.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var totalRevenue = (decimal)ViewBag.TotalRevenue;
-    var totalOrders = (int)ViewBag.TotalOrders;
-    var lowStockCount = (int)ViewBag.LowStockCount;
-    var newCustomers = (int)ViewBag.NewCustomers;
-    var recentOrders = (List<HDKTech.Models.Order>)ViewBag.RecentOrders;
-    var dailyRevenue = (List<DailyRevenueData>)ViewBag.DailyRevenue;
 
-    // Calculate max revenue for chart scaling
-    var maxRevenue = dailyRevenue?.Max(d => d.Revenue) ?? 1;
-    var revenueChangePercent = totalRevenue > 0 ? 12.5m : 0; // Sample percentage
-    var ordersChangePercent = totalOrders > 0 ? 8m : 0;
+    // Serialize dữ liệu cho Chart.js — Line Chart doanh thu 7 ngày
+    var chartLabels   = System.Text.Json.JsonSerializer.Serialize(
+                            Model.DailyRevenue.Select(d => d.DayName).ToList());
+    var chartRevenues = System.Text.Json.JsonSerializer.Serialize(
+                            Model.DailyRevenue.Select(d => (double)d.Revenue).ToList());
+
+    // Màu sắc cho các loại Audit Log action
+    Func<string, (string dot, string icon)> GetAuditStyle = action => action switch {
+        "Create"              => ("bg-success",   "bi-plus-circle text-success"),
+        "Update"              => ("bg-warning",   "bi-pencil-square text-warning"),
+        "Delete"              => ("bg-danger",    "bi-trash text-danger"),
+        "Login"               => ("bg-primary",   "bi-box-arrow-in-right text-primary"),
+        "Logout"              => ("bg-secondary", "bi-box-arrow-right text-secondary"),
+        "InventoryReserve"    => ("bg-info",      "bi-box-arrow-in-down text-info"),
+        "InventoryRelease"    => ("bg-warning",   "bi-box-arrow-up text-warning"),
+        "OrderStatusChange"   => ("bg-primary",   "bi-arrow-repeat text-primary"),
+        _                     => ("bg-info",      "bi-info-circle text-info")
+    };
 }
 
-<!-- Quick Stats Bento Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Revenue Card -->
-    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-primary">
-        <div class="flex justify-between items-start mb-4">
-            <span class="p-2 bg-primary-fixed text-on-primary-fixed-variant rounded-lg">
-                <span class="material-symbols-outlined">payments</span>
-            </span>
-            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">trending_up</span> +@revenueChangePercent.ToString("F1")%
-            </span>
-        </div>
-        <p class="text-sm font-medium text-zinc-500 mb-1">Tổng doanh thu</p>
-        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@totalRevenue.ToString("C0")</h3>
-    </div>
+@section Styles {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  STAT CARDS STYLING                                         */
+        /* ═══════════════════════════════════════════════════════════ */
+        .stat-card {
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            cursor: default;
+            border-radius: 0.75rem;
+            border-left: 4px solid #dee2e6;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-    <!-- Orders Card -->
-    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex justify-between items-start mb-4">
-            <span class="p-2 bg-surface-container text-on-surface-variant rounded-lg">
-                <span class="material-symbols-outlined">shopping_bag</span>
-            </span>
-            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">trending_up</span> +@ordersChangePercent.ToString("F0")%
-            </span>
-        </div>
-        <p class="text-sm font-medium text-zinc-500 mb-1">Tổng đơn hàng</p>
-        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@totalOrders.ToString("N0")</h3>
-    </div>
+        .stat-card.stat-success {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.02) 0%, rgba(40, 167, 69, 0.01) 100%);
+        }
 
-    <!-- Low Stock Card -->
-    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex justify-between items-start mb-4">
-            <span class="p-2 bg-error-container text-on-error-container rounded-lg">
-                <span class="material-symbols-outlined">warning</span>
-            </span>
-            <span class="text-xs font-bold text-error">Cảnh báo</span>
-        </div>
-        <p class="text-sm font-medium text-zinc-500 mb-1">Hàng sắp hết</p>
-        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@lowStockCount sản phẩm</h3>
-    </div>
+        .stat-card.stat-warning {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.02) 0%, rgba(255, 193, 7, 0.01) 100%);
+        }
 
-    <!-- New Customers Card -->
-    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex justify-between items-start mb-4">
-            <span class="p-2 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-lg">
-                <span class="material-symbols-outlined">person_add</span>
-            </span>
-            <span class="text-xs font-bold text-tertiary flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">trending_up</span> +152
+        .stat-card.stat-danger {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.02) 0%, rgba(220, 53, 69, 0.01) 100%);
+        }
+
+        .stat-card.stat-primary {
+            border-left-color: #007bff;
+            background: linear-gradient(135deg, rgba(0, 123, 255, 0.02) 0%, rgba(0, 123, 255, 0.01) 100%);
+        }
+
+        .stat-card.stat-info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, rgba(23, 162, 184, 0.02) 0%, rgba(23, 162, 184, 0.01) 100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .stat-card .card-body {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .stat-card .card-body > * {
+            writing-mode: horizontal-tb;
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            flex-shrink: 0;
+            font-size: 1.5rem;
+        }
+
+        .stat-content {
+            flex-grow: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .stat-desc {
+            font-size: 0.68rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+            white-space: normal;
+        }
+
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  OTHER STYLING                                              */
+        /* ═══════════════════════════════════════════════════════════ */
+        .badge-status       { font-size: .76rem; padding: .35em .7em; border-radius: .5rem; }
+        .audit-dot          { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .low-stock-row.critical { background: rgba(220,53,69,.06); }
+        .stock-bar          { height: 6px; border-radius: 3px; }
+        .banner-rank-badge  { width: 28px; height: 28px; border-radius: 50%; display: flex;
+                              align-items: center; justify-content: center; font-size: .8rem;
+                              font-weight: 700; flex-shrink: 0; }
+        .cache-chip         { background: rgba(13,110,253,.08); border-radius: 20px;
+                              padding: 2px 10px; font-size: .7rem; color: #0d6efd; }
+    </style>
+}
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard
+        </h4>
+        <div class="d-flex align-items-center gap-2 mt-1">
+            <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            </small>
+            <span class="cache-chip">
+                <i class="bi bi-lightning-charge me-1"></i>Cache: @Model.CachedAt.ToString("HH:mm:ss")
             </span>
         </div>
-        <p class="text-sm font-medium text-zinc-500 mb-1">Khách hàng mới</p>
-        <h3 class="text-2xl font-extrabold text-on-surface tracking-tight">@newCustomers.ToString("N0")</h3>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-area="Admin" asp-controller="BannerAnalytics" asp-action="Index"
+           class="btn btn-outline-info btn-sm">
+            <i class="bi bi-bar-chart-line me-1"></i>Banner Analytics
+        </a>
+        <a asp-area="Admin" asp-controller="Order" asp-action="Index"
+           class="btn btn-primary btn-sm">
+            <i class="bi bi-receipt me-1"></i>Xem đơn hàng
+        </a>
     </div>
 </div>
 
-<!-- Main Data Visualization -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-    <!-- Revenue Chart Section -->
-    <div class="lg:col-span-2 bg-surface-container-low p-8 rounded-xl relative overflow-hidden">
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <h2 class="text-xl font-bold tracking-tight">Doanh thu theo ngày</h2>
-                <p class="text-sm text-zinc-500">So sánh hiệu suất hàng ngày</p>
-            </div>
-            <div class="flex bg-surface-container-highest p-1 rounded-lg">
-                <button class="px-4 py-1.5 text-xs font-bold bg-white text-primary rounded shadow-sm transition-all">Hàng ngày</button>
-                <button class="px-4 py-1.5 text-xs font-bold text-zinc-500 hover:text-primary transition-all">Hàng tháng</button>
-            </div>
-        </div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  ROW 1: STAT CARDS (6 cards — 2 hàng trên mobile)             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="row g-4 mb-4">
 
-        <!-- Chart Bars -->
-        <div class="h-64 flex items-end justify-between gap-4">
-            @if (dailyRevenue != null && dailyRevenue.Count > 0)
-            {
-                @foreach (var item in dailyRevenue)
-                {
-                    var heightPercent = maxRevenue > 0 ? (item.Revenue / maxRevenue * 100) : 0;
-                    <div class="w-full bg-primary/@(25 + (int)(heightPercent / 2)) rounded-t-lg relative group" style="height: @heightPercent%;">
-                        @if (item.Date.Date == DateTime.Now.Date)
-                        {
-                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded whitespace-nowrap">
-                                Hôm nay: @item.Revenue.ToString("C0")
-                            </div>
-                        }
+    <!-- CARD 1: Tổng doanh thu -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-success h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Tổng Doanh Thu</div>
+                    <div class="stat-value text-success">
+                        @((Model.TotalRevenue / 1_000_000m).ToString("F1"))M ₫
                     </div>
-                }
-            }
-        </div>
-        <div class="flex justify-between mt-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-            @if (dailyRevenue != null)
-            {
-                @foreach (var item in dailyRevenue)
-                {
-                    <span>@item.DayName</span>
-                }
-            }
+                    <div class="stat-desc">Đã giao thành công</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Active Campaign Card -->
-    <div class="bg-on-surface text-white p-8 rounded-xl flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-        <div>
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-                <span class="text-xs font-bold uppercase tracking-widest text-primary-fixed">Chiến dịch hiện tại</span>
-            </div>
-            <h2 class="text-2xl font-bold leading-tight mb-2">Khuyến mãi Q3 Laptop</h2>
-            <p class="text-zinc-400 text-sm">Nhắm tới khách hàng doanh nghiệp với máy RTX 4090.</p>
-        </div>
-        <div class="mt-8">
-            <div class="flex justify-between text-xs font-bold mb-2">
-                <span>Mục tiêu hoàn thành</span>
-                <span>78%</span>
-            </div>
-            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div class="h-full bg-primary w-[78%] rounded-full shadow-[0_0_8px_rgba(188,0,12,0.6)]"></div>
+    <!-- CARD 2: Doanh thu hôm nay -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-success h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">DT Hôm nay</div>
+                    <div class="stat-value text-success">
+                        @((Model.TodayRevenue / 1_000_000m).ToString("F2"))M ₫
+                    </div>
+                    <div class="stat-desc">
+                        <i class="bi bi-bag-check me-1"></i>@Model.TodayOrderCount đơn
+                    </div>
+                </div>
             </div>
         </div>
-        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="mt-8 w-full py-3 bg-primary text-white font-bold rounded-lg text-center hover:brightness-110 transition-all active:scale-95 cursor-pointer block">
-            Xem chi tiết chiến dịch
-        </a>
     </div>
+
+    <!-- CARD 3: Đơn hàng chờ -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-warning h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Đơn Chờ</div>
+                    <div class="stat-value text-warning">@Model.PendingOrders</div>
+                    <div class="stat-desc">Chờ xác nhận/xử lý</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 4: Tổng đơn hàng -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-primary h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-bag-check"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Tổng Đơn</div>
+                    <div class="stat-value text-primary">@Model.TotalOrders.ToString("N0")</div>
+                    <div class="stat-desc">AOV @Model.AverageOrderValue.ToString("N0") ₫</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 5: Hàng sắp hết -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-danger h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi @(Model.LowStockCount > 0 ? "bi-exclamation-triangle-fill" : "bi-exclamation-triangle")"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Hàng Sắp Hết</div>
+                    <div class="stat-value text-danger">@Model.LowStockCount SP</div>
+                    <div class="stat-desc">Tồn kho &lt; 10 sản phẩm</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 6: Banner Clicks -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm stat-card stat-info h-100">
+            <div class="card-body">
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-cursor-fill"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Banner Clicks</div>
+                    <div class="stat-value text-info">@Model.TotalClicksToday</div>
+                    <div class="stat-desc">Hôm nay · @Model.ActiveBanners đang hiện</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- Recent Orders Table Section -->
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
-    <div class="p-6 flex items-center justify-between">
-        <h2 class="text-xl font-bold tracking-tight">Đơn hàng gần đây</h2>
-        <a asp-area="Admin" asp-controller="Order" asp-action="Index" class="text-sm font-bold text-tertiary flex items-center gap-1 hover:underline">
-            Xem tất cả <span class="material-symbols-outlined text-sm">arrow_outward</span>
-        </a>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  ROW 2: LINE CHART + QUICK SUMMARY                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+
+    <!-- Line Chart doanh thu 7 ngày ← GĐ2: chuyển từ Bar → Line -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3 pb-0">
+                <div>
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Doanh thu 7 ngày gần nhất
+                    </h6>
+                    <small class="text-muted">Đơn đã giao thành công · Cache 5 phút</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
+                        Tổng: @((Model.DailyRevenue.Sum(d => d.Revenue) / 1_000_000m).ToString("F1"))M ₫
+                    </span>
+                    @* ── GĐ3: Quick Action — Tải báo cáo doanh thu ── *@
+                    <a asp-area="Admin"
+                       asp-controller="Reports"
+                       asp-action="ExportRevenue"
+                       asp-route-start="@DateTime.Now.AddDays(-6).ToString("yyyy-MM-dd")"
+                       asp-route-end="@DateTime.Now.ToString("yyyy-MM-dd")"
+                       class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                       title="Tải báo cáo doanh thu 7 ngày vừa qua">
+                        <i class="bi bi-file-earmark-arrow-down"></i>
+                        <span class="d-none d-xl-inline">Tải báo cáo</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <canvas id="revenueChart" style="max-height:250px"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left">
-            <thead>
-                <tr class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] border-b border-surface-container">
-                    <th class="px-6 py-4">Mã đơn</th>
-                    <th class="px-6 py-4">Khách hàng</th>
-                    <th class="px-6 py-4">Ngày</th>
-                    <th class="px-6 py-4">Trạng thái</th>
-                    <th class="px-6 py-4 text-right">Hành động</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-surface-container">
-                @if (recentOrders != null && recentOrders.Count > 0)
-                {
-                    @foreach (var order in recentOrders)
+
+    <!-- Panel tóm tắt nhanh -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-3 pb-0">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-lightning-charge me-2 text-warning"></i>Tóm tắt nhanh
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small"><i class="bi bi-person-plus me-2 text-primary"></i>Khách mới (30 ngày)</span>
+                        <span class="badge bg-primary rounded-pill">@Model.NewCustomers</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small"><i class="bi bi-percent me-2 text-success"></i>Khuyến mãi đang chạy</span>
+                        <span class="badge bg-success rounded-pill">@Model.ActivePromotions</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small"><i class="bi bi-clock-history me-2 text-warning"></i>Đơn chờ xử lý</span>
+                        <span class="badge bg-warning text-dark rounded-pill">@Model.PendingOrders</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small"><i class="bi bi-box-seam me-2 text-danger"></i>Tồn kho cảnh báo (&lt;10)</span>
+                        <span class="badge bg-danger rounded-pill">@Model.LowStockCount</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                        <span class="small"><i class="bi bi-image me-2 text-info"></i>Banner đang hiển thị</span>
+                        <span class="badge bg-info rounded-pill">@Model.ActiveBanners</span>
+                    </li>
+                </ul>
+                <div class="p-3 d-grid gap-2">
+                    <a asp-area="Admin" asp-controller="BannerAnalytics" asp-action="Index"
+                       class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-bar-chart-line me-1"></i> Thống kê Banner chi tiết
+                    </a>
+                    <a asp-area="Admin" asp-controller="Promotion" asp-action="Index"
+                       class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-percent me-1"></i> Quản lý khuyến mãi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  ROW 3: LOW STOCK ALERT (đỏ) + TOP 3 BANNER ROI ← GĐ2        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+
+    <!-- 🔴 LOW STOCK ALERT PANEL ─────────────────────────────── -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100
+                    @(Model.LowStockProducts.Any() ? "border-danger border" : "")">
+            <div class="card-header border-0 pt-3 pb-0
+                         @(Model.LowStockProducts.Any() ? "bg-danger bg-opacity-5" : "bg-white")
+                         d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Cảnh báo tồn kho thấp
+                    @if (Model.LowStockProducts.Any())
                     {
-                        <tr class="hover:bg-surface-container-low transition-colors group">
-                            <td class="px-6 py-5 text-sm font-mono text-zinc-500">#@order.OrderCode</td>
-                            <td class="px-6 py-5">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600">
-                                        @(order.User?.UserName?.Substring(0, 2).ToUpper() ?? "NA")
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-semibold">@order.User?.FullName ?? "N/A"</p>
-                                        <p class="text-[10px] text-zinc-400">@order.User?.Email ?? "N/A"</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-5 text-sm text-zinc-600">@order.OrderDate.ToString("MMM dd, yyyy")</td>
-                            <td class="px-6 py-5">
-                                @{
-                                    string statusColor = order.Status switch
-                                    {
-                                        0 => "error-container",
-                                        1 => "secondary-container",
-                                        2 => "surface-container",
-                                        _ => "surface-container"
-                                    };
-                                    string statusText = order.Status switch
-                                    {
-                                        0 => "Chờ xử lý",
-                                        1 => "Đang giao",
-                                        2 => "Đã giao",
-                                        _ => "N/A"
-                                    };
-                                }
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-@statusColor text-on-@statusColor">
-                                    @statusText
-                                </span>
-                            </td>
-                            <td class="px-6 py-5 text-right">
-                                <a asp-area="Admin" asp-controller="Order" asp-action="Details" asp-route-id="@order.OrderCode" class="text-zinc-400 hover:text-primary transition-colors">
-                                    <span class="material-symbols-outlined">visibility</span>
-                                </a>
-                            </td>
-                        </tr>
+                        <span class="badge bg-danger ms-1">@Model.LowStockProducts.Count SP</span>
                     }
+                </h6>
+                <a asp-area="Admin" asp-controller="Product" asp-action="Index"
+                   class="btn btn-danger btn-sm">
+                    <i class="bi bi-box-seam me-1"></i>Quản lý kho
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.LowStockProducts.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3" style="width:40%">Sản phẩm</th>
+                                    <th>Tồn kho</th>
+                                    <th>Mức độ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var sp in Model.LowStockProducts)
+                                {
+                                    var pct  = Math.Min(100, (int)((double)sp.CurrentStock / sp.Threshold * 100));
+                                    var bClr = sp.IsCritical ? "bg-danger" : "bg-warning";
+                                    <tr class="low-stock-row @(sp.IsCritical ? "critical" : "")">
+                                        <td class="ps-3">
+                                            <div class="small fw-semibold text-truncate" style="max-width:180px"
+                                                 title="@sp.ProductName">
+                                                @sp.ProductName
+                                            </div>
+                                            <div class="text-muted" style="font-size:.68rem">ID: @sp.ProductId</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(sp.IsCritical ? "bg-danger" : "bg-warning text-dark") rounded-pill fs-6">
+                                                @sp.CurrentStock
+                                            </span>
+                                            <div class="stock-bar @bClr bg-opacity-25 mt-1" style="width:60px">
+                                                <div class="stock-bar @bClr" style="width:@pct%"></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (sp.IsCritical)
+                                            {
+                                                <span class="badge bg-danger">🔴 Nguy hiểm</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">🟡 Thấp</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="5" class="px-6 py-5 text-center text-zinc-500">Không có đơn hàng nào gần đây</td>
-                    </tr>
+                    <div class="text-center text-success py-4">
+                        <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
+                        <strong>Tất cả sản phẩm có tồn kho ổn định</strong>
+                        <div class="text-muted small mt-1">Ngưỡng cảnh báo: dưới 5 sản phẩm</div>
+                    </div>
                 }
-            </tbody>
-        </table>
+            </div>
+        </div>
     </div>
-    <div class="p-4 bg-surface-container-low border-t border-surface-container text-center">
-        <a asp-area="Admin" asp-controller="Order" asp-action="Index" class="text-xs font-bold text-zinc-500 hover:text-on-surface transition-all uppercase tracking-widest">
-            Xem thêm đơn hàng
-        </a>
+
+    <!-- 📊 TOP 3 BANNER ROI ────────────────────────────────────── -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3 pb-0">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-trophy-fill me-2 text-warning"></i>Top 3 Banner hiệu quả nhất
+                </h6>
+                <a asp-area="Admin" asp-controller="BannerAnalytics" asp-action="Index"
+                   class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-bar-chart-line me-1"></i>Chi tiết
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.TopBanners.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3" style="width:5%">#</th>
+                                    <th>Banner</th>
+                                    <th class="text-center">Clicks</th>
+                                    <th class="text-center">7 ngày</th>
+                                    <th class="text-end pe-3">DT ước tính</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    string[] rankColors = { "warning", "secondary", "danger" };
+                                    string[] rankEmojis = { "🥇", "🥈", "🥉" };
+                                }
+                                @for (int idx = 0; idx < Model.TopBanners.Count; idx++)
+                                {
+                                    var b = Model.TopBanners[idx];
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="banner-rank-badge bg-@rankColors[idx] bg-opacity-15 text-@rankColors[idx]">
+                                                @rankEmojis[idx]
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold text-truncate" style="max-width:160px"
+                                                 title="@b.BannerTitle">@b.BannerTitle</div>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                <span class="badge bg-light text-dark border" style="font-size:.65rem">
+                                                    @b.BannerType
+                                                </span>
+                                                <span class="badge bg-@b.EfficiencyBadge" style="font-size:.65rem">
+                                                    @b.EfficiencyLabel
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="fw-bold">@b.TotalClicks.ToString("N0")</div>
+                                            <div class="text-muted" style="font-size:.68rem">
+                                                @b.UniqueReach reach
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="fw-semibold text-info">@b.ClicksLast7Days</div>
+                                            <div class="text-muted" style="font-size:.68rem">
+                                                ~@b.AvgClicksPerDay/ngày
+                                            </div>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <div class="fw-semibold text-success small">
+                                                @b.EstimatedRevenue.ToString("N0") ₫
+                                            </div>
+                                            <div class="text-muted" style="font-size:.62rem">
+                                                *ước tính 5% conv.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-3 py-2 border-top bg-light bg-opacity-50">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            DT ước tính = ClicksLast7D × 5% × AOV (@Model.AverageOrderValue.ToString("N0") ₫).
+                            Chính xác hơn khi tích hợp session tracking.
+                        </small>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-image fs-3 d-block mb-2"></i>
+                        Chưa có dữ liệu click Banner.
+                        <div class="small mt-1">
+                            <a asp-area="Admin" asp-controller="Banner" asp-action="Index">Quản lý Banner →</a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
+
 </div>
 
-<!-- Floating Action Button -->
-<style>
-    .fab-button {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        width: 3.5rem;
-        height: 3.5rem;
-        background-color: #bc000c;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 25px rgba(188, 0, 12, 0.4);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        z-index: 50;
-        border: none;
-        font-size: 1.75rem;
-    }
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  ROW 4: ĐƠN HÀNG GẦN ĐÂY + AUDIT LOG                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="row g-3">
 
-    .fab-button:hover {
-        transform: scale(1.1);
-    }
+    <!-- 5 đơn hàng gần nhất -->
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-receipt me-2 text-primary"></i>Đơn hàng gần đây
+                    @if (Model.PendingOrders > 0)
+                    {
+                        <span class="badge bg-warning text-dark ms-1">@Model.PendingOrders chờ</span>
+                    }
+                </h6>
+                <a asp-area="Admin" asp-controller="Order" asp-action="Index"
+                   class="btn btn-outline-primary btn-sm">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày đặt</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-3">Tổng tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                Func<int, (string css, string label)> GetOrderStyle = status => status switch {
+                                    0 => ("bg-secondary",      "Chờ xác nhận"),
+                                    1 => ("bg-warning text-dark", "Đang xử lý"),
+                                    2 => ("bg-info text-dark", "Đang giao"),
+                                    3 => ("bg-success",        "Đã giao"),
+                                    4 => ("bg-danger",         "Đã huỷ"),
+                                    _ => ("bg-light text-dark","N/A")
+                                };
+                            }
+                            @if (Model.RecentOrders.Any())
+                            {
+                                @foreach (var order in Model.RecentOrders)
+                                {
+                                    var (badgeCss, statusLabel) = GetOrderStyle(order.Status);
+                                    <tr>
+                                        <td class="ps-3">
+                                            <span class="fw-semibold text-primary small">
+                                                #@order.OrderCode
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center
+                                                            justify-content-center text-primary fw-bold"
+                                                     style="width:30px;height:30px;font-size:.72rem;flex-shrink:0">
+                                                    @((order.User?.FullName ?? order.User?.Email ?? "?")[0])
+                                                </div>
+                                                <div class="overflow-hidden">
+                                                    <div class="small fw-semibold text-truncate" style="max-width:120px">
+                                                        @(order.User?.FullName ?? order.User?.Email ?? "Khách vãng lai")
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                @order.OrderDate.ToString("dd/MM HH:mm")
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-status @badgeCss">@statusLabel</span>
+                                        </td>
+                                        <td class="text-end pe-3 fw-semibold small">
+                                            @order.TotalAmount.ToString("N0") ₫
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-4 d-block mb-2"></i>Chưa có đơn hàng
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    .fab-button:active {
-        transform: scale(0.95);
-    }
-</style>
+    <!-- 5 Audit Log gần nhất (bao gồm Inventory events từ GĐ1) -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between pt-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-journal-text me-2 text-secondary"></i>Hoạt động hệ thống
+                </h6>
+                <a asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm">Xem log</a>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @if (Model.RecentAuditLogs.Any())
+                    {
+                        @foreach (var log in Model.RecentAuditLogs)
+                        {
+                            var (dotCss, _) = GetAuditStyle(log.Action);
+                            <li class="list-group-item px-3 py-2">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="audit-dot @dotCss mt-2"></span>
+                                    <div class="flex-grow-1 overflow-hidden">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-semibold small text-truncate" style="max-width:130px"
+                                                  title="@log.Username">@log.Username</span>
+                                            <span class="text-muted flex-shrink-0"
+                                                  style="font-size:.66rem;white-space:nowrap">
+                                                @log.Timestamp.ToString("HH:mm dd/MM")
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted text-truncate" title="@log.Description">
+                                            <span class="badge bg-light text-dark border me-1"
+                                                  style="font-size:.65rem">@log.Action</span>
+                                            @log.Description
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-center text-muted py-4">
+                            <i class="bi bi-journal-x fs-4 d-block mb-2"></i>Chưa có hoạt động
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
 
-<a asp-area="Admin" asp-controller="Product" asp-action="Create" class="fab-button" title="Thêm sản phẩm mới">
-    <span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">add</span>
-</a>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    // ── Chart.js — LINE CHART doanh thu 7 ngày ──────────────────────────────
+    const labels   = @Html.Raw(chartLabels);
+    const revenues = @Html.Raw(chartRevenues);
+
+    const ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+
+    // Gradient fill
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(13,110,253,0.25)');
+    gradient.addColorStop(1, 'rgba(13,110,253,0.01)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Doanh thu (₫)',
+                data: revenues,
+                borderColor: '#0d6efd',
+                borderWidth: 2,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#0d6efd',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return (value / 1000000).toFixed(1) + 'M ₫';
+                        }
+                    }
+                }
+            }
+        }
+    });
+})();
+</script>
+}

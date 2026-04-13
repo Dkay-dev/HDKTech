@@ -1,5 +1,4 @@
-﻿using HDKTech.Areas.Identity.Data;
-using HDKTech.Data;
+﻿using HDKTech.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
