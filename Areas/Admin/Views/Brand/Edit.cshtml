@@ -2,88 +2,124 @@
 
 @{
     ViewData["Title"] = "Chỉnh sửa Thương Hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
 }
 
-<div class="p-8">
-    <!-- Header -->
-    <div class="mb-10">
-        <div class="flex items-center gap-3 mb-2">
-            <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="text-primary hover:underline text-sm font-medium flex items-center gap-1">
-                <span class="material-symbols-outlined">chevron_left</span>
-                Quay lại
-            </a>
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-building text-danger me-2"></i>Chỉnh sửa Thương Hiệu</h1>
+        <p>Cập nhật thông tin thương hiệu</p>
+    </div>
+    <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ========== MAIN FORM ========== -->
+<div class="row g-4">
+
+    <!-- CỘT TRÁI: Form chính (8/12) -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-2"></i>Thông tin Thương Hiệu
+            </div>
+            <div class="card-body p-4">
+
+                <form asp-action="Edit" asp-controller="Brand" asp-area="Admin" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+
+                    <!-- Tên Thương Hiệu -->
+                    <div class="mb-4">
+                        <label asp-for="Name" class="form-label">
+                            Tên Thương Hiệu <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Name"
+                               class="form-control"
+                               placeholder="VD: Apple, Samsung, Dell, HP..." />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Mô Tả -->
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label">Mô Tả</label>
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Mô tả chi tiết về thương hiệu..."></textarea>
+                        <div class="form-text">Tùy chọn. Giúp khách hàng hiểu rõ về thương hiệu.</div>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Nút action -->
+                    <div class="d-flex gap-2 align-items-center pt-3 border-top">
+                        <button type="submit" class="btn btn-save px-4">
+                            <i class="bi bi-check-circle me-2"></i>Cập nhật
+                        </button>
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x me-1"></i>Hủy
+                        </a>
+                    </div>
+
+                </form>
+            </div>
         </div>
-        <h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Chỉnh sửa Thương Hiệu</h1>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Form -->
-        <div class="lg:col-span-2">
-            <form asp-action="Edit" asp-controller="Brand" asp-area="Admin" method="post" class="space-y-6">
-                <input type="hidden" asp-for="Id" />
-
-                <!-- Tên Thương Hiệu -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="Name" class="block text-sm font-bold text-on-surface mb-2">Tên Thương Hiệu <span class="text-error">*</span></label>
-                    <input type="text" asp-for="Name" placeholder="Nhập tên thương hiệu" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none" />
-                    <span asp-validation-for="Name" class="text-xs text-error mt-1 block"></span>
+    <!-- CỘT PHẢI: Thông tin (4/12) -->
+    <div class="col-lg-4">
+        <div class="hdk-preview-container">
+            <div class="hdk-preview-card">
+                <div class="hdk-preview-card-header">
+                    <i class="bi bi-info-circle me-1"></i>Thông tin
                 </div>
+                <div class="hdk-preview-info">
 
-                <!-- Mô Tả -->
-                <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                    <label asp-for="Description" class="block text-sm font-bold text-on-surface mb-2">Mô Tả</label>
-                    <textarea asp-for="Description" placeholder="Nhập mô tả thương hiệu" rows="5" class="w-full px-4 py-2.5 border border-surface-container-high rounded-lg focus:ring-2 focus:ring-primary/40 outline-none resize-none"></textarea>
-                    <span asp-validation-for="Description" class="text-xs text-error mt-1 block"></span>
-                </div>
+                    <!-- Brand ID -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Mã Thương Hiệu</div>
+                        <div class="hdk-preview-info-value fw-bold">#@Model.Id</div>
+                    </div>
 
-                <!-- Buttons -->
-                <div class="flex gap-3">
-                    <button type="submit" class="px-6 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined">check</span>
-                        Cập nhật
-                    </button>
-                    <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined">close</span>
-                        Hủy
-                    </a>
-                </div>
-            </form>
-        </div>
+                    <!-- Brand Name Preview -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Tên</div>
+                        <div class="hdk-preview-info-value fw-bold">@(Model.Name ?? "-")</div>
+                    </div>
 
-        <!-- Info Panel -->
-        <div class="space-y-6">
-            <div class="bg-surface-container-lowest p-6 rounded-lg shadow-sm">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined">info</span>
-                    Thông tin
-                </h2>
-                <div class="space-y-3 text-sm text-zinc-600">
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">Mã Thương Hiệu</p>
-                        <p class="text-primary">#@Model?.Id</p>
+                    <!-- Status -->
+                    <div class="hdk-preview-info-row">
+                        <div class="hdk-preview-info-label">Trạng thái</div>
+                        <div class="hdk-preview-info-value">
+                            <span class="badge badge-success">
+                                <i class="bi bi-check-circle me-1"></i>Hoạt động
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">Ngôn ngữ</p>
-                        <p>Tiếng Việt</p>
-                    </div>
-                    <div>
-                        <p class="font-bold text-on-surface mb-1">Trạng thái</p>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-tertiary-fixed/30 text-on-tertiary">Hoạt động</span>
-                    </div>
+
                 </div>
             </div>
 
-            <div class="bg-primary/10 p-6 rounded-lg border-l-4 border-primary">
-                <p class="text-sm text-on-surface">
-                    <span class="font-bold">💡 Tip:</span> Bạn có thể cập nhật bất kỳ thông tin nào về thương hiệu từ đây
+            <!-- Info Panel -->
+            <div class="info-panel mt-4">
+                <h3>
+                    <i class="bi bi-lightbulb text-gold"></i>Hướng dẫn
+                </h3>
+
+                <p>
+                    <strong>💡 Tip:</strong> Cập nhật bất kỳ thông tin nào về thương hiệu từ đây để giữ dữ liệu luôn cập nhật.
                 </p>
             </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }
