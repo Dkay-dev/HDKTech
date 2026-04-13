@@ -26,6 +26,10 @@ namespace HDKTech.Models
         public int Status { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.Now;
 
+        // ✅ Thêm mới: phương thức và trạng thái thanh toán
+        public string PaymentMethod { get; set; } = "COD";
+        public string PaymentStatus { get; set; } = "Unpaid";
+
         [ForeignKey("UserId")]
         public virtual AppUser User { get; set; }
 

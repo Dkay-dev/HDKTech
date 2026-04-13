@@ -3,17 +3,28 @@
     ViewData["Title"] = "Thanh Toán";
 }
 
-<link rel="stylesheet" href="~/css/pages/checkout.css" />
+@* ✅ Fix #2: Tách CSS ra @section Styles theo yêu cầu kỹ thuật *@
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/checkout.css" asp-append-version="true" />
+}
+
+@* ✅ Fix #2: Hidden inputs để JS đọc TempData và show SweetAlert2 *@
+@if (TempData["SwalSuccess"] != null)
+{
+    <input type="hidden" id="swal-success-msg" value="@TempData["SwalSuccess"]" />
+}
+@if (TempData["SwalError"] != null)
+{
+    <input type="hidden" id="swal-error-msg" value="@TempData["SwalError"]" />
+}
 
 <div class="container">
     <div class="checkout-container">
-        <!-- Title -->
         <div class="checkout-title">
             <i class="bi bi-credit-card"></i>
             Xác Nhận Thanh Toán
         </div>
 
-        <!-- Error Messages -->
         @if (TempData["Error"] != null)
         {
             <div class="error-message">
@@ -22,25 +33,28 @@
             </div>
         }
 
-        <form method="post" novalidate>
+        <form method="post" action="/Checkout" id="checkoutForm" novalidate>
             @Html.AntiForgeryToken()
-            
+
+            <input type="hidden" name="TotalAmount" value="@Model.TotalAmount" />
+            <input type="hidden" name="ShippingFee" value="@Model.ShippingFee" />
+            <input type="hidden" name="SoProduct" value="@Model.SoProduct" />
+
             <div class="row">
                 <!-- Left: Form -->
                 <div class="col-lg-7">
-                    <!-- Thông Tin Người Nhận -->
                     <div class="form-section">
                         <h5>
                             <i class="bi bi-person-check"></i>
                             Thông Tin Người Nhận
                         </h5>
-                        
+
                         <div class="form-group">
                             <label class="form-label">
                                 <i class="bi bi-person"></i>
                                 Họ Tên
                             </label>
-                            <input type="text" class="form-control @(ViewData.ModelState["RecipientName"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                            <input type="text" class="form-control @(ViewData.ModelState["RecipientName"]?.Errors.Any() == true ? "is-invalid" : "")"
                                    name="RecipientName" value="@Model.RecipientName" placeholder="Nhập họ tên">
                             @if (ViewData.ModelState["RecipientName"]?.Errors.Any() == true)
                             {
@@ -53,7 +67,7 @@
                                 <i class="bi bi-envelope"></i>
                                 Email
                             </label>
-                            <input type="email" class="form-control @(ViewData.ModelState["Email"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                            <input type="email" class="form-control @(ViewData.ModelState["Email"]?.Errors.Any() == true ? "is-invalid" : "")"
                                    name="Email" value="@Model.Email" placeholder="Nhập email">
                             @if (ViewData.ModelState["Email"]?.Errors.Any() == true)
                             {
@@ -66,7 +80,7 @@
                                 <i class="bi bi-telephone"></i>
                                 Số Điện Thoại
                             </label>
-                            <input type="tel" class="form-control @(ViewData.ModelState["SoDienThoai"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                            <input type="tel" class="form-control @(ViewData.ModelState["SoDienThoai"]?.Errors.Any() == true ? "is-invalid" : "")"
                                    name="SoDienThoai" value="@Model.SoDienThoai" placeholder="Nhập số điện thoại">
                             @if (ViewData.ModelState["SoDienThoai"]?.Errors.Any() == true)
                             {
@@ -79,7 +93,7 @@
                                 <i class="bi bi-geo-alt"></i>
                                 Địa Chỉ Giao Hàng
                             </label>
-                            <input type="text" class="form-control @(ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true ? "is-invalid" : "")" 
+                            <input type="text" class="form-control @(ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true ? "is-invalid" : "")"
                                    name="ShippingAddress" value="@Model.ShippingAddress" placeholder="Nhập địa chỉ giao hàng">
                             @if (ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true)
                             {
@@ -103,7 +117,7 @@
                             Phương Thức Thanh Toán
                         </h5>
 
-                        <div class="payment-method active">
+                        <div class="payment-method active" id="pm-cod">
                             <input type="radio" id="cod" name="PaymentMethod" value="COD" checked>
                             <label for="cod" style="margin: 0; cursor: pointer; flex: 1;">
                                 <i class="bi bi-truck"></i>
@@ -113,7 +127,31 @@
                             </label>
                         </div>
 
-                        <div class="payment-method">
+                        <div class="payment-method" id="pm-vnpay">
+                            <input type="radio" id="vnpay" name="PaymentMethod" value="VNPAY">
+                            <label for="vnpay" style="margin: 0; cursor: pointer; flex: 1;">
+                                <img src="~/images/payment/vnpay-logo.png" alt="VNPay" height="22"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-credit-card-2-front" style="display:none;"></i>
+                                <strong>Thanh Toán Qua VNPay</strong>
+                                <br>
+                                <small style="color: #666;">ATM, Visa, Mastercard, QR Code</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-momo">
+                            <input type="radio" id="momo" name="PaymentMethod" value="Momo">
+                            <label for="momo" style="margin: 0; cursor: pointer; flex: 1;">
+                                <img src="~/images/payment/momo-logo.png" alt="MoMo" height="22"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-wallet2" style="display:none;"></i>
+                                <strong>Thanh Toán Qua MoMo</strong>
+                                <br>
+                                <small style="color: #666;">Ví MoMo, QR Code</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-bank">
                             <input type="radio" id="bank" name="PaymentMethod" value="BANK" disabled>
                             <label for="bank" style="margin: 0; cursor: not-allowed; flex: 1; color: #999;">
                                 <i class="bi bi-bank"></i>
@@ -138,15 +176,9 @@
                             @foreach (var item in Model.Items)
                             {
                                 <div class="summary-item">
-                                    <div class="summary-item-name">
-                                        @item.ProductName
-                                    </div>
-                                    <div class="summary-item-qty">
-                                        ×@item.Quantity
-                                    </div>
-                                    <div class="summary-item-price">
-                                        @((item.Price * item.Quantity).ToString("N0"))₫
-                                    </div>
+                                    <div class="summary-item-name">@item.ProductName</div>
+                                    <div class="summary-item-qty">×@item.Quantity</div>
+                                    <div class="summary-item-price">@((item.Price * item.Quantity).ToString("N0"))₫</div>
                                 </div>
                             }
                         }
@@ -160,7 +192,7 @@
 
                         <div class="summary-item">
                             <span>Phí Vận Chuyển:</span>
-                            <span style="font-weight: 600; color: var(--hdk-dark);">@Model.ShippingFee.ToString("N0")₫</span>
+                            <span style="font-weight: 600; color: var(--hdk-dark);">@(Model.ShippingFee == 0 ? "Miễn phí" : Model.ShippingFee.ToString("N0") + "₫")</span>
                         </div>
 
                         <div class="summary-total">
@@ -168,9 +200,9 @@
                             <span>@((Model.TotalAmount + Model.ShippingFee).ToString("N0"))₫</span>
                         </div>
 
-                        <button type="submit" class="btn-checkout">
-                            <i class="bi bi-check-circle"></i>
-                            XÁC NHẬN ĐẶT HÀNG
+                        <button type="submit" id="btnSubmit" class="btn-checkout">
+                            <i class="bi bi-check-circle" id="btnIcon"></i>
+                            <span id="btnText">XÁC NHẬN ĐẶT HÀNG</span>
                         </button>
 
                         <a href="/Cart" class="btn btn-outline-secondary w-100 mt-2">
@@ -184,3 +216,51 @@
     </div>
 </div>
 
+<script>
+    // Cập nhật giao diện nút và highlight khi chọn phương thức thanh toán
+    document.querySelectorAll('input[name="PaymentMethod"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var btn  = document.getElementById('btnSubmit');
+            var icon = document.getElementById('btnIcon');
+            var text = document.getElementById('btnText');
+
+            // Reset tất cả highlight
+            document.querySelectorAll('.payment-method').forEach(function (el) {
+                el.classList.remove('active');
+            });
+            this.closest('.payment-method').classList.add('active');
+
+            // Đổi màu nút theo phương thức
+            if (this.value === 'VNPAY') {
+                btn.style.background = '#005BAA';
+                icon.className = 'bi bi-credit-card-2-front';
+                text.textContent = 'THANH TOÁN QUA VNPAY';
+            } else if (this.value === 'Momo') {
+                btn.style.background = '#A72930';
+                icon.className = 'bi bi-wallet2';
+                text.textContent = 'THANH TOÁN QUA MOMO';
+            } else {
+                btn.style.background = '';
+                icon.className = 'bi bi-check-circle';
+                text.textContent = 'XÁC NHẬN ĐẶT HÀNG';
+            }
+        });
+    });
+
+    // Loading state khi submit
+    document.getElementById('checkoutForm').addEventListener('submit', function () {
+        var btn  = document.getElementById('btnSubmit');
+        var icon = document.getElementById('btnIcon');
+        var text = document.getElementById('btnText');
+
+        btn.disabled = true;
+        icon.className = 'bi bi-hourglass-split';
+        text.textContent = 'ĐANG XỬ LÝ...';
+    });
+</script>
+
+@* ✅ Fix #2: SweetAlert2 + checkout.js tách biệt (gọi qua @section Scripts) *@
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="~/client/js/checkout.js" asp-append-version="true"></script>
+}

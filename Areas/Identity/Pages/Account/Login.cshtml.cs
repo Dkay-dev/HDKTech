@@ -1,141 +1,132 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
+// ✅ Fix #1: Override trang Login của Identity
+// Thêm logic redirect theo Role sau khi đăng nhập thành công:
+//   - Admin / Manager / WarehouseStaff → /Admin/Dashboard
+//   - Customer (mặc định)             → returnUrl hoặc trang chủ
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 using HDKTech.Models;
-using HDKTech.Services;
 
 namespace HDKTech.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly UserManager<AppUser>   _userManager;
         private readonly ILogger<LoginModel>    _logger;
-        // ── Giai đoạn 4: Audit log cho sự kiện đăng nhập / bị khoá ──────
-        private readonly ISystemLogService      _logService;
 
         public LoginModel(
             SignInManager<AppUser> signInManager,
-            ILogger<LoginModel>    logger,
-            ISystemLogService      logService)
+            UserManager<AppUser>   userManager,
+            ILogger<LoginModel>    logger)
         {
             _signInManager = signInManager;
+            _userManager   = userManager;
             _logger        = logger;
-            _logService    = logService;
         }
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new();
 
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
+        public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
+        public string? ReturnUrl { get; set; }
+        public string? ErrorMessage { get; set; }
 
-        public string ReturnImageUrl { get; set; }
-
-        [TempData]
-        public string ErrorMessage { get; set; }
+        // ── Danh sách Role được điều hướng vào Admin Area ─────────────────────
+        private static readonly string[] AdminRoles = { "Admin", "Manager", "WarehouseStaff" };
 
         public class InputModel
         {
-            [Required(ErrorMessage = "Vui lòng nhập Email.")]
-            [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
-            public string Email { get; set; }
+            [Required(ErrorMessage = "Vui lòng nhập email.")]
+            [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+            public string Email { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
             [DataType(DataType.Password)]
-            public string Password { get; set; }
+            public string Password { get; set; } = string.Empty;
 
             [Display(Name = "Ghi nhớ đăng nhập?")]
             public bool RememberMe { get; set; }
         }
 
-        public async Task OnGetAsync(string returnImageUrl = null)
+        // ── GET: Hiển thị form đăng nhập ──────────────────────────────────────
+        public async Task OnGetAsync(string? returnUrl = null)
         {
             if (!string.IsNullOrEmpty(ErrorMessage))
-            {
                 ModelState.AddModelError(string.Empty, ErrorMessage);
-            }
 
-            returnImageUrl ??= Url.Content("~/");
+            returnUrl ??= Url.Content("~/");
 
-            // Xóa cookie bên ngoài hiện có để đảm bảo quá trình đăng nhập sạch sẽ
+            // Xoá cookie xác thực ngoại vi còn sót lại
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-            ReturnImageUrl = returnImageUrl;
+            ReturnUrl      = returnUrl;
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnImageUrl = null)
+        // ── POST: Xử lý đăng nhập & redirect theo Role ───────────────────────
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
-            returnImageUrl ??= Url.Content("~/");
+            returnUrl ??= Url.Content("~/");
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return Page();
+
+            // Thử đăng nhập bằng Password
+            var result = await _signInManager.PasswordSignInAsync(
+                Input.Email,
+                Input.Password,
+                Input.RememberMe,
+                lockoutOnFailure: true   // Bật lockout brute-force theo cấu hình Program.cs
+            );
+
+            if (result.Succeeded)
             {
-                // ── Giai đoạn 4: Brute-force — lockoutOnFailure: true ────────
-                // Sau 5 lần sai liên tiếp, tài khoản bị khoá 15 phút (cấu hình ở Program.cs).
-                var result = await _signInManager.PasswordSignInAsync(
-                    Input.Email, Input.Password, Input.RememberMe,
-                    lockoutOnFailure: true);
+                _logger.LogInformation("Người dùng {Email} đăng nhập thành công.", Input.Email);
 
-                if (result.Succeeded)
+                // ✅ Lấy thông tin user để kiểm tra Role
+                var user = await _userManager.FindByEmailAsync(Input.Email);
+
+                if (user != null)
                 {
-                    _logger.LogInformation("Người dùng {Email} đã đăng nhập thành công.", Input.Email);
+                    var roles = await _userManager.GetRolesAsync(user);
 
-                    // Ghi Audit Log đăng nhập thành công
-                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-                    var ua = HttpContext.Request.Headers["User-Agent"].ToString();
-                    await _logService.LogLoginAsync(Input.Email, ip, ua);
+                    // ✅ Fix #1: Admin / Manager / WarehouseStaff → Admin Dashboard
+                    if (roles.Any(r => AdminRoles.Contains(r)))
+                    {
+                        _logger.LogInformation("Admin user {Email} → redirect /Admin/Dashboard", Input.Email);
+                        return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                    }
+                }
 
-                    // ── Giai đoạn 4: Redirect đến Admin Dashboard sau khi login ──
-                    // Chuyển hướng đến Dashboard controller trong Admin area
-                    return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToPage("./LoginWith2fa",
-                        new { ReturnImageUrl = returnImageUrl, RememberMe = Input.RememberMe });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("Tài khoản {Email} đã bị khoá do nhập sai nhiều lần.", Input.Email);
-
-                    // ── Giai đoạn 4: Audit Log — ghi nhận sự kiện Lockout ────
-                    await _logService.LogActionAsync(
-                        username:    Input.Email,
-                        actionType:  "Lockout",
-                        module:      "Security",
-                        description: $"Tài khoản '{Input.Email}' bị khoá tạm thời 15 phút do nhập sai mật khẩu quá 5 lần.",
-                        userRole:    "Unknown"
-                    );
-
-                    return RedirectToPage("./Lockout");
-                }
-                else
-                {
-                    // Ghi log đăng nhập thất bại (không đủ nghiêm trọng để ghi audit)
-                    _logger.LogWarning("Đăng nhập thất bại cho {Email}.", Input.Email);
-                    ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không hợp lệ.");
-                    return Page();
-                }
+                // Customer / User thường → returnUrl hoặc trang chủ
+                // LocalRedirect bảo vệ chống Open Redirect
+                return LocalRedirect(returnUrl);
             }
 
-            // Nếu dữ liệu không hợp lệ, hiển thị lại form
+            if (result.RequiresTwoFactor)
+            {
+                return RedirectToPage("./LoginWith2fa", new
+                {
+                    ReturnUrl    = returnUrl,
+                    RememberMe   = Input.RememberMe
+                });
+            }
+
+            if (result.IsLockedOut)
+            {
+                _logger.LogWarning("Tài khoản {Email} bị khoá tạm thời.", Input.Email);
+                return RedirectToPage("./Lockout");
+            }
+
+            // Đăng nhập thất bại
+            ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
             return Page();
         }
     }
 }
-

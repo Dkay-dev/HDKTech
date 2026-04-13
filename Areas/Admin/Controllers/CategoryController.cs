@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+
+using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
@@ -311,3 +313,4 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
+

@@ -25,48 +25,45 @@ namespace HDKTech.Utils
 
             ImageUrl = ImageUrl.Trim();
 
-            // Nếu đã là ImageUrl tuyệt đối hoặc bắt đầu bằng /images/
-            // => chuẩn hoá extension -> .jpg
+            // ✅ Fix #3: Nếu ImageUrl đã là đường dẫn đầy đủ (tuyệt đối hoặc /images/...)
+            // => GIỮ NGUYÊN extension thực tế (.jpg, .png, .webp, .gif)
+            // BUG CŨ: luôn đổi extension thành .jpg => ảnh .png/.webp bị broken
             if (ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
                 ImageUrl.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
             {
-                // Bỏ extension cũ, thêm .jpg
-                var withoutExt = System.IO.Path.Combine(
-                    System.IO.Path.GetDirectoryName(ImageUrl) ?? string.Empty,
-                    System.IO.Path.GetFileNameWithoutExtension(ImageUrl)
-                ).Replace("\\", "/");
-
-                return withoutExt + ".jpg";
+                // Trả về nguyên đường dẫn, không cần chuyển đổi gì thêm
+                return ImageUrl;
             }
 
             // ImageUrl kiểu "folder/file.jpg" hoặc "file.jpg"
             var cleaned = ImageUrl.Replace('\\', '/').TrimStart('/');
 
+            // ✅ Fix #3: Giữ nguyên extension thực tế của file thay vì cứng .jpg
             // Kiểm tra xem có folder không
             if (cleaned.Contains("/"))
             {
-                var folder = System.IO.Path.GetDirectoryName(cleaned)?.Replace("\\", "/") ?? "";
-                var fileNoExt = System.IO.Path.GetFileNameWithoutExtension(cleaned);
-                
+                var folder   = System.IO.Path.GetDirectoryName(cleaned)?.Replace("\\", "/") ?? "";
+                var fileName = System.IO.Path.GetFileName(cleaned); // giữ cả extension gốc
+
                 if (string.IsNullOrWhiteSpace(folder))
-                    return $"/images/products/{fileNoExt}.jpg";
-                
-                return $"/images/products/{folder}/{fileNoExt}.jpg";
+                    return $"/images/products/{fileName}";
+
+                return $"/images/products/{folder}/{fileName}";
             }
             else
             {
                 // Chỉ file name => cần categoryFolder để xác định folder
-                var fileNoExt = System.IO.Path.GetFileNameWithoutExtension(cleaned);
-                
+                var fileName = cleaned; // giữ nguyên tên file + extension gốc
+
                 if (!string.IsNullOrWhiteSpace(categoryFolder))
                 {
                     // Chuẩn hoá categoryFolder: lowercase, space -> dash
                     var folder = categoryFolder.Trim().ToLower().Replace(" ", "-");
-                    return $"/images/products/{folder}/{fileNoExt}.jpg";
+                    return $"/images/products/{folder}/{fileName}";
                 }
                 
-                // Fallback: không có folder info
-                return $"/images/products/{fileNoExt}.jpg";
+                // Fallback: không có folder info - giữ nguyên tên file
+                return $"/images/products/{fileName}";
             }
         }
 

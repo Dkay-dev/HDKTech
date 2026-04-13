@@ -58,9 +58,11 @@
                     </div>
 
                     <!-- CART ICON -->
+                    @* ✅ Fix #3: Dùng CartSummary ViewComponent để lấy số lượng từ Session (server-side)
+                       Thay thế hardcode "0" bằng số lượng thực tế *@
                     <a asp-area="" asp-controller="Cart" asp-action="Index" class="hdk-cart-container d-inline-flex align-items-center justify-content-center position-relative flex-shrink-0">
                         <i class="bi bi-bag-fill hdk-cart-icon"></i>
-                        <span id="cartBadge" class="hdk-cart-badge">0</span>
+                        @await Component.InvokeAsync("CartSummary")
                     </a>
 
                     <!-- MOBILE MENU TOGGLE -->

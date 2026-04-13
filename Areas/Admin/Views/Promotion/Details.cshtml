@@ -57,6 +57,7 @@
                         <i class="fas fa-check-circle me-2"></i>
                         <strong>Khuyến mãi đang hoạt động</strong> - Sẽ kết thúc sau <strong>@Math.Ceiling(daysLeft) ngày</strong>
                     </div>
+                    <p class="text-sm text-green-600">Sẽ kết thúc sau <span class="font-bold">@Math.Ceiling(daysLeft) ngày</span></p>
                 }
                 else if (Model.StartDate > DateTime.Now)
                 {
@@ -64,6 +65,7 @@
                         <i class="fas fa-calendar me-2"></i>
                         <strong>Khuyến mãi sắp diễn ra</strong> - Sẽ bắt đầu sau <strong>@Math.Ceiling((Model.StartDate - DateTime.Now).TotalDays) ngày</strong>
                     </div>
+                    <p class="text-sm text-amber-600">Sẽ bắt đầu sau <span class="font-bold">@Math.Ceiling((Model.StartDate - DateTime.Now).TotalDays) ngày</span></p>
                 }
                 else
                 {
@@ -71,6 +73,7 @@
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>Khuyến mãi đã kết thúc</strong> vào <strong>@Model.EndDate.ToString("dd/MM/yyyy HH:mm")</strong>
                     </div>
+                    <p class="text-sm text-zinc-600">Kết thúc vào @Model.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
                 }
             </div>
         </div>
@@ -84,7 +87,7 @@
             </div>
             <div class="card-body">
                 <div class="row g-4">
-                    <!-- Discount Value -->
+                <!-- Discount Value -->
                     <div class="col-md-6">
                         <div class="border-start border-primary border-4 ps-3">
                             <small class="text-muted fw-bold d-block mb-1">
@@ -92,10 +95,10 @@
                             </small>
                             <p class="mb-0 fs-3 fw-bold text-primary">@discount</p>
                             <small class="text-muted d-block mt-1">@(Model.PromotionType == "Percentage" ? "Phần trăm giảm" : "Số tiền giảm")</small>
-                        </div>
+                </div>
                     </div>
 
-                    <!-- Campaign Code -->
+                <!-- Campaign Code -->
                     <div class="col-md-6">
                         <div class="border-start border-info border-4 ps-3">
                             <small class="text-muted fw-bold d-block mb-1">
@@ -103,10 +106,10 @@
                             </small>
                             <p class="mb-0 fs-5 fw-bold font-monospace text-info">@Model.PromoCode</p>
                             <small class="text-muted d-block mt-1">Dùng mã này khi tạo đơn hàng</small>
-                        </div>
+                </div>
                     </div>
 
-                    <!-- Start Date -->
+                <!-- Start Date -->
                     <div class="col-md-6">
                         <div class="border-start border-success border-4 ps-3">
                             <small class="text-muted fw-bold d-block mb-1">
@@ -114,10 +117,10 @@
                             </small>
                             <p class="mb-0 fw-bold">@Model.StartDate.ToString("dd/MM/yyyy")</p>
                             <small class="text-muted d-block">@Model.StartDate.ToString("HH:mm:ss")</small>
-                        </div>
+                </div>
                     </div>
 
-                    <!-- End Date -->
+                <!-- End Date -->
                     <div class="col-md-6">
                         <div class="border-start border-danger border-4 ps-3">
                             <small class="text-muted fw-bold d-block mb-1">
@@ -125,9 +128,9 @@
                             </small>
                             <p class="mb-0 fw-bold">@Model.EndDate.ToString("dd/MM/yyyy")</p>
                             <small class="text-muted d-block">@Model.EndDate.ToString("HH:mm:ss")</small>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
             </div>
         </div>
 
@@ -139,7 +142,7 @@
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-file-alt me-2"></i>Mô tả
                     </h5>
-                </div>
+        </div>
                 <div class="card-body">
                     <p class="text-muted" style="white-space: pre-wrap;">@Model.Description</p>
                 </div>
@@ -170,7 +173,10 @@
                             </small>
                             <p class="mb-0 fs-4 fw-bold text-info">@(Model.PromotionType == "Percentage" ? Model.Value + "%" : "₫" + Model.Value.ToString("N0"))</p>
                         </div>
-                    </div>
+                </div>
+                <div class="p-4 bg-tertiary/5 rounded-lg border border-tertiary/20">
+                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">Giá trị khuyến mãi</p>
+                    <p class="text-2xl font-extrabold text-tertiary">@(Model.PromotionType == "Percentage" ? Model.Value + "%" : "₫" + Model.Value.ToString("N0"))</p>
                 </div>
             </div>
         </div>
@@ -202,7 +208,7 @@
                             <span class="badge bg-success">Miễn phí vận chuyển</span>
                         }
                     </p>
-                </div>
+            </div>
 
                 <hr>
 
@@ -211,7 +217,7 @@
                         <i class="fas fa-hourglass-half me-1"></i>Thời gian chạy
                     </small>
                     <p class="mb-0 small">@((Model.EndDate - Model.StartDate).TotalDays.ToString("F0")) ngày</p>
-                </div>
+            </div>
 
                 <hr>
 
@@ -220,33 +226,94 @@
                         <i class="fas fa-calendar-alt me-1"></i>Ngày tạo
                     </small>
                     <p class="mb-0 small">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
+            </div>
 
-                @if (Model.UpdatedAt.HasValue)
-                {
+            <!-- Updated Date -->
+            @if (Model.UpdatedAt.HasValue)
+            {
                     <hr>
                     <div class="mb-3">
                         <small class="text-muted fw-bold d-block mb-1">
                             <i class="fas fa-sync me-1"></i>Cập nhật lần cuối
                         </small>
                         <p class="mb-0 small">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
-                    </div>
-                }
+                </div>
+            }
 
                 <hr>
 
-                <!-- Actions -->
+            <!-- Actions -->
                 <div class="d-grid gap-2">
                     <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary btn-sm">
                         <i class="fas fa-edit me-1"></i>Chỉnh sửa
-                    </a>
+                </a>
                     <form method="post" action="@Url.Action("Delete", new { id = Model.Id })" onsubmit="return confirm('Bạn chắc chắn muốn xóa khuyến mãi này?');">
-                        @Html.AntiForgeryToken()
+                    @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-danger btn-sm">
                             <i class="fas fa-trash me-1"></i>Xóa
-                        </button>
-                    </form>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+    <h3 class="text-lg font-bold text-on-surface mb-6">Dòng thời gian</h3>
+    <div class="relative space-y-8">
+        @if (Model.Status == "Scheduled")
+        {
+            <!-- Upcoming -->
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-amber-500 z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-amber-500 to-transparent"></div>
                 </div>
+                <div class="pb-8">
+                    <p class="font-bold text-on-surface">Sắp bắt đầu</p>
+                    <p class="text-sm text-on-surface-variant">@Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Started -->
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-green-500 z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-green-500 to-gray-300"></div>
+                </div>
+                <div class="pb-8">
+                    <p class="font-bold text-on-surface">Đã bắt đầu</p>
+                    <p class="text-sm text-on-surface-variant">@Model.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        }
+
+        <!-- Current/Ended -->
+        @if (Model.Status == "Running")
+        {
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-4 h-4 rounded-full bg-primary animate-pulse z-10 relative"></div>
+                    <div class="w-0.5 h-16 bg-gradient-to-b from-primary to-primary/20"></div>
+                </div>
+                <div class="pb-8">
+                    <p class="font-bold text-primary">Đang chạy</p>
+                    <p class="text-sm text-on-surface-variant">Hôm nay</p>
+                </div>
+            </div>
+        }
+
+        <!-- End -->
+        <div class="flex gap-4">
+            <div class="flex flex-col items-center">
+                <div class="w-4 h-4 rounded-full @(Model.Status == "Ended" ? "bg-error" : "bg-gray-300") z-10 relative"></div>
+            </div>
+            <div>
+                <p class="font-bold @(Model.Status == "Ended" ? "text-error" : "text-on-surface-variant")">@(Model.Status == "Ended" ? "Đã kết thúc" : "Sẽ kết thúc")</p>
+                <p class="text-sm text-on-surface-variant">@Model.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
             </div>
         </div>
     </div>

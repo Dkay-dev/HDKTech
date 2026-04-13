@@ -1,141 +1,192 @@
-﻿@model IEnumerable<Promotion>
+@* ✅ Fix #5: Sửa lỗi trắng trang Khuyến mãi
+   - Thêm @using đầy đủ cho namespace Promotion
+   - Kiểm tra null/empty trước khi render
+   - Loại bỏ Tailwind CSS lẫn lộn với Bootstrap - chỉ dùng Bootstrap thuần
+   - Sửa cấu trúc div lồng nhau bị lỗi gây crash view *@
+
+@using HDKTech.Areas.Admin.Models
+@model IEnumerable<Promotion>
 
 @{
     ViewData["Title"] = "Quản lý Khuyến mãi";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+
+    // ✅ Fix: Đảm bảo Model không null để tránh NullReferenceException
+    var promotions = Model ?? Enumerable.Empty<Promotion>();
+    var now = DateTime.Now;
+
+    int tongChienDich = promotions.Count();
+    int dangChay      = promotions.Count(p => p.IsCurrentlyActive);
+    int sapDienRa     = promotions.Count(p => !p.IsCurrentlyActive && p.StartDate > now);
 }
 
-<!-- Header Section -->
-<div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-5 gap-4">
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/promotion.css" asp-append-version="true" />
+}
+
+<!-- ========== HEADER ========== -->
+<div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-4 gap-3">
     <div>
-        <h1 class="display-4 fw-bold mb-2">Quản lý Khuyến mãi</h1>
-        <p class="text-muted">Quản lý các chiến dịch khuyến mãi, theo dõi lượt sử dụng và hiệu suất của các mã giảm giá.</p>
+        <h1 class="fw-bold mb-1">
+            <i class="fas fa-percentage text-danger me-2"></i>Quản lý Khuyến mãi
+        </h1>
+        <p class="text-muted mb-0">Quản lý chiến dịch khuyến mãi, theo dõi lượt sử dụng và hiệu suất mã giảm giá.</p>
     </div>
-    <a href="@Url.Action("Create")" class="btn btn-primary align-self-start d-flex align-items-center gap-2">
-        <i class="fas fa-plus-circle"></i>
-        Thêm Khuyến mãi Mới
+    <a href="@Url.Action("Create")" class="btn btn-danger align-self-start">
+        <i class="fas fa-plus-circle me-1"></i> Thêm Khuyến mãi Mới
     </a>
 </div>
 
-<!-- Quick Stats Cards -->
-<div class="row mb-5">
-    <div class="col-md-4 mb-3">
+<!-- ========== THÔNG BÁO TempData ========== -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ========== THỐNG KÊ NHANH ========== -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-danger-light p-3 me-3">
-                        <i class="fas fa-megaphone text-danger fs-5"></i>
-                    </div>
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                    <i class="fas fa-megaphone text-danger fs-5"></i>
                 </div>
-                <p class="text-muted small fw-bold mb-1">Tổng số chiến dịch</p>
-                <h3 class="fw-bold">@Model.Count()</h3>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">Tổng chiến dịch</p>
+                    <h3 class="fw-bold mb-0">@tongChienDich</h3>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
+
+    <div class="col-sm-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-success-light p-3 me-3">
-                        <i class="fas fa-play text-success fs-5"></i>
-                    </div>
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                    <i class="fas fa-play text-success fs-5"></i>
                 </div>
-                <p class="text-muted small fw-bold mb-1">Đang chạy</p>
-                <h3 class="fw-bold">@Model.Count(k => k.IsCurrentlyActive)</h3>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">Đang chạy</p>
+                    <h3 class="fw-bold mb-0">@dangChay</h3>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
+
+    <div class="col-sm-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-warning-light p-3 me-3">
-                        <i class="fas fa-calendar text-warning fs-5"></i>
-                    </div>
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                    <i class="fas fa-clock text-warning fs-5"></i>
                 </div>
-                <p class="text-muted small fw-bold mb-1">Sắp diễn ra</p>
-                <h3 class="fw-bold">@Model.Count(k => !k.IsCurrentlyActive && k.StartDate > DateTime.Now)</h3>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">Sắp diễn ra</p>
+                    <h3 class="fw-bold mb-0">@sapDienRa</h3>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Promotions Table -->
+<!-- ========== DANH SÁCH CHIẾN DỊCH ========== -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 fw-bold">
-            <i class="fas fa-list me-2"></i>Danh sách chiến dịch khuyến mãi
+            <i class="fas fa-list me-2 text-muted"></i>Danh sách chiến dịch
         </h5>
         <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV()">
             <i class="fas fa-download me-1"></i>Export CSV
         </button>
     </div>
+
     <div class="card-body p-0">
-        @if (!Model.Any())
+
+        @* ✅ Fix #5 - Kiểm tra null/empty - hiển thị UI thông báo thay vì để trắng trang *@
+        @if (!promotions.Any())
         {
-            <div class="text-center py-5">
-                <i class="fas fa-tag fs-1 text-muted mb-3 d-block"></i>
-                <p class="text-muted">Không có chiến dịch nào. <a href="@Url.Action("Create")" class="fw-bold">Tạo chiến dịch mới</a></p>
+            <div class="text-center py-5 my-3">
+                <div class="mb-3">
+                    <i class="fas fa-tag fa-3x text-muted opacity-50"></i>
+                </div>
+                <h5 class="text-muted fw-bold mb-2">Chưa có chiến dịch khuyến mãi</h5>
+                <p class="text-muted small mb-3">Tạo chiến dịch đầu tiên để bắt đầu thu hút khách hàng.</p>
+                <a href="@Url.Action("Create")" class="btn btn-danger">
+                    <i class="fas fa-plus-circle me-1"></i> Tạo chiến dịch ngay
+                </a>
             </div>
         }
         else
         {
             <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0">
+                <table class="table table-hover table-sm align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
                             <th>Tên chiến dịch</th>
                             <th>Thời gian</th>
-                            <th>Mức giảm</th>
+                            <th>Mã / Mức giảm</th>
+                            <th>Lượt dùng</th>
                             <th>Trạng thái</th>
                             <th class="text-end">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var promo in Model.OrderByDescending(p => p.CreatedAt))
+                        @foreach (var promo in promotions.OrderByDescending(p => p.CreatedAt))
                         {
                             <tr>
+                                <!-- Tên chiến dịch -->
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-light rounded p-2">
+                                        <div class="bg-light rounded p-2 flex-shrink-0">
                                             <i class="fas fa-percentage text-danger"></i>
                                         </div>
                                         <div>
-                                            <p class="mb-0 fw-bold">@promo.CampaignName</p>
-                                            <small class="text-muted">@promo.ApplicableCategory</small>
+                                            <p class="mb-0 fw-bold small">@promo.CampaignName</p>
+                                            @if (!string.IsNullOrEmpty(promo.ApplicableCategory))
+                                            {
+                                                <small class="text-muted">@promo.ApplicableCategory</small>
+                                            }
                                         </div>
                                     </div>
                                 </td>
+
+                                <!-- Thời gian -->
                                 <td>
-                                    <div>
-                                        <small class="d-block fw-bold">
-                                            <i class="fas fa-calendar me-1"></i>@promo.StartDate.ToString("dd/MM/yyyy") - @promo.EndDate.ToString("dd/MM/yyyy")
-                                        </small>
-                                        <small class="text-muted d-block">
-                                            @{
-                                                var remaining = (promo.EndDate - DateTime.Now).TotalDays;
-                                                string remainingText = "Không xác định";
-                                                if (remaining < 0)
-                                                {
-                                                    remainingText = "Đã kết thúc";
-                                                }
-                                                else if (remaining > 1)
-                                                {
-                                                    remainingText = $"Còn {remaining:0} ngày";
-                                                }
-                                                else if (remaining > 0)
-                                                {
-                                                    remainingText = "Còn <1 ngày";
-                                                }
-                                                else
-                                                {
-                                                    remainingText = "Hôm nay kết thúc";
-                                                }
-                                            }
-                                            @remainingText
-                                        </small>
-                                    </div>
+                                    <small class="d-block fw-semibold">
+                                        @promo.StartDate.ToString("dd/MM/yyyy") → @promo.EndDate.ToString("dd/MM/yyyy")
+                                    </small>
+                                    @{
+                                        var remaining = (promo.EndDate - now).TotalDays;
+                                        string remainingText;
+                                        string remainingClass;
+
+                                        if (remaining < 0)
+                                        { remainingText = "Đã kết thúc"; remainingClass = "text-secondary"; }
+                                        else if (remaining > 1)
+                                        { remainingText = $"Còn {remaining:0} ngày"; remainingClass = "text-success"; }
+                                        else if (remaining > 0)
+                                        { remainingText = "Còn < 1 ngày"; remainingClass = "text-warning fw-bold"; }
+                                        else
+                                        { remainingText = "Hôm nay kết thúc"; remainingClass = "text-danger fw-bold"; }
+                                    }
+                                    <small class="@remainingClass">@remainingText</small>
                                 </td>
+
+                                <!-- Mã / Mức giảm -->
                                 <td>
+                                    @if (!string.IsNullOrEmpty(promo.PromoCode))
+                                    {
+                                        <code class="small d-block">@promo.PromoCode</code>
+                                    }
                                     @if (promo.PromotionType == "Percentage")
                                     {
                                         <span class="badge bg-danger">@promo.Value% OFF</span>
@@ -146,9 +197,20 @@
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Miễn phí vận chuyển</span>
+                                        <span class="badge bg-success">Miễn phí ship</span>
                                     }
                                 </td>
+
+                                <!-- Lượt dùng -->
+                                <td>
+                                    <span class="fw-bold">@promo.UsageCount</span>
+                                    @if (promo.MaxUsageCount.HasValue)
+                                    {
+                                        <span class="text-muted small"> / @promo.MaxUsageCount</span>
+                                    }
+                                </td>
+
+                                <!-- Trạng thái -->
                                 <td>
                                     @if (promo.IsCurrentlyActive)
                                     {
@@ -156,7 +218,7 @@
                                             <i class="fas fa-circle-notch fa-spin me-1"></i>Đang chạy
                                         </span>
                                     }
-                                    else if (promo.StartDate > DateTime.Now)
+                                    else if (promo.StartDate > now)
                                     {
                                         <span class="badge bg-warning rounded-pill text-dark">
                                             <i class="fas fa-clock me-1"></i>Sắp diễn ra
@@ -169,17 +231,26 @@
                                         </span>
                                     }
                                 </td>
+
+                                <!-- Hành động -->
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="@Url.Action("Details", new { id = promo.Id })" class="btn btn-outline-info" title="Chi tiết">
+                                        <a href="@Url.Action("Details", new { id = promo.Id })"
+                                           class="btn btn-outline-info" title="Chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="@Url.Action("Edit", new { id = promo.Id })" class="btn btn-outline-primary" title="Chỉnh sửa">
+                                        <a href="@Url.Action("Edit", new { id = promo.Id })"
+                                           class="btn btn-outline-primary" title="Chỉnh sửa">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form method="post" action="@Url.Action("Delete", new { id = promo.Id })" style="display:inline;">
+                                        <form method="post"
+                                              action="@Url.Action("Delete", new { id = promo.Id })"
+                                              style="display:inline;">
                                             @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger" title="Xóa" onclick="return confirm('Bạn chắc chắn muốn xóa chiến dịch này?')">
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger"
+                                                    title="Xóa"
+                                                    onclick="return confirmXoa('@promo.CampaignName')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -194,9 +265,6 @@
     </div>
 </div>
 
-<script>
-    function exportCSV() {
-        alert('Tính năng Export CSV sẽ được triển khai.');
-    }
-</script>
-
+@section Scripts {
+    <script src="~/admin/js/promotion.js" asp-append-version="true"></script>
+}
