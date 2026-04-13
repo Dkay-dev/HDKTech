@@ -10,8 +10,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-using HDKTech.Areas.Admin.Repositories;
-
 namespace HDKTech.Controllers
 {
     [Authorize]
@@ -31,7 +29,7 @@ namespace HDKTech.Controllers
             UserManager<AppUser> userManager,
             ILogger<CheckoutController> logger,
             IVnPayService vnPayService,
-            IMomoService momoService,
+            IMomoService momoService,               // ✅ THÊM MỚI
             HDKTechContext context)
         {
             _orderRepository = orderRepository;
@@ -39,7 +37,7 @@ namespace HDKTech.Controllers
             _userManager = userManager;
             _logger = logger;
             _vnPayService = vnPayService;
-            _momoService = momoService;
+            _momoService = momoService;             // ✅ THÊM MỚI
             _context = context;
         }
 
@@ -64,11 +62,11 @@ namespace HDKTech.Controllers
                 RecipientName = user.FullName ?? "",
                 Email = user.Email ?? "",
                 SoDienThoai = user.PhoneNumber ?? "",
-                ShippingAddress = "", // Không có DiaChi trong AppUser
+                ShippingAddress = "",
                 Items = cart.Items,
                 TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity),
                 SoProduct = cart.Items.Count,
-                ShippingFee = 0 // Có thể tính động dựa trên địa chỉ
+                ShippingFee = 0
             };
 
             return View(viewModel);
@@ -101,65 +99,114 @@ namespace HDKTech.Controllers
                 return View(model);
             }
 
+            var totalAmount = model.TotalAmount + model.ShippingFee;
+
+            // Lưu thông tin giao hàng vào TempData (dùng cho cả VNPay và MoMo callback)
+            TempData["RecipientName"] = model.RecipientName;
+            TempData["SoDienThoai"] = model.SoDienThoai;
+            TempData["ShippingAddress"] = model.ShippingAddress;
+            TempData["GhiChu"] = model.GhiChu;
+            TempData["ShippingFee"] = model.ShippingFee.ToString();
+
+            // ✅ VNPay
+            if (model.PaymentMethod == "VNPAY")
+            {
+                try
+                {
+                    var paymentModel = new PaymentInformationModel
+                    {
+                        OrderType = "other",
+                        Amount = (double)totalAmount,
+                        OrderDescription = "Thanh toan don hang HDKTech",
+                        Name = model.RecipientName
+                    };
+
+                    var paymentUrl = _vnPayService.CreatePaymentUrl(paymentModel, HttpContext);
+                    _logger.LogInformation($"Redirect VNPay: user {user.Id}, amount {totalAmount}");
+
+                    return Redirect(paymentUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Lỗi tạo URL VNPay: {ex.Message}");
+                    TempData["Error"] = "Không thể kết nối VNPay. Vui lòng thử lại.";
+                    model.Items = cart.Items;
+                    model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
+                    model.SoProduct = cart.Items.Count;
+                    return View(model);
+                }
+            }
+
+            // ✅ MoMo — xử lý trực tiếp tại đây, redirect sang cổng thanh toán
+            if (model.PaymentMethod == "Momo")
+            {
+                try
+                {
+                    var orderInfoModel = new OrderInfoModel
+                    {
+                        FullName = model.RecipientName,
+                        Amount = (long)totalAmount,
+                        OrderInfo = "Thanh toan don hang HDKTech"
+                    };
+
+                    var momoResponse = await _momoService.CreatePaymentAsync(orderInfoModel);
+
+                    if (momoResponse == null || string.IsNullOrEmpty(momoResponse.PayUrl))
+                    {
+                        _logger.LogError($"MoMo trả về lỗi: {momoResponse?.Message}");
+                        TempData["Error"] = $"Không thể kết nối MoMo: {momoResponse?.Message ?? "Lỗi không xác định"}";
+                        model.Items = cart.Items;
+                        model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
+                        model.SoProduct = cart.Items.Count;
+                        return View(model);
+                    }
+
+                    // Lưu MoMo OrderId để dùng khi callback
+                    TempData["MomoOrderId"] = momoResponse.OrderId;
+                    _logger.LogInformation($"Redirect MoMo: user {user.Id}, amount {totalAmount}, orderId={momoResponse.OrderId}");
+
+                    return Redirect(momoResponse.PayUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Lỗi tạo URL MoMo: {ex.Message}");
+                    TempData["Error"] = "Không thể kết nối MoMo. Vui lòng thử lại.";
+                    model.Items = cart.Items;
+                    model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
+                    model.SoProduct = cart.Items.Count;
+                    return View(model);
+                }
+            }
+
+            // ✅ COD
             try
             {
-                // ✅ Fix #2: Wrap toàn bộ luồng tạo đơn hàng trong try-catch đầy đủ
-                // Bước 1: Tạo đơn hàng và lưu vào database
-                var donHang = await _orderRepository.CreateOrderAsync(
+                var order = await _orderRepository.CreateOrderAsync(
                     userId: user.Id,
                     RecipientName: model.RecipientName,
                     soDienThoai: model.SoDienThoai,
                     ShippingAddress: model.ShippingAddress,
                     items: cart.Items,
-                    ShippingFee: model.ShippingFee
+                    ShippingFee: model.ShippingFee,
+                    paymentMethod: "COD",
+                    paymentStatus: "Unpaid"
                 );
 
-                // Bước 2: Kiểm tra đơn hàng đã được tạo thành công chưa
-                // (SaveChangesAsync đã chạy bên trong CreateOrderAsync, nếu lỗi sẽ throw exception)
-                if (donHang == null || donHang.Id <= 0)
-                {
-                    throw new InvalidOperationException("Tạo đơn hàng thất bại - không nhận được Id từ database.");
-                }
-
-                // Bước 3: Cập nhật thông tin profile user (không bắt buộc, không throw nếu lỗi)
-                try
-                {
-                    user.FullName    = model.RecipientName;
-                    user.PhoneNumber = model.SoDienThoai;
-                    await _userManager.UpdateAsync(user);
-                }
-                catch (Exception exProfile)
-                {
-                    // Lỗi cập nhật profile không ảnh hưởng đến đơn hàng
-                    _logger.LogWarning(exProfile, "Không thể cập nhật profile user {UserId}", user.Id);
-                }
-
-                // Bước 4: Xoá giỏ hàng
+                user.FullName = model.RecipientName;
+                user.PhoneNumber = model.SoDienThoai;
+                await _userManager.UpdateAsync(user);
                 await _cartService.ClearCartAsync();
 
-                // ✅ Sinh mã đơn hàng hiển thị dạng HDK-xxxxx từ OrderCode thực tế
-                // OrderCode trong DB: "HDK20260413123456_1234" → hiển thị: "HDK-1234"
-                var maHienThi = donHang.OrderCode; // OrderCode đã tự sinh trong CreateOrderAsync
-
-                _logger.LogInformation(
-                    "✅ Đơn hàng #{MaDonHang} (Id={Id}) tạo thành công bởi user {UserId}",
-                    maHienThi, donHang.Id, user.Id);
-
-                // Bước 5: Redirect sang trang thành công, truyền mã đơn hàng
-                return RedirectToAction("Success", new { maOrder = donHang.OrderCode });
+                _logger.LogInformation($"Đơn hàng COD #{order.OrderCode} tạo thành công");
+                return RedirectToAction("Success", new { maOrder = order.OrderCode });
             }
             catch (Exception ex)
             {
-                // ✅ Fix #2: Log chi tiết lỗi để debug dễ hơn
-                _logger.LogError(ex, "❌ Lỗi khi tạo đơn hàng cho user {UserId}: {Message}", user.Id, ex.Message);
-
-                // Hiển thị thông báo lỗi thân thiện cho người dùng (không lộ technical details)
-                TempData["Error"] = "Đặt hàng thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.";
-
-                // Khôi phục dữ liệu view
-                model.Items       = cart.Items;
+                _logger.LogError($"Lỗi khi tạo đơn hàng: {ex.Message}");
+                TempData["Error"] = "Lỗi khi đặt hàng. Vui lòng thử lại.";
+                model.Items = cart.Items;
                 model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                model.SoProduct   = cart.Items.Count;
+                model.SoProduct = cart.Items.Count;
                 return View(model);
             }
         }
@@ -168,19 +215,99 @@ namespace HDKTech.Controllers
         public async Task<IActionResult> Success(string maOrder)
         {
             if (string.IsNullOrEmpty(maOrder))
+                return RedirectToAction("Index", "Home");
+
+            var order = await _orderRepository.GetOrderByMaDonHangAsync(maOrder);
+            if (order == null)
             {
+                TempData["Error"] = "Không tìm thấy đơn hàng.";
                 return RedirectToAction("Index", "Home");
             }
 
-            var Order = await _orderRepository.GetOrderByMaDonHangAsync(maOrder);
-            if (Order == null)
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null || order.UserId != user.Id)
             {
-                _logger.LogError($"Lỗi tạo đơn sau VNPay callback");
+                TempData["Error"] = "Bạn không có quyền xem đơn hàng này.";
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(order);
+        }
+
+        // GET: /Checkout/PaymentCallbackVnpay
+        [HttpGet]
+        public async Task<IActionResult> PaymentCallbackVnpay()
+        {
+            var response = _vnPayService.PaymentExecute(Request.Query);
+
+            // ✅ Lưu log giao dịch VNPay vào DB
+            var vnpayLog = new VNPAYModel
+            {
+                OrderId = response.OrderId ?? "",
+                PaymentMethod = "VNPay",
+                OrderDescription = response.OrderDescription ?? "",
+                TransactionId = response.TransactionId ?? "",
+                PaymentId = response.PaymentId ?? "",
+                Success = response.Success,
+                VnPayResponseCode = response.VnPayResponseCode ?? "",
+                CreatedDate = DateTime.Now
+            };
+            _context.VNPAYModels.Add(vnpayLog);
+            await _context.SaveChangesAsync();
+
+            if (!response.Success || response.VnPayResponseCode != "00")
+            {
+                _logger.LogWarning($"VNPay callback thất bại: ResponseCode={response.VnPayResponseCode}");
+                TempData["Error"] = $"Thanh toán VNPay thất bại (mã: {response.VnPayResponseCode}). Vui lòng thử lại.";
+                return RedirectToAction("Index");
+            }
+
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    TempData["Error"] = "Phiên đăng nhập hết hạn.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var cart = await _cartService.GetCartAsync();
+                if (cart == null || !cart.Items.Any())
+                {
+                    TempData["Error"] = "Giỏ hàng đã hết. Đơn hàng có thể đã được tạo trước đó.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var recipientName = TempData["RecipientName"]?.ToString() ?? user.FullName ?? "";
+                var soDienThoai = TempData["SoDienThoai"]?.ToString() ?? user.PhoneNumber ?? "";
+                var shippingAddress = TempData["ShippingAddress"]?.ToString() ?? "";
+                var shippingFee = decimal.TryParse(TempData["ShippingFee"]?.ToString(), out var fee) ? fee : 0;
+
+                var order = await _orderRepository.CreateOrderAsync(
+                    userId: user.Id,
+                    RecipientName: recipientName,
+                    soDienThoai: soDienThoai,
+                    ShippingAddress: shippingAddress,
+                    items: cart.Items,
+                    ShippingFee: shippingFee,
+                    paymentMethod: "VNPay",
+                    paymentStatus: "Paid"
+                );
+
+                user.FullName = recipientName;
+                user.PhoneNumber = soDienThoai;
+                await _userManager.UpdateAsync(user);
+                await _cartService.ClearCartAsync();
+
+                _logger.LogInformation($"Đơn hàng VNPay #{order.OrderCode} tạo thành công, TransactionId={response.TransactionId}");
+                return RedirectToAction("Success", new { maOrder = order.OrderCode });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi tạo đơn sau VNPay callback: {ex.Message}");
                 TempData["Error"] = "Thanh toán thành công nhưng tạo đơn hàng thất bại. Vui lòng liên hệ hỗ trợ.";
                 return RedirectToAction("Index", "Home");
             }
-
-            return View(Order);
         }
 
         // GET: /Checkout/PaymentCallBack  ← MoMo redirect về đây
@@ -206,27 +333,63 @@ namespace HDKTech.Controllers
                 return RedirectToAction("Index");
             }
 
-            // ✅ Security Check: Verify user owns this order
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+            try
             {
-                _logger.LogWarning($"Unauthorized access: null user");
-                TempData["Error"] = "Bạn phải đăng nhập để xem đơn hàng."; 
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    TempData["Error"] = "Phiên đăng nhập hết hạn.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var cart = await _cartService.GetCartAsync();
+                if (cart == null || !cart.Items.Any())
+                {
+                    TempData["Error"] = "Giỏ hàng đã hết. Đơn hàng có thể đã được tạo trước đó.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var recipientName = TempData["RecipientName"]?.ToString() ?? user.FullName ?? "";
+                var soDienThoai = TempData["SoDienThoai"]?.ToString() ?? user.PhoneNumber ?? "";
+                var shippingAddress = TempData["ShippingAddress"]?.ToString() ?? "";
+                var shippingFee = decimal.TryParse(TempData["ShippingFee"]?.ToString(), out var fee) ? fee : 0;
+
+                var order = await _orderRepository.CreateOrderAsync(
+                    userId: user.Id,
+                    RecipientName: recipientName,
+                    soDienThoai: soDienThoai,
+                    ShippingAddress: shippingAddress,
+                    items: cart.Items,
+                    ShippingFee: shippingFee,
+                    paymentMethod: "MoMo",
+                    paymentStatus: "Paid"
+                );
+
+                user.FullName = recipientName;
+                user.PhoneNumber = soDienThoai;
+                await _userManager.UpdateAsync(user);
+                await _cartService.ClearCartAsync();
+
+                _logger.LogInformation($"Đơn hàng MoMo #{order.OrderCode} tạo thành công, orderId={response.OrderId}");
+                return RedirectToAction("Success", new { maOrder = order.OrderCode });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi tạo đơn sau MoMo callback: {ex.Message}");
+                TempData["Error"] = "Thanh toán thành công nhưng tạo đơn hàng thất bại. Vui lòng liên hệ hỗ trợ.";
                 return RedirectToAction("Index", "Home");
             }
+        }
 
-            // Get order by order ID from response
-            var order = await _orderRepository.GetOrderByMaDonHangAsync(response.OrderId);
-            if (order == null || order.UserId != user.Id)
-            {
-                _logger.LogWarning($"Unauthorized access attempt to order {response.OrderId} by user {user?.Id}");
-                TempData["Error"] = "Bạn không có quyền xem đơn hàng này.";
-                return RedirectToAction("Index", "Home");
-            }
-
-            return View(order);
+        // POST: /Checkout/MomoNotify  ← MoMo IPN (server-to-server)
+        [HttpPost]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public IActionResult MomoNotify()
+        {
+            // MoMo gọi IPN để xác nhận server-side — luôn trả 200 OK
+            _logger.LogInformation("MoMo IPN nhận thành công");
+            return Ok(new { status = 0, message = "Nhận thông báo thành công" });
         }
     }
 }
-
-
