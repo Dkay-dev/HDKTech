@@ -3,9 +3,12 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HDKTech Admin</title>
+    <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" class="text-decoration-none d-flex align-items-center px-3 py-3">
+        <div class="hdk-logo">
+            <span class="hdk-logo-hdk" style="color: white; font-weight: 700; font-size: 1.4rem;">HDK</span><span class="hdk-logo-tech" style="color: #ef4444; font-weight: 700; font-size: 1.4rem;">Tech</span>
+            <span class="badge ms-2" style="background-color: rgba(201, 168, 76, 0.2); color: #c9a84c; font-size: 0.7rem; padding: 4px 8px; border: 1px solid rgba(201, 168, 76, 0.3);">ADMIN</span>
+        </div>
+    </a>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />

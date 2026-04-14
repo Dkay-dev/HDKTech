@@ -1,0 +1,95 @@
+﻿@model HDKTech.Models.Product
+@using HDKTech.Utils
+
+@{
+    var img = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+              ?? Model.Images?.FirstOrDefault()?.ImageUrl
+              ?? "no-image.png";
+    var imgPath = ImageHelper.GetImagePath(img, Model.Category?.Name);
+
+    var specs = (Model.Specifications ?? "")
+        .Split(new[] { '|', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => s.Trim())
+        .Where(s => s.Length > 0 && s.Contains(':'))
+        .Take(2)
+        .ToList();
+}
+
+<div class="product-card"
+     data-brand="@(Model.Brand?.Name ?? "")"
+     data-category="@(Model.Category?.Name ?? "")">
+
+    <div class="product-image-container">
+        <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id">
+            <img src="@imgPath"
+                 alt="@Model.Name"
+                 class="product-image"
+                 loading="lazy"
+                 onerror="this.src='/images/products/no-image.png'" />
+        </a>
+
+        @if (Model.DiscountPercent > 0)
+        {
+            <span class="badge-discount">-@Model.DiscountPercent%</span>
+        }
+        else
+        {
+            <span class="badge-new">MỚI</span>
+        }
+        <span class="badge-installment">0% lãi</span>
+
+        <button type="button"
+                class="product-quick-add"
+                onclick="addToCartAjax(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')">
+            <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+        </button>
+    </div>
+
+    <div class="product-info">
+        <h6 class="product-name">
+            <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id">
+                @Model.Name
+            </a>
+        </h6>
+
+        @if (specs.Any())
+        {
+            <div class="quick-specs">
+                @foreach (var spec in specs)
+                {
+                    var parts = spec.Split(':', 2);
+                    var key = parts[0].Trim();
+                    var val = parts.Length > 1 ? parts[1].Trim() : "";
+                    var icon = key.ToLower() switch
+                    {
+                        var k when k.Contains("cpu") || k.Contains("processor") => "bi-cpu",
+                        var k when k.Contains("ram") => "bi-memory",
+                        var k when k.Contains("ssd") || k.Contains("ổ cứng") => "bi-device-ssd",
+                        var k when k.Contains("vga") || k.Contains("card") => "bi-gpu-card",
+                        var k when k.Contains("màn") || k.Contains("display") => "bi-display",
+                        _ => "bi-check2"
+                    };
+                    <span class="spec-chip">
+                        <i class="bi @icon"></i>
+                        @(val.Length > 14 ? val.Substring(0, 14) + "…" : val)
+                    </span>
+                }
+            </div>
+        }
+
+        <div class="product-price-group">
+            <span class="product-price-current">@Model.Price.ToString("N0")₫</span>
+            @if (Model.ListPrice.HasValue && Model.ListPrice > Model.Price)
+            {
+                <span class="product-price-old">@Model.ListPrice.Value.ToString("N0")₫</span>
+            }
+        </div>
+
+        <div class="product-rating">
+            <span class="rating-stars">
+                ★★★★★
+            </span>
+            <span class="rating-count">Đã bán</span>
+        </div>
+    </div>
+</div>
