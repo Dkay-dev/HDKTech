@@ -1,95 +1,261 @@
-﻿@model HDKTech.Models.Product
+﻿@* ═══════════════════════════════════════════════════════════════════════
+   _ProductCard.cshtml — HDKTech Definitive Product Card
+   ─────────────────────────────────────────────────────────────────────
+   Model     : HDKTech.Models.Product
+   Requires  : ~/css/components/product-card.css (link once in _Layout)
+               ImageHelper.GetImagePath()
+               addToCartAjax() from ~/js/cart.js
+   Usage     : @await Html.PartialAsync("_ProductCard", product)
+               @await Html.PartialAsync("_ProductCard", product, new ViewDataDictionary(ViewData) { { "ShowCompare", true } })
+   ═══════════════════════════════════════════════════════════════════════ *@
+@model HDKTech.Models.Product
 @using HDKTech.Utils
 
 @{
-    var img = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
-              ?? Model.Images?.FirstOrDefault()?.ImageUrl
-              ?? "no-image.png";
-    var imgPath = ImageHelper.GetImagePath(img, Model.Category?.Name);
+    // ── State Detection ────────────────────────────────────────────────
+    var isFlashSale = Model.IsFlashSaleActive;
+    var displayPrice = Model.CurrentPrice;
+    var originalPrice = Model.Price;
+    var hasDiscount = Model.ListPrice.HasValue && Model.ListPrice > originalPrice;
+    var discountPct = Model.DiscountPercent;
 
-    var specs = (Model.Specifications ?? "")
+    // Flash Sale end time for inline countdown (ISO 8601)
+    var endTimeIso = isFlashSale && Model.FlashSaleEndTime.HasValue
+        ? Model.FlashSaleEndTime.Value.ToString("o")
+        : "";
+
+    // ── Image ──────────────────────────────────────────────────────────
+    var rawImg = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+               ?? Model.Images?.FirstOrDefault()?.ImageUrl
+               ?? "no-image.png";
+    var imgPath = ImageHelper.GetImagePath(rawImg, Model.Category?.Name);
+
+    // ── Specs preview (top 2 key specs from pipe-separated string) ─────
+    var specsPreview = (Model.Specifications ?? "")
         .Split(new[] { '|', '\n' }, StringSplitOptions.RemoveEmptyEntries)
         .Select(s => s.Trim())
-        .Where(s => s.Length > 0 && s.Contains(':'))
+        .Where(s => s.Contains(':'))
         .Take(2)
+        .Select(s =>
+        {
+            var parts = s.Split(':', 2);
+            return new { Key = parts[0].Trim(), Val = parts.Length > 1 ? parts[1].Trim() : "" };
+        })
         .ToList();
+
+    // ── Inventory stock for urgency signal ─────────────────────────────
+    var stock = Model.Inventories?.Sum(i => i.Quantity) ?? 0;
+    var showStockUrgency = stock > 0 && stock <= 5;
+
+    // ── Rating (real avg from Reviews) ─────────────────────────────────
+    var reviewCount = Model.Reviews?.Count ?? 0;
+    var avgRating = reviewCount > 0
+        ? Math.Round(Model.Reviews!.Average(r => r.Rating), 1)
+        : 0.0;
+    var showRating = reviewCount > 0;
+
+    // ── Brand label ────────────────────────────────────────────────────
+    var brandName = Model.Brand?.Name ?? "";
+
+    // ── Options passed from parent view ───────────────────────────────
+    var showCompare = ViewData["ShowCompare"] as bool? ?? false;
+
+    // ── CSS state modifier ─────────────────────────────────────────────
+    var cardMod = isFlashSale ? "pc--flash" : "";
 }
 
-<div class="product-card"
-     data-brand="@(Model.Brand?.Name ?? "")"
-     data-category="@(Model.Category?.Name ?? "")">
+<article class="pc @cardMod" data-product-id="@Model.Id" role="listitem">
+    <article class="pc"
+             onclick="goToDetail(@Model.Id)"
+             style="cursor:pointer;">
+    @* ── IMAGE ZONE ──────────────────────────────────────────────────── *@
+    <div class="pc__image-zone">
 
-    <div class="product-image-container">
-        <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id">
+        @* Clickable image link *@
+        <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id"
+               class="pc__img-link" aria-label="Xem chi tiết @Model.Name" tabindex="-1">
             <img src="@imgPath"
                  alt="@Model.Name"
-                 class="product-image"
+                 class="pc__img"
                  loading="lazy"
-                 onerror="this.src='/images/products/no-image.png'" />
+                 decoding="async"
+                 onerror="this.onerror=null;this.src='/images/products/no-image.png';" />
         </a>
 
-        @if (Model.DiscountPercent > 0)
-        {
-            <span class="badge-discount">-@Model.DiscountPercent%</span>
-        }
-        else
-        {
-            <span class="badge-new">MỚI</span>
-        }
-        <span class="badge-installment">0% lãi</span>
-
-        <button type="button"
-                class="product-quick-add"
-                onclick="addToCartAjax(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')">
-            <i class="bi bi-cart-plus"></i> Thêm vào giỏ
-        </button>
-    </div>
-
-    <div class="product-info">
-        <h6 class="product-name">
-            <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id">
-                @Model.Name
-            </a>
-        </h6>
-
-        @if (specs.Any())
-        {
-            <div class="quick-specs">
-                @foreach (var spec in specs)
-                {
-                    var parts = spec.Split(':', 2);
-                    var key = parts[0].Trim();
-                    var val = parts.Length > 1 ? parts[1].Trim() : "";
-                    var icon = key.ToLower() switch
-                    {
-                        var k when k.Contains("cpu") || k.Contains("processor") => "bi-cpu",
-                        var k when k.Contains("ram") => "bi-memory",
-                        var k when k.Contains("ssd") || k.Contains("ổ cứng") => "bi-device-ssd",
-                        var k when k.Contains("vga") || k.Contains("card") => "bi-gpu-card",
-                        var k when k.Contains("màn") || k.Contains("display") => "bi-display",
-                        _ => "bi-check2"
-                    };
-                    <span class="spec-chip">
-                        <i class="bi @icon"></i>
-                        @(val.Length > 14 ? val.Substring(0, 14) + "…" : val)
-                    </span>
-                }
-            </div>
-        }
-
-        <div class="product-price-group">
-            <span class="product-price-current">@Model.Price.ToString("N0")₫</span>
-            @if (Model.ListPrice.HasValue && Model.ListPrice > Model.Price)
+        @* ── Badges overlay ──────────────────────────────────────────── *@
+        <div class="pc__badges">
+            @if (isFlashSale)
             {
-                <span class="product-price-old">@Model.ListPrice.Value.ToString("N0")₫</span>
+                <span class="pc__badge pc__badge--flash" aria-label="Flash Sale đang diễn ra">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M6 1L2 6h3l-1 3L9 4H6L6 1z" /></svg>
+                    FLASH
+                </span>
+            }
+            @if (discountPct > 0)
+            {
+                <span class="pc__badge pc__badge--discount" aria-label="Giảm @discountPct phần trăm">
+                    -@discountPct%
+                </span>
+            }
+            @if (!isFlashSale && discountPct == 0)
+            {
+                <span class="pc__badge pc__badge--new">MỚI</span>
             }
         </div>
 
-        <div class="product-rating">
-            <span class="rating-stars">
-                ★★★★★
-            </span>
-            <span class="rating-count">Đã bán</span>
+        @* ── Flash countdown (only when flash sale active) ─────────────── *@
+        @if (isFlashSale && !string.IsNullOrEmpty(endTimeIso))
+        {
+            <div class="pc__countdown" data-end="@endTimeIso" aria-live="polite" aria-label="Thời gian còn lại của Flash Sale">
+                <span class="pc__cd-unit" aria-hidden="true">
+                    <span class="pc__cd-num" data-unit="h">00</span>
+                    <span class="pc__cd-label">giờ</span>
+                </span>
+                <span class="pc__cd-sep" aria-hidden="true">:</span>
+                <span class="pc__cd-unit" aria-hidden="true">
+                    <span class="pc__cd-num" data-unit="m">00</span>
+                    <span class="pc__cd-label">phút</span>
+                </span>
+                <span class="pc__cd-sep" aria-hidden="true">:</span>
+                <span class="pc__cd-unit" aria-hidden="true">
+                    <span class="pc__cd-num" data-unit="s">00</span>
+                    <span class="pc__cd-label">giây</span>
+                </span>
+            </div>
+        }
+
+        @* ── Hover action buttons ─────────────────────────────────────── *@
+        <div class="pc__hover-actions" aria-hidden="true">
+            <button type="button"
+                    class="pc__action-btn pc__action-btn--cart"
+                    onclick="addToCartAjax(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
+                    aria-label="Thêm @Model.Name vào giỏ hàng">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
+                Thêm giỏ hàng
+            </button>
+            @if (showCompare)
+            {
+                <button type="button"
+                        class="pc__action-btn pc__action-btn--compare"
+                        onclick="addToCompare(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
+                        aria-label="So sánh @Model.Name">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                    So sánh
+                </button>
+            }
         </div>
     </div>
-</div>
+
+    @* ── BODY ZONE ────────────────────────────────────────────────────── *@
+    <div class="pc__body">
+
+        @* Brand label *@
+        @if (!string.IsNullOrEmpty(brandName))
+        {
+            <span class="pc__brand" aria-label="Thương hiệu @brandName">@brandName</span>
+        }
+
+        @* Product name — linked *@
+        <h3 class="pc__name">
+            <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id"
+               class="pc__name-link">@Model.Name</a>
+        </h3>
+
+        @* Specs preview — revealed on hover *@
+        @if (specsPreview.Any())
+        {
+            <ul class="pc__specs" aria-label="Thông số nhanh">
+                @foreach (var spec in specsPreview)
+                {
+                    <li class="pc__spec-item">
+                        <span class="pc__spec-key">@spec.Key</span>
+                        <span class="pc__spec-val">@spec.Val</span>
+                    </li>
+                }
+            </ul>
+        }
+
+        @* Rating row *@
+        @if (showRating)
+        {
+            <div class="pc__rating" aria-label="Đánh giá @avgRating trên 5 sao từ @reviewCount lượt">
+                <div class="pc__stars" role="img" aria-hidden="true">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span class="pc__star @(i <= Math.Round(avgRating) ? "pc__star--on" : "")">&#9733;</span>
+                    }
+                </div>
+                <span class="pc__rating-num">@avgRating</span>
+                <span class="pc__rating-count">(@reviewCount)</span>
+            </div>
+        }
+
+        @* Price zone *@
+        <div class="pc__price-zone">
+            @if (isFlashSale)
+            {
+                <div class="pc__price-flash">
+                    <span class="pc__price-current pc__price-current--flash">
+                        @displayPrice.ToString("N0")₫
+                    </span>
+                    <span class="pc__price-original">@originalPrice.ToString("N0")₫</span>
+                </div>
+            }
+            else
+            {
+                <div class="pc__price-normal">
+                    <span class="pc__price-current">@displayPrice.ToString("N0")₫</span>
+                    @if (hasDiscount)
+                    {
+                        <span class="pc__price-original">@Model.ListPrice!.Value.ToString("N0")₫</span>
+                    }
+                </div>
+            }
+        </div>
+
+        @* Stock urgency signal — only show when genuinely low *@
+        @if (showStockUrgency)
+        {
+            <p class="pc__stock-urgency" role="status" aria-live="polite">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="5" /></svg>
+                Chỉ còn <strong>@stock</strong> sản phẩm
+            </p>
+        }
+
+        
+
+    </div>
+</article>
+
+@* ── Per-card countdown script (scoped, runs once per card) ──────────── *@
+@if (isFlashSale && !string.IsNullOrEmpty(endTimeIso))
+{
+    <script>
+        (function () {
+            var card    = document.currentScript.previousElementSibling?.closest('.pc--flash') ||
+                          document.querySelector('.pc--flash[data-product-id="@Model.Id"]');
+            if (!card) return;
+            var cdEl    = card.querySelector('.pc__countdown');
+            if (!cdEl) return;
+            var endTime = new Date('@endTimeIso');
+            if (isNaN(endTime)) return;
+
+            function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+            function tick() {
+                var diff = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+                if (diff === 0) { cdEl.textContent = 'Đã kết thúc'; return; }
+                cdEl.querySelector('[data-unit="h"]').textContent = pad(Math.floor(diff / 3600));
+                cdEl.querySelector('[data-unit="m"]').textContent = pad(Math.floor((diff % 3600) / 60));
+                cdEl.querySelector('[data-unit="s"]').textContent = pad(diff % 60);
+                setTimeout(tick, 1000);
+            }
+            tick();
+        })();
+    </script>
+}
+<script>
+function goToDetail(id) {
+    window.location.href = '/Product/Details/' + id;
+}
+</script>
