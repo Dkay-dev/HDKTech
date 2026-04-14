@@ -120,11 +120,11 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // POST: /admin/product/create
         [HttpPost("create")]
-        [Authorize(Policy = "Product.Create")]   // ← GĐ4: Granular Security
+        [Authorize(Policy = "Product.Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product, IList<IFormFile> images, int stockQuantity = 0)
         {
-            // Bỏ validation cho navigation properties
+            // 1. Loại bỏ Validation cho các bảng liên quan
             ModelState.Remove(nameof(Product.Category));
             ModelState.Remove(nameof(Product.Brand));
             ModelState.Remove(nameof(Product.Images));
@@ -141,19 +141,30 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 product.CreatedAt = DateTime.Now;
+
+                // --- ĐẢM BẢO DỮ LIỆU FLASH SALE ĐƯỢC GÁN ---
+                // Thông thường EF Core sẽ tự động map nếu tên trường ở View 
+                // và Model khớp nhau. Nhưng để chắc chắn, bạn có thể check:
+                if (!product.IsFlashSale)
+                {
+                    product.FlashSalePrice = null;
+                    product.FlashSaleEndTime = null;
+                }
+
+                // 2. Lưu sản phẩm thông qua Repo hoặc Context
                 var created = await _productRepo.CreateProductAsync(product);
 
-                // Lưu ảnh
+                // 3. Lưu ảnh nếu có
                 if (images?.Count > 0)
                     await SaveProductImages(created.Id, images, created.Category?.Name);
 
-                // Tạo inventory
+                // 4. Tạo tồn kho
                 if (stockQuantity > 0)
                 {
                     _context.Inventories.Add(new Inventory
                     {
                         ProductId = created.Id,
-                        Quantity  = stockQuantity,
+                        Quantity = stockQuantity,
                         UpdatedAt = DateTime.Now
                     });
                     await _context.SaveChangesAsync();
@@ -164,7 +175,7 @@ namespace HDKTech.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi tạo sản phẩm: {Name}", product.Name);
+                _logger.LogError(ex, "Lỗi tạo sản phẩm");
                 TempData["Error"] = "Lỗi khi tạo sản phẩm.";
                 await LoadDropdowns();
                 return View(product);
@@ -176,12 +187,13 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/product/edit/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpPost("edit/{id:int}")]
-        [Authorize(Policy = "Product.Update")]   // ← GĐ4: Granular Security
+        [Authorize(Policy = "Product.Update")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Product product, IList<IFormFile> images)
         {
             if (id != product.Id) return BadRequest();
 
+            // Bỏ validation các bảng liên quan để tránh lỗi vặt
             ModelState.Remove(nameof(Product.Category));
             ModelState.Remove(nameof(Product.Brand));
             ModelState.Remove(nameof(Product.Images));
@@ -197,19 +209,38 @@ namespace HDKTech.Areas.Admin.Controllers
 
             try
             {
-                var updated = await _productRepo.UpdateProductAsync(product);
+                // 1. Lấy bản gốc từ DB ra để Update (Cách này an toàn nhất)
+                var existingProduct = await _context.Products.FindAsync(id);
+                if (existingProduct == null) return NotFound();
 
-                // Thêm ảnh mới nếu có upload
+                // 2. Cập nhật các thông tin cơ bản
+                existingProduct.Name = product.Name;
+                existingProduct.Price = product.Price;
+                existingProduct.ListPrice = product.ListPrice;
+                existingProduct.CategoryId = product.CategoryId;
+                existingProduct.BrandId = product.BrandId;
+                existingProduct.Status = product.Status;
+                existingProduct.Description = product.Description;
+                existingProduct.Specifications = product.Specifications;
+                existingProduct.WarrantyInfo = product.WarrantyInfo;
+
+                // 3. QUAN TRỌNG: Cập nhật Flash Sale
+                existingProduct.IsFlashSale = product.IsFlashSale;
+                existingProduct.FlashSalePrice = product.FlashSalePrice;
+                existingProduct.FlashSaleEndTime = product.FlashSaleEndTime;
+
+                // 4. Lưu trực tiếp qua Context hoặc qua Repo (Nếu Repo của bạn gọi SaveChanges)
+                _context.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                // Xử lý ảnh mới nếu có
                 if (images?.Count > 0)
                 {
                     var cat = await _context.Categories.FindAsync(product.CategoryId);
                     await SaveProductImages(product.Id, images, cat?.Name);
                 }
 
-                TempData[updated ? "Success" : "Error"] = updated
-                    ? "Cập nhật sản phẩm thành công!"
-                    : "Cập nhật sản phẩm thất bại.";
-
+                TempData["Success"] = "Cập nhật sản phẩm thành công!";
                 return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)

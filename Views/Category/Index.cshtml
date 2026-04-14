@@ -170,90 +170,12 @@
         </form>
     </div>
 
-    <!-- Danh sách sản phẩm -->
-    <div class="products-grid">
-        @if (Model != null && Model.Any())
-        {
-            @foreach (var item in Model)
-            {
-                <div class="product-card-wrapper">
-                    <div class="product-card">
-                        <!-- IMAGE SECTION -->
-                        <div class="product-image-container">
-                            <a asp-controller="Product" asp-action="Details" asp-route-id="@item.Id" class="product-image-link">
-                                @{
-                                    var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
-                                                   ?? item.Images?.FirstOrDefault()?.ImageUrl
-                                                   ?? "no-image.png";
-                                    var fullPath = "/images/products/" + fileName;
-                                }
-                                <img src="@fullPath"
-                                     alt="@item.Name"
-                                     class="product-image"
-                                     onerror="this.onerror=null; this.src='/images/products/no-image.png';">
-                            </a>
-
-                            <!-- BADGES -->
-                            <span class="product-badge-new">MỚI</span>
-                            @if (item.DiscountPercent > 0)
-                            {
-                                <span class="product-badge-discount">-@item.DiscountPercent%</span>
-                            }
-
-                            <!-- ADD TO CART BUTTON -->
-                            <button type="button" class="product-add-btn" onclick="addToCartAjax(@item.Id, '@item.Name')">
-                                <i class="bi bi-cart-plus"></i> Thêm Giỏ
-                            </button>
-                        </div>
-
-                        <!-- PRODUCT INFO -->
-                        <div class="product-info">
-                            <h5 class="product-name">
-                                <a asp-controller="Product" asp-action="Details" asp-route-id="@item.Id">
-                                    @item.Name
-                                </a>
-                            </h5>
-
-                            <!-- Rating -->
-                            <div class="product-rating">
-                                <div class="rating-stars">
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                </div>
-                                <span class="rating-count">Đã bán 234</span>
-                            </div>
-
-                            <div class="product-price-group">
-                                @if (item.ListPrice.HasValue && item.ListPrice > item.Price)
-                                {
-                                    <span class="product-price-old">@item.ListPrice.Value.ToString("#,##0")₫</span>
-                                }
-                                <span class="product-price-current">@item.Price.ToString("#,##0")₫</span>
-                            </div>
-
-                            <!-- Installment button -->
-                            <button type="button" class="btn-installment">
-                                <i class="bi bi-percent"></i> Trả góp 0%
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12" style="grid-column: 1 / -1;">
-                <div class="alert alert-info text-center py-5">
-                    <i class="bi bi-search fs-1 d-block mb-3"></i>
-                    <h5>Không tìm thấy sản phẩm</h5>
-                    <p class="mb-0">Vui lòng thử bộ lọc khác hoặc <a asp-controller="Home" asp-action="Index" class="fw-bold">quay lại trang chủ</a></p>
-                </div>
-            </div>
-        }
-    </div>
+<div class="pc-grid">
+    @foreach (var item in Model)
+    {
+        @await Html.PartialAsync("_ProductCard", item, new ViewDataDictionary(ViewData) { { "ShowCompare", true } })
+    }
+</div>
 
                         <!-- ===== PAGINATION ===== -->
                         @if (ViewBag.TotalPages > 1)

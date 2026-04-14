@@ -147,59 +147,13 @@
             </a>
         </div>
 
-        <div class="flash-products-grid">
+        <div class="pc-grid">
             @foreach (var p in Model.FlashSaleProducts.Take(5))
             {
-                var img = p.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
-                          ?? p.Images?.FirstOrDefault()?.ImageUrl
-                          ?? "no-image.png";
-                var displayPrice = p.IsFlashSaleActive && p.FlashSalePrice.HasValue
-                    ? p.FlashSalePrice.Value
-                    : p.Price;
-                var soldEst = new Random(p.Id).Next(15, 85);
-
-                <div class="flash-card">
-                    <div class="flash-card-img">
-                        <a asp-controller="Product" asp-action="Details" asp-route-id="@p.Id">
-                            <img src="@ImageHelper.GetImagePath(img, p.Category?.Name)"
-                                 alt="@p.Name"
-                                 onerror="this.src='/images/products/no-image.png'" />
-                        </a>
-                        @if (p.DiscountPercent > 0)
-                        {
-                            <span class="flash-badge-disc">-@p.DiscountPercent%</span>
-                        }
-                    </div>
-
-                    <div class="flash-progress-wrap">
-                        <div class="flash-progress-label">
-                            <span>Đã bán</span>
-                            <span>@soldEst%</span>
-                        </div>
-                        <div class="flash-progress-bar">
-                            <div class="flash-progress-fill" style="width:@soldEst%"></div>
-                        </div>
-                    </div>
-
-                    <div class="flash-card-info">
-                        <div class="flash-card-name">
-                            <a asp-controller="Product" asp-action="Details" asp-route-id="@p.Id">
-                                @p.Name
-                            </a>
-                        </div>
-                        <span class="flash-price-current">@displayPrice.ToString("N0")₫</span>
-                        @if (p.FlashSalePrice.HasValue && p.Price > p.FlashSalePrice)
-                        {
-                            <span class="flash-price-old">@p.Price.ToString("N0")₫</span>
-                        }
-                        <button type="button" class="flash-add-btn"
-                                onclick="addToCartAjax(@p.Id, '@Html.Raw(p.Name.Replace("'", "\\'"))')">
-                            <i class="bi bi-cart-plus"></i> Thêm giỏ
-                        </button>
-                    </div>
-                </div>
+                @await Html.PartialAsync("_ProductCard", p)
             }
         </div>
+            }
     </div>
 }
 
@@ -281,13 +235,11 @@
                         }
                     </div>
 
-                    <div class="module-products-column">
-                        <div class="products-grid">
-                            @foreach (var p in catProducts)
-                            {
-                                @await Html.PartialAsync("_ProductCard", p)
-                            }
-                        </div>
+                    <div class="pc-grid">
+                        @foreach (var p in catProducts)
+                        {
+                            @await Html.PartialAsync("_ProductCard", p)
+                        }
                     </div>
                 </div>
             </div>
