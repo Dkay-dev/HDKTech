@@ -23,6 +23,12 @@ namespace HDKTech.Models
         public int Status { get; set; }
         public string? WarrantyInfo { get; set; } = "24 Months";
         public string? DiscountNote { get; set; }
+        public bool IsFlashSale { get; set; } = false;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? FlashSalePrice { get; set; }
+
+        public DateTime? FlashSaleEndTime { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [ForeignKey("CategoryId")]
@@ -44,18 +50,35 @@ namespace HDKTech.Models
         {
             get
             {
+                // Ưu tiên Flash Sale Price
+                if (IsFlashSale && FlashSalePrice.HasValue && FlashSalePrice < Price && Price > 0)
+                    return (int)Math.Round((double)((Price - FlashSalePrice.Value) / Price * 100));
+                // Fallback về ListPrice
                 if (ListPrice.HasValue && ListPrice > Price && ListPrice > 0)
                     return (int)Math.Round((double)((ListPrice - Price) / ListPrice * 100));
                 return 0;
             }
         }
 
-        /// <summary>
-        /// Giá thực tế hiển thị cho khách hàng.
-        /// Price đã là giá bán sau mọi điều chỉnh thủ công (ListPrice là giá niêm yết gốc).
-        /// Dùng CurrentPrice nhất quán trên toàn hệ thống thay vì gọi trực tiếp Price.
-        /// </summary>
+        // Giá hiển thị thực tế (dùng Flash Sale Price nếu đang active)
         [NotMapped]
-        public decimal CurrentPrice => Price;
+        public decimal CurrentPrice
+        {
+            get
+            {
+                if (IsFlashSaleActive && FlashSalePrice.HasValue)
+                    return FlashSalePrice.Value;
+                return Price;
+            }
+        }
+
+        // Kiểm tra Flash Sale có đang active không
+        [NotMapped]
+        public bool IsFlashSaleActive =>
+            IsFlashSale &&
+            FlashSalePrice.HasValue &&
+            FlashSalePrice < Price &&
+            FlashSaleEndTime.HasValue &&
+            FlashSaleEndTime.Value > DateTime.Now;
     }
 }

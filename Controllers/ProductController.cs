@@ -58,6 +58,23 @@ namespace HDKTech.Controllers
 
             return View(products);
         }
+        public async Task<IActionResult> FlashSale()
+        {
+            var now = DateTime.Now;
+            var products = await _productRepo.GetFlashSaleProductsAsync(limit: 50);
+
+            // Lấy thời gian hết hạn sớm nhất
+            var endTime = products
+                .Where(p => p.FlashSaleEndTime.HasValue)
+                .Select(p => p.FlashSaleEndTime!.Value)
+                .DefaultIfEmpty(DateTime.Now.Date.AddDays(1))
+                .Min();
+
+            ViewBag.FlashSaleEndTime = endTime.ToString("o");
+            ViewBag.TotalProducts = products.Count;
+
+            return View(products);
+        }
     }
 }
 

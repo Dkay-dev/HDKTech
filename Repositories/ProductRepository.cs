@@ -160,16 +160,19 @@ namespace HDKTech.Repositories
 
         public async Task<List<Product>> GetFlashSaleProductsAsync(int limit = 5)
         {
-            var products = await _dbSet
+            var now = DateTime.Now;
+            return await _dbSet
                 .Include(p => p.Images)
                 .Include(p => p.Brand)
-                .Where(p => p.ListPrice.HasValue && p.ListPrice > p.Price)
-                .ToListAsync();
-
-            return products
-                .OrderByDescending(p => p.DiscountPercent)
+                .Where(p =>
+                    p.IsFlashSale &&
+                    p.FlashSalePrice.HasValue &&
+                    p.FlashSalePrice < p.Price &&
+                    p.FlashSaleEndTime.HasValue &&
+                    p.FlashSaleEndTime.Value > now)
+                .OrderBy(p => p.FlashSaleEndTime) // Sắp hết hạn nhất lên đầu
                 .Take(limit)
-                .ToList();
+                .ToListAsync();
         }
 
         public async Task<List<Product>> GetTopSellerProductsAsync(int limit = 8)
@@ -191,6 +194,8 @@ namespace HDKTech.Repositories
                 .Take(limit)
                 .ToListAsync();
         }
+
+
     }
 }
 

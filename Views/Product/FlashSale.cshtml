@@ -1,0 +1,181 @@
+﻿@model List<HDKTech.Models.Product>
+@using HDKTech.Utils
+@{
+    ViewData["Title"] = "Flash Sale - HDKTech";
+    var endTimeStr = ViewBag.FlashSaleEndTime as string ?? "";
+}
+
+<link rel="stylesheet" href="~/css/pages/flash-sale.css" asp-append-version="true" />
+
+{{!-- ═══ HERO BANNER ═══ --}}
+<div class="fs-hero">
+    <div class="fs-hero-content">
+        <div class="fs-hero-badge">
+            <i class="bi bi-lightning-fill"></i> LIMITED TIME
+        </div>
+        <h1 class="fs-hero-title">FLASH SALE</h1>
+        <p class="fs-hero-sub">Giảm giá sốc — Số lượng có hạn</p>
+
+        <div class="fs-countdown-wrap">
+            <span class="fs-countdown-label">Kết thúc sau:</span>
+            <div class="fs-countdown">
+                <div class="fs-cd-block">
+                    <span id="fs-h">00</span>
+                    <small>GIỜ</small>
+                </div>
+                <span class="fs-cd-sep">:</span>
+                <div class="fs-cd-block">
+                    <span id="fs-m">00</span>
+                    <small>PHÚT</small>
+                </div>
+                <span class="fs-cd-sep">:</span>
+                <div class="fs-cd-block">
+                    <span id="fs-s">00</span>
+                    <small>GIÂY</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{!-- ═══ BREADCRUMB ═══ --}}
+<div class="container-fluid px-4 my-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted small">
+                    <i class="bi bi-house-fill me-1"></i>Trang chủ
+                </a>
+            </li>
+            <li class="breadcrumb-item active small">
+                <i class="bi bi-lightning-fill text-warning me-1"></i>Flash Sale
+            </li>
+        </ol>
+    </nav>
+</div>
+
+{{!-- ═══ PRODUCT GRID ═══ --}}
+<div class="container-fluid px-4 pb-5">
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="fs-empty">
+            <i class="bi bi-clock-history"></i>
+            <h4>Chưa có Flash Sale nào đang diễn ra</h4>
+            <p class="text-muted">Quay lại sớm để không bỏ lỡ ưu đãi hấp dẫn!</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-warning fw-bold px-4 rounded-pill">
+                <i class="bi bi-house me-2"></i>Về trang chủ
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="fs-section-header mb-4">
+            <div class="fs-section-title">
+                <i class="bi bi-lightning-fill text-warning"></i>
+                <span>Đang giảm giá</span>
+                <span class="fs-count-badge">@Model.Count sản phẩm</span>
+            </div>
+        </div>
+
+        <div class="fs-products-grid">
+            @foreach (var p in Model)
+            {
+                var img = p.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+                          ?? p.Images?.FirstOrDefault()?.ImageUrl
+                          ?? "no-image.png";
+                var imgPath = ImageHelper.GetImagePath(img, p.Category?.Name);
+                var displayPrice = p.IsFlashSaleActive && p.FlashSalePrice.HasValue
+                    ? p.FlashSalePrice.Value
+                    : p.Price;
+                var soldEst = new Random(p.Id).Next(20, 90);
+
+                <div class="fs-product-card">
+                    {{!-- Badge --}}
+                    @if (p.DiscountPercent > 0)
+                    {
+                        <div class="fs-product-discount-badge">-@p.DiscountPercent%</div>
+                    }
+
+                    {{!-- Image --}}
+                    <div class="fs-product-image">
+                        <a asp-controller="Product" asp-action="Details" asp-route-id="@p.Id">
+                            <img src="@imgPath"
+                                 alt="@p.Name"
+                                 loading="lazy"
+                                 onerror="this.src='/images/products/no-image.png'" />
+                        </a>
+                        <button type="button"
+                                class="fs-product-quick-add"
+                                onclick="addToCartAjax(@p.Id, '@Html.Raw(p.Name.Replace("'", "\\'"))')">
+                            <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ
+                        </button>
+                    </div>
+
+                    {{!-- Info --}}
+                    <div class="fs-product-info">
+                        <div class="fs-product-brand">@(p.Brand?.Name ?? "")</div>
+                        <h6 class="fs-product-name">
+                            <a asp-controller="Product" asp-action="Details" asp-route-id="@p.Id">
+                                @p.Name
+                            </a>
+                        </h6>
+
+                        {{!-- Progress bar --}}
+                        <div class="fs-product-progress-wrap">
+                            <div class="fs-product-progress-label">
+                                <span><i class="bi bi-fire text-warning"></i> Đã bán @soldEst%</span>
+                            </div>
+                            <div class="fs-product-progress-bar">
+                                <div class="fs-product-progress-fill"
+                                     style="width: @soldEst%"></div>
+                            </div>
+                        </div>
+
+                        {{!-- Price --}}
+                        <div class="fs-product-price-wrap">
+                            <span class="fs-product-price-sale">@displayPrice.ToString("N0")₫</span>
+                            @if (p.FlashSalePrice.HasValue && p.Price > p.FlashSalePrice)
+                            {
+                                <span class="fs-product-price-original">@p.Price.ToString("N0")₫</span>
+                            }
+                        </div>
+
+                        {{!-- End time --}}
+                        @if (p.FlashSaleEndTime.HasValue)
+                        {
+                            <div class="fs-product-end-time">
+                                <i class="bi bi-clock me-1"></i>
+                                Hết lúc @p.FlashSaleEndTime.Value.ToString("HH:mm dd/MM")
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var endTimeStr = '@Html.Raw(endTimeStr)';
+            var endTime    = endTimeStr ? new Date(endTimeStr) : null;
+            if (!endTime || isNaN(endTime.getTime())) {
+                endTime = new Date(); endTime.setHours(23, 59, 59, 999);
+            }
+
+            function pad(n) { return n < 10 ? '0' + n : n; }
+
+            function tick() {
+                var diff = Math.max(0, Math.floor((endTime - new Date()) / 1000));
+                if (diff === 0) { setTimeout(function() { location.reload(); }, 2000); return; }
+                document.getElementById('fs-h').textContent = pad(Math.floor(diff / 3600));
+                document.getElementById('fs-m').textContent = pad(Math.floor((diff % 3600) / 60));
+                document.getElementById('fs-s').textContent = pad(diff % 60);
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
+}

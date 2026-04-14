@@ -1,0 +1,336 @@
+﻿/* ═══════════════════════════════════════════
+   FLASH SALE PAGE — Tông Đen - Vàng Gold
+   ═══════════════════════════════════════════ */
+:root {
+    --fs-gold: #f0a500;
+    --fs-red: #ef4444;
+    --fs-dark: #1a1a1a;
+    --fs-dark2: #2a2a2a;
+}
+
+/* ── HERO ────────────────────────────────── */
+.fs-hero {
+    background: linear-gradient(135deg, var(--fs-dark) 0%, #2d1a00 50%, #1a0d00 100%);
+    border-bottom: 3px solid var(--fs-gold);
+    padding: 60px 20px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+    .fs-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, rgba(240,165,0,.15) 0%, transparent 70%);
+    }
+
+.fs-hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.fs-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(240,165,0,.15);
+    border: 1px solid rgba(240,165,0,.4);
+    color: var(--fs-gold);
+    padding: 4px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.fs-hero-title {
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 900;
+    color: var(--fs-gold);
+    letter-spacing: -2px;
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(240,165,0,.5);
+    margin: 0 0 8px;
+}
+
+.fs-hero-sub {
+    color: rgba(255,255,255,.7);
+    font-size: 15px;
+    margin-bottom: 28px;
+}
+
+/* ── COUNTDOWN ───────────────────────────── */
+.fs-countdown-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0,0,0,.4);
+    border: 1px solid rgba(240,165,0,.3);
+    padding: 12px 28px;
+    border-radius: 50px;
+}
+
+.fs-countdown-label {
+    color: rgba(255,255,255,.6);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.fs-countdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fs-cd-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--fs-dark);
+    border: 1px solid rgba(240,165,0,.4);
+    border-radius: 8px;
+    padding: 8px 14px;
+    min-width: 54px;
+}
+
+    .fs-cd-block span {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--fs-gold);
+        font-family: monospace;
+        line-height: 1;
+    }
+
+    .fs-cd-block small {
+        font-size: 9px;
+        color: rgba(255,255,255,.5);
+        letter-spacing: 1px;
+        margin-top: 2px;
+    }
+
+.fs-cd-sep {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--fs-gold);
+    line-height: 1;
+}
+
+/* ── SECTION HEADER ──────────────────────── */
+.fs-section-header {
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 12px;
+}
+
+.fs-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.fs-count-badge {
+    background: var(--fs-gold);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 50px;
+}
+
+/* ── PRODUCTS GRID ───────────────────────── */
+.fs-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+/* ── PRODUCT CARD ────────────────────────── */
+.fs-product-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    overflow: hidden;
+    position: relative;
+    transition: transform .2s, box-shadow .2s;
+}
+
+    .fs-product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(0,0,0,.1);
+    }
+
+.fs-product-discount-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    background: linear-gradient(135deg, #ef4444, #c41c1c);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.fs-product-image {
+    position: relative;
+    background: #f9f9f9;
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+
+    .fs-product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 12px;
+        transition: transform .3s;
+    }
+
+.fs-product-card:hover .fs-product-image img {
+    transform: scale(1.05);
+}
+
+.fs-product-quick-add {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #1a1a1a, #333);
+    color: var(--fs-gold);
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    padding: 10px;
+    opacity: 0;
+    transition: opacity .25s;
+    cursor: pointer;
+}
+
+.fs-product-card:hover .fs-product-quick-add {
+    opacity: 1;
+}
+
+.fs-product-info {
+    padding: 12px 14px 14px;
+}
+
+.fs-product-brand {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.fs-product-name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+    .fs-product-name a {
+        color: #1a1a1a;
+        text-decoration: none;
+    }
+
+        .fs-product-name a:hover {
+            color: var(--fs-gold);
+        }
+
+.fs-product-progress-wrap {
+    margin-bottom: 10px;
+}
+
+.fs-product-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.fs-product-progress-bar {
+    height: 5px;
+    background: #eee;
+    border-radius: 50px;
+    overflow: hidden;
+}
+
+.fs-product-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--fs-gold), #ff8c00);
+    border-radius: 50px;
+    transition: width .5s;
+}
+
+.fs-product-price-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.fs-product-price-sale {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--fs-red);
+}
+
+.fs-product-price-original {
+    font-size: 12px;
+    color: #bbb;
+    text-decoration: line-through;
+}
+
+.fs-product-end-time {
+    font-size: 11px;
+    color: #999;
+}
+
+/* ── EMPTY STATE ─────────────────────────── */
+.fs-empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: #aaa;
+}
+
+    .fs-empty i {
+        font-size: 4rem;
+        display: block;
+        margin-bottom: 16px;
+        opacity: .4;
+    }
+
+    .fs-empty h4 {
+        color: #555;
+        margin-bottom: 8px;
+    }
+
+/* ── RESPONSIVE ──────────────────────────── */
+@media (max-width: 576px) {
+    .fs-hero {
+        padding: 40px 16px 36px;
+    }
+
+    .fs-products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .fs-countdown-wrap {
+        flex-direction: column;
+        gap: 8px;
+        padding: 14px 20px;
+    }
+}

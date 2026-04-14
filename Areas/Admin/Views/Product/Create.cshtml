@@ -116,6 +116,58 @@
                             <label asp-for="DiscountNote" class="form-label fw-semibold">Ghi chú giảm giá</label>
                             <input asp-for="DiscountNote" class="form-control" placeholder="VD: Tặng chuột gaming" />
                         </div>
+                        <!-- Flash Sale Section -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white fw-semibold border-bottom">
+                                <i class="fa-solid fa-bolt text-warning me-2"></i>Flash Sale
+                            </div>
+                            <div class="card-body row g-3">
+
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IsFlashSale"
+                                               class="form-check-input"
+                                               id="isFlashSaleToggle"
+                                               role="switch" />
+                                        <label class="form-check-label fw-semibold" for="isFlashSaleToggle">
+                                            Kích hoạt Flash Sale
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="flashSaleFields" style="display:none;" class="col-12">
+                                    <div class="row g-3">
+                                        <div class="col-sm-6">
+                                            <label asp-for="FlashSalePrice" class="form-label fw-semibold">
+                                                Giá Flash Sale (₫) <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white text-warning fw-bold">₫</span>
+                                                <input asp-for="FlashSalePrice"
+                                                       type="number" step="1000" min="0"
+                                                       class="form-control"
+                                                       placeholder="Giá sau giảm..." />
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label asp-for="FlashSaleEndTime" class="form-label fw-semibold">
+                                                Thời gian kết thúc <span class="text-danger">*</span>
+                                            </label>
+                                            <input asp-for="FlashSaleEndTime"
+                                                   type="datetime-local"
+                                                   class="form-control" />
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="alert alert-warning py-2 mb-0 small">
+                                                <i class="fa-solid fa-circle-info me-1"></i>
+                                                Giá Flash Sale phải thấp hơn giá bán gốc.
+                                                Sau thời gian kết thúc, sản phẩm sẽ tự động trở về giá thường.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -231,5 +283,21 @@
             input.files = allFiles.files;
             el.remove();
         }
+        
+        // Flash Sale toggle
+        var toggle = document.getElementById('isFlashSaleToggle');
+        var fields = document.getElementById('flashSaleFields');
+
+        function updateFlashSaleFields() {
+            if (toggle && fields) {
+                fields.style.display = toggle.checked ? 'block' : 'none';
+            }
+        }
+
+        if (toggle) {
+            toggle.addEventListener('change', updateFlashSaleFields);
+            updateFlashSaleFields(); // Khởi tạo khi load trang Edit
+        }
+
     </script>
 }
