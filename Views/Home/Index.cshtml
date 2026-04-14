@@ -12,30 +12,45 @@
      ============================================ -->
 @if (Model.MainBanners.Any())
 {
-    @* Dùng container-fluid p-0 để banner tràn sát mép trái phải *@
     <div class="container-fluid p-0 mb-0">
         <div id="mainBannerCarousel" class="carousel slide carousel-fade main-banner-carousel" data-bs-ride="carousel" data-bs-interval="5000">
             <div class="carousel-inner">
                 @foreach (var banner in Model.MainBanners)
                 {
+                    bool hasLink = !string.IsNullOrWhiteSpace(banner.LinkUrl);
+                    bool isExternal = hasLink && (banner.LinkUrl.StartsWith("http://") || banner.LinkUrl.StartsWith("https://"));
+                    string target = isExternal ? "_blank" : "_self";
+
                     <div class="carousel-item @(Model.MainBanners.IndexOf(banner) == 0 ? "active" : "")">
-                        <a href="@banner.LinkUrl" class="banner-link" target="@(banner.LinkUrl?.StartsWith("http") == true ? "_blank" : "_self")" onclick="trackBannerClick(@banner.
 
+                        @* Nếu có link → bọc <a> để cả banner thành nút bấm; không có → chỉ hiện ảnh *@
+                        @if (hasLink)
+                        {
+                            <a href="@banner.LinkUrl"
+                                   target="@target"
+                                   rel="@(isExternal ? "noopener noreferrer" : null)"
+                                   class="banner-link d-block"
+                                   onclick="trackBannerClick(@banner.Id); return true;">
+                                <img src="@banner.ImageUrl" alt="@banner.Title" class="d-block w-100"
+                                     style="height: 75vh; min-height: 500px; object-fit: cover;"
+                                     loading="@(Model.MainBanners.IndexOf(banner) == 0 ? "eager" : "lazy")" />
+                            </a>
+                        }
+                        else
+                        {
+                            <img src="@banner.ImageUrl" alt="@banner.Title" class="d-block w-100"
+                                 style="height: 75vh; min-height: 500px; object-fit: cover;"
+                                 loading="@(Model.MainBanners.IndexOf(banner) == 0 ? "eager" : "lazy")" />
+                        }
 
-
-)">
-                            @* CHỈNH SỬA TẠI ĐÂY: 
-                                - Đổi height: 400px thành 75vh (chiếm 75% chiều cao màn hình) hoặc 600px
-                                - Thêm d-block w-100 để đảm bảo ảnh phủ kín ngang
-                            *@
-                            <img src="@banner.ImageUrl" alt="@banner.Title" class="d-block w-100" 
-                                 style="height: 75vh; min-height: 500px; object-fit: cover;">
-                            
-                            <div class="carousel-caption d-md-block" style="bottom: 20%; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); border-radius: 15px; padding: 20px;">
-                                <h2 class="fw-bold display-4" style="text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">@banner.Title</h2>
+                        <div class="carousel-caption d-md-block" style="bottom: 20%; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); border-radius: 15px; padding: 20px;">
+                            <h2 class="fw-bold display-4" style="text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">@banner.Title</h2>
+                            @if (!string.IsNullOrEmpty(banner.Description))
+                            {
                                 <p class="lead fs-4" style="text-shadow: 1px 1px 5px rgba(0,0,0,0.6);">@banner.Description</p>
-                            </div>
-                        </a>
+                            }
+                        </div>
+
                     </div>
                 }
             </div>
@@ -52,8 +67,9 @@
                 <div class="carousel-indicators">
                     @foreach (var banner in Model.MainBanners)
                     {
-                        <button type="button" data-bs-target="#mainBannerCarousel" data-bs-slide-to="@Model.MainBanners.IndexOf(banner)" 
-                                class="@(Model.MainBanners.IndexOf(banner) == 0 ? "active" : "")" aria-current="@(Model.MainBanners.IndexOf(banner) == 0 ? "true" : "false")"></button>
+                        <button type="button" data-bs-target="#mainBannerCarousel" data-bs-slide-to="@Model.MainBanners.IndexOf(banner)"
+                                class="@(Model.MainBanners.IndexOf(banner) == 0 ? "active" : "")"
+                                aria-current="@(Model.MainBanners.IndexOf(banner) == 0 ? "true" : "false")"></button>
                     }
                 </div>
             }
@@ -66,7 +82,6 @@ else
         <p class="mb-0">Chưa có banner nào. <a href="/Admin/Banner">Tạo banner ngay</a></p>
     </div>
 }
-git
 
 
 <!-- ============================================
@@ -82,24 +97,17 @@ git
         @if (Model.Categories.Any())
         {
             <div class="row g-4 justify-content-center">
-                @* Lấy các danh mục chính (Tầng 1 - Parent) để hiển thị ra icon tròn.
-                   Nếu bạn muốn hiện cả các nhóm con, chỉ cần bỏ điều kiện .Where đi.
-                *@
                 @foreach (var category in Model.Categories.Where(m => m.ParentCategoryId == null).Take(14))
                 {
-                    // Link lấy tương tự sidebar: Controller="Category", Action="Index", Route-id="Id"
                     <div class="col-4 col-md-3 col-lg-2">
                         <a asp-controller="Category" asp-action="Index" asp-route-id="@category.Id"
                                class="text-decoration-none category-item-modern">
-            
                             <div class="category-icon-wrapper shadow-sm mb-3">
-                                @* Đường dẫn ảnh: /images/banners/category-{Id}.jpg *@
                                 <img src="/images/banners/category-@(category.Id).jpg"
                                      alt="@category.Name"
                                      onerror="this.src='/images/banners/category-1.jpg'"
                                      class="img-fluid p-3 category-img-render">
                             </div>
-            
                             <h6 class="category-name-modern text-center">@category.Name</h6>
                         </a>
                     </div>
@@ -156,7 +164,6 @@ git
                                         </a>
                                     </h5>
 
-                                    <!-- Rating -->
                                     <div class="product-rating">
                                         <div class="rating-stars">
                                             <i class="bi bi-star-fill"></i>
@@ -176,7 +183,6 @@ git
                                         <span class="product-price-current">@product.Price.ToString("#,##0")₫</span>
                                     </div>
 
-                                    <!-- Installment button -->
                                     <button type="button" class="btn-installment">
                                         <i class="bi bi-percent"></i> Trả góp 0%
                                     </button>
@@ -230,7 +236,6 @@ git
                                         </a>
                                     </h5>
 
-                                    <!-- Rating -->
                                     <div class="product-rating">
                                         <div class="rating-stars">
                                             <i class="bi bi-star-fill"></i>
@@ -250,7 +255,6 @@ git
                                         <span class="product-price-current">@product.Price.ToString("#,##0")₫</span>
                                     </div>
 
-                                    <!-- Installment button -->
                                     <button type="button" class="btn-installment">
                                         <i class="bi bi-percent"></i> Trả góp 0%
                                     </button>
@@ -267,43 +271,30 @@ git
 @section Scripts {
     <script src="~/js/pages/home.js"></script>
     <script>
-        // Track banner clicks for analytics
         function trackBannerClick(bannerId) {
+            if (!bannerId) return;
             fetch(`/api/banneranalytics/track-click/${bannerId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Banner click tracked:', data);
-            })
-            .catch(error => {
-                console.error('Error tracking banner click:', error);
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }).catch(() => {});
         }
     </script>
 }
 
-@* Cart functionality is now in global wwwroot/js/cart.js *@
-
 @functions {
-    // Helper function to get icon for category
     string GetCategoryIcon(int categoryId)
     {
         return categoryId switch
         {
-            1 => "bi-laptop",           // Laptop
-            2 => "bi-pc-display",       // PC/Desktop
-            3 => "bi-keyboard",         // Keyboard/Accessories
-            4 => "bi-mouse3",           // Mouse
-            5 => "bi-cpu",              // CPU/Components
-            6 => "bi-memory",           // RAM/Memory
-            7 => "bi-hdd",              // Storage
-            8 => "bi-display",          // Monitor
-            _ => "bi-box2-heart"        // Default
+            1 => "bi-laptop",
+            2 => "bi-pc-display",
+            3 => "bi-keyboard",
+            4 => "bi-mouse3",
+            5 => "bi-cpu",
+            6 => "bi-memory",
+            7 => "bi-hdd",
+            8 => "bi-display",
+            _ => "bi-box2-heart"
         };
     }
 }
-
