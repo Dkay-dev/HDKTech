@@ -3,12 +3,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" class="text-decoration-none d-flex align-items-center px-3 py-3">
-        <div class="hdk-logo">
-            <span class="hdk-logo-hdk" style="color: white; font-weight: 700; font-size: 1.4rem;">HDK</span><span class="hdk-logo-tech" style="color: #ef4444; font-weight: 700; font-size: 1.4rem;">Tech</span>
-            <span class="badge ms-2" style="background-color: rgba(201, 168, 76, 0.2); color: #c9a84c; font-size: 0.7rem; padding: 4px 8px; border: 1px solid rgba(201, 168, 76, 0.3);">ADMIN</span>
-        </div>
-    </a>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - HDKTech Admin</title>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -33,9 +30,18 @@
             <button class="btn btn-sm text-white" id="sidebarToggleBtn" aria-label="Toggle sidebar">
                 <i class="bi bi-list fs-5"></i>
             </button>
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/admin/dashboard">
-                <i class="bi bi-cpu-fill text-warning"></i>
-                <span>HDKTech <span class="badge bg-warning text-dark small">Admin</span></span>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/admin/dashboard">
+                <div class="hdk-logo-admin">
+                    <span style="color: #ffffff; font-weight: 800; font-size: 1.4rem;">HDK</span>
+                    <span style="color: #ef4444; font-weight: 800; font-size: 1.4rem;">Tech</span>
+                </div>
+    
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <span class="badge ms-1" style="background-color: rgba(201, 168, 76, 0.15); color: #c9a84c; font-size: 0.65rem; border: 1px solid rgba(201, 168, 76, 0.3);">
+                        @(User.IsInRole("Admin") ? "ADMIN" : "MANAGER")
+                    </span>
+                }
             </a>
         </div>
 

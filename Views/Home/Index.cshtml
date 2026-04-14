@@ -142,7 +142,7 @@
                     <div class="countdown-unit" id="cd-s">00</div>
                 </div>
             </div>
-            <a asp-controller="Product" asp-action="Search" asp-route-keyword="flash+sale" class="flash-view-all">
+            <a asp-controller="Product" asp-action="FlashSale" class="flash-view-all">
                 Xem tất cả <i class="bi bi-arrow-right"></i>
             </a>
         </div>
@@ -153,6 +153,9 @@
                 var img = p.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
                           ?? p.Images?.FirstOrDefault()?.ImageUrl
                           ?? "no-image.png";
+                var displayPrice = p.IsFlashSaleActive && p.FlashSalePrice.HasValue
+                    ? p.FlashSalePrice.Value
+                    : p.Price;
                 var soldEst = new Random(p.Id).Next(15, 85);
 
                 <div class="flash-card">
@@ -184,10 +187,10 @@
                                 @p.Name
                             </a>
                         </div>
-                        <span class="flash-price-current">@p.Price.ToString("N0")₫</span>
-                        @if (p.ListPrice.HasValue && p.ListPrice > p.Price)
+                        <span class="flash-price-current">@displayPrice.ToString("N0")₫</span>
+                        @if (p.FlashSalePrice.HasValue && p.Price > p.FlashSalePrice)
                         {
-                            <span class="flash-price-old">@p.ListPrice.Value.ToString("N0")₫</span>
+                            <span class="flash-price-old">@p.Price.ToString("N0")₫</span>
                         }
                         <button type="button" class="flash-add-btn"
                                 onclick="addToCartAjax(@p.Id, '@Html.Raw(p.Name.Replace("'", "\\'"))')">
@@ -223,131 +226,76 @@
     </div>
 }
 
-@* ═══════════════════════════════════════════════════════════
-   5. TOP SELLER MODULE — 3:9 with sticky side banner
-   ═══════════════════════════════════════════════════════════ *@
-@if (Model.TopSellerProducts.Any())
+@* Duyệt qua 12 danh mục chính để tạo các khối sản phẩm đồng bộ *@
+@{
+    var mainCategories = Model.Categories.Take(12).ToList();
+}
+
+@foreach (var cat in mainCategories)
 {
-    <div class="container-fluid px-3 px-lg-4">
-        <div class="hdk-section">
-            <div class="section-header">
-                <div class="section-header-left">
-                    <div class="section-label">
-                        <i class="bi bi-fire"></i>
-                        Laptop Bán Chạy
+    var catProducts = Model.AllProducts.Where(p => p.CategoryId == cat.Id).Take(12).ToList();
+    
+    @if (catProducts.Any())
+    {
+        <div class="container-fluid px-3 px-lg-4">
+            <div class="hdk-section">
+                <div class="section-header">
+                    <div class="section-header-left">
+                        <div class="section-label">
+                            <i class="bi @GetCategoryIcon(cat.Id)"></i> @cat.Name
+                        </div>
                     </div>
-                    <div class="section-tabs" id="tabsTopSeller">
-                        <button class="section-tab active" data-filter="all" onclick="filterProducts('topSeller', 'all', this)">Tất cả</button>
-                        @foreach (var brand in Model.TopSellerProducts
-                                                    .Where(p => p.Brand != null)
-                                                    .Select(p => p.Brand.Name)
-                                                    .Distinct().Take(4))
+                </div>
+
+                <div class="category-module-main">
+                    <div class="module-side-banners-stack">
+                        @{
+                            // Lọc ra các banner SIDE có chứa từ khóa của danh mục hiện tại (ví dụ: "Laptop")
+                            // Cách này sẽ lấy đúng "Banner Laptop 1" và "Banner Laptop 2" từ Admin của bạn
+                            var currentSideBanners = Model.SideBanners
+                                        .Where(b => b.Title.Contains(cat.Name, StringComparison.OrdinalIgnoreCase))
+                                        .ToList();
+
+                            // 2. Nếu là danh mục "Laptop", ta phải lọc bỏ những cái có chữ "Gaming"
+                            // để nó không lấy nhầm banner của Laptop Gaming.
+                            if (cat.Name == "Laptop")
+                            {
+                                currentSideBanners = currentSideBanners.Where(b => !b.Title.Contains("Gaming")).ToList();
+                            }
+
+                            // 3. Lấy 2 cái cuối cùng sau khi lọc
+                            var finalBanners = currentSideBanners.OrderBy(b => b.Title).Take(2).ToList();
+
+                            // Nếu danh mục khác chưa có banner riêng, lấy 2 cái SIDE đầu tiên làm mặc định
+                            if (currentSideBanners.Count < 2)
+                            {
+                                currentSideBanners = Model.SideBanners.OrderBy(b => b.Id).Take(2).ToList();
+                            }
+                        }
+        
+                        @foreach (var sb in currentSideBanners)
                         {
-                            <button class="section-tab" data-filter="@brand" onclick="filterProducts('topSeller', '@brand', this)">@brand</button>
+                            <a href="@(sb.LinkUrl ?? "#")" class="side-banner-item">
+                                <img src="@sb.ImageUrl" alt="@sb.Title" loading="lazy" />
+                            </a>
                         }
                     </div>
-                </div>
-                <a asp-controller="Product" asp-action="Search" asp-route-keyword="laptop" class="view-all-btn">
-                    Xem tất cả <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
 
-            <div class="module-layout">
-                @* — Side Banner — *@
-                <div class="module-side-banner">
-                    @{
-                        var sideB = Model.SideBanners.Skip(Model.SideBanners.Count > 3 ? 3 : 0).FirstOrDefault()
-                                    ?? Model.SideBanners.FirstOrDefault();
-                    }
-                    @if (sideB != null)
-                    {
-                        <a href="@(sideB.LinkUrl ?? "#")" onclick="trackBannerClick(@sideB.Id); return true;">
-                            <img src="@sideB.ImageUrl" alt="@sideB.Title" loading="lazy" />
-                        </a>
-                    }
-                    else
-                    {
-                        <div class="module-side-placeholder">
-                            <i class="bi bi-laptop"></i>
-                            <span style="font-size:13px;font-weight:500;">Laptop Gaming</span>
+                    <div class="module-products-column">
+                        <div class="products-grid">
+                            @foreach (var p in catProducts)
+                            {
+                                @await Html.PartialAsync("_ProductCard", p)
+                            }
                         </div>
-                    }
-                </div>
-
-                @* — Product Grid — *@
-                <div class="products-grid" id="gridTopSeller">
-                    @foreach (var p in Model.TopSellerProducts.Take(8))
-                    {
-                        @await Html.PartialAsync("_ProductCard", p)
-                    }
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 }
 
-@* ═══════════════════════════════════════════════════════════
-   6. NEW ARRIVALS MODULE — 3:9 with sticky side banner
-   ═══════════════════════════════════════════════════════════ *@
-@if (Model.NewProducts.Any())
-{
-    <div class="container-fluid px-3 px-lg-4">
-        <div class="hdk-section">
-            <div class="section-header">
-                <div class="section-header-left">
-                    <div class="section-label">
-                        <i class="bi bi-stars"></i>
-                        Sản Phẩm Mới Về
-                    </div>
-                    <div class="section-tabs" id="tabsNew">
-                        <button class="section-tab active" data-filter="all" onclick="filterProducts('newProd', 'all', this)">Tất cả</button>
-                        @foreach (var cat in Model.NewProducts
-                                                    .Where(p => p.Category != null)
-                                                    .Select(p => p.Category.Name)
-                                                    .Distinct().Take(4))
-                        {
-                            <button class="section-tab" data-filter="@cat" onclick="filterProducts('newProd', '@cat', this)">@cat</button>
-                        }
-                    </div>
-                </div>
-                <a asp-controller="Product" asp-action="Search" asp-route-keyword="mới+nhất" class="view-all-btn">
-                    Xem tất cả <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
 
-            <div class="module-layout">
-                @* — Side Banner — *@
-                <div class="module-side-banner">
-                    @{
-                        var sideB2 = Model.SideBanners.Skip(1).FirstOrDefault()
-                                     ?? Model.SideBanners.FirstOrDefault();
-                    }
-                    @if (sideB2 != null)
-                    {
-                        <a href="@(sideB2.LinkUrl ?? "#")" onclick="trackBannerClick(@sideB2.Id); return true;">
-                            <img src="@sideB2.ImageUrl" alt="@sideB2.Title" loading="lazy" />
-                        </a>
-                    }
-                    else
-                    {
-                        <div class="module-side-placeholder">
-                            <i class="bi bi-cpu"></i>
-                            <span style="font-size:13px;font-weight:500;">Linh kiện mới</span>
-                        </div>
-                    }
-                </div>
-
-                @* — Product Grid — *@
-                <div class="products-grid" id="gridNewProd">
-                    @foreach (var p in Model.NewProducts.Take(8))
-                    {
-                        @await Html.PartialAsync("_ProductCard", p)
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @* ═══════════════════════════════════════════════════════════
    7. BOTTOM BANNER — second strip (if enough banners)
@@ -371,6 +319,8 @@
     </div>
 }
 
+
+
 @section Scripts {
     <script>
         (function () {
@@ -385,34 +335,44 @@
             };
 
             // ── Flash Sale Countdown — ends at midnight ──────────────────────────
-            function initCountdown() {
-                var cdH = document.getElementById('cd-h');
-                var cdM = document.getElementById('cd-m');
-                var cdS = document.getElementById('cd-s');
-                if (!cdH) return;
+                    // ── Flash Sale Countdown — theo thời gian thực từ DB ──────────────────
+        function initCountdown() {
+            var cdH = document.getElementById('cd-h');
+            var cdM = document.getElementById('cd-m');
+            var cdS = document.getElementById('cd-s');
+            if (!cdH) return;
 
-                function pad(n) { return n < 10 ? '0' + n : n; }
+            // Lấy thời gian kết thúc từ ViewBag (ISO 8601)
+            var endTimeStr = '@ViewBag.FlashSaleEndTime';
+            var endTime    = endTimeStr ? new Date(endTimeStr) : null;
 
-                function tick() {
-                    var now  = new Date();
-                    var end  = new Date(now);
-                    end.setHours(23, 59, 59, 999);
-                    var diff = Math.max(0, Math.floor((end - now) / 1000));
-
-                    var h = Math.floor(diff / 3600);
-                    var m = Math.floor((diff % 3600) / 60);
-                    var s = diff % 60;
-
-                    cdH.textContent = pad(h);
-                    cdM.textContent = pad(m);
-                    cdS.textContent = pad(s);
-                }
-
-                tick();
-                setInterval(tick, 1000);
+            // Nếu không có endTime từ DB, fallback về cuối ngày hôm nay
+            if (!endTime || isNaN(endTime.getTime())) {
+                endTime = new Date();
+                endTime.setHours(23, 59, 59, 999);
             }
 
-            initCountdown();
+            function pad(n) { return n < 10 ? '0' + n : n; }
+
+            function tick() {
+                var now  = new Date();
+                var diff = Math.max(0, Math.floor((endTime - now) / 1000));
+
+                if (diff === 0) {
+                    // Hết thời gian — reload để ẩn Flash Sale
+                    setTimeout(function () { location.reload(); }, 1500);
+                }
+
+                cdH.textContent = pad(Math.floor(diff / 3600));
+                cdM.textContent = pad(Math.floor((diff % 3600) / 60));
+                cdS.textContent = pad(diff % 60);
+            }
+
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        initCountdown();
 
             // ── Tab Filter — client-side (no page reload) ───────────────────────
             // Data arrays built server-side and passed as JSON.

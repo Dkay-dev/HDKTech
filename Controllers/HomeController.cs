@@ -34,6 +34,13 @@ namespace HDKTech.Controllers
             var topSellerProducts = await _productRepo.GetTopSellerProductsAsync(limit: 8);
             var newProducts = await _productRepo.GetNewProductsAsync(limit: 6);
 
+            var flashSaleEndTime = flashSaleProducts
+            .Where(p => p.FlashSaleEndTime.HasValue)
+            .Select(p => p.FlashSaleEndTime!.Value)
+            .DefaultIfEmpty(DateTime.Now.Date.AddDays(1)) // Fallback: hết ngày hôm nay
+            .Min();
+
+            ViewBag.FlashSaleEndTime = flashSaleEndTime.ToString("o");
             // Tất cả sản phẩm cho hero slider (nếu cần)
             var allProducts = await _productRepo.GetAllWithImagesAsync();
 
