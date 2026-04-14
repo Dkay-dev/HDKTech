@@ -5,10 +5,35 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeAdmin() {
+    setupSidebarToggle();
     setupTableInteractions();
     setupFormValidation();
     setupSearchFunctionality();
     setupNavigationHighlight();
+}
+
+/**
+ * Setup sidebar toggle functionality
+ */
+function setupSidebarToggle() {
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const wrapper = document.getElementById('hdk-admin-wrapper');
+
+    if (toggleBtn && wrapper) {
+        toggleBtn.addEventListener('click', function() {
+            wrapper.classList.toggle('sidebar-show');
+        });
+
+        // Close sidebar when clicking on a link on mobile
+        if (window.innerWidth <= 768) {
+            const sidebarLinks = document.querySelectorAll('.hdk-admin-sidebar .nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    wrapper.classList.remove('sidebar-show');
+                });
+            });
+        }
+    }
 }
 
 /**

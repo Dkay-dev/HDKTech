@@ -1,36 +1,54 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using HDKTech.Data;
-using HDKTech.Models;
 using System.Security.Claims;
+using HDKTech.Models;
 
 namespace HDKTech.ChucNangPhanQuyen
 {
+    /// <summary>
+    /// Policy-based Authorization Handler — Sprint 1 Refactor.
+    ///
+    /// Thay vì đọc từ bảng custom RolePermissions, handler này truy vấn
+    /// bảng chuẩn của ASP.NET Identity: AspNetRoleClaims.
+    ///
+    /// Flow:
+    ///   User → AspNetUserRoles → IdentityRole → AspNetRoleClaims
+    ///   Claim Type  = "Permission"
+    ///   Claim Value = "Module.Action"  (vd: "Inventory.Update", "Product.Delete")
+    ///
+    /// Để gán quyền cho Role: dùng RoleController.SavePermissions()
+    /// hoặc gọi trực tiếp: await _roleManager.AddClaimAsync(role, new Claim("Permission","Inventory.Update"))
+    /// </summary>
     public class PermissionHandler : AuthorizationHandler<PermissionRequirement>
     {
-        private readonly HDKTechContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly UserManager<AppUser>   _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public PermissionHandler(HDKTechContext context, IHttpContextAccessor httpContextAccessor, UserManager<AppUser> userManager)
+        public PermissionHandler(
+            IHttpContextAccessor       httpContextAccessor,
+            UserManager<AppUser>       userManager,
+            RoleManager<IdentityRole>  roleManager)
         {
-            _context = context;
             _httpContextAccessor = httpContextAccessor;
-            _userManager = userManager;
+            _userManager         = userManager;
+            _roleManager         = roleManager;
         }
 
-        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
+        protected override async Task HandleRequirementAsync(
+            AuthorizationHandlerContext context,
+            PermissionRequirement       requirement)
         {
             var userPrincipal = _httpContextAccessor.HttpContext?.User;
-            if (userPrincipal == null || !userPrincipal.Identity.IsAuthenticated)
+
+            if (userPrincipal == null || !userPrincipal.Identity!.IsAuthenticated)
             {
                 context.Fail();
                 return;
             }
 
-            // If user is in Admin role (identity role), succeed (site admin has full access)
+            // Admin role — bypass mọi kiểm tra quyền
             if (userPrincipal.IsInRole("Admin"))
             {
                 context.Succeed(requirement);
@@ -38,59 +56,41 @@ namespace HDKTech.ChucNangPhanQuyen
             }
 
             var userId = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                context.Fail();
-                return;
-            }
+            if (string.IsNullOrEmpty(userId)) { context.Fail(); return; }
 
-            // Get user entity and their identity role names
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
+            if (user == null) { context.Fail(); return; }
+
+            var roleNames = await _userManager.GetRolesAsync(user);
+            if (!roleNames.Any()) { context.Fail(); return; }
+
+            // Giá trị cần tìm trong AspNetRoleClaims: "Module.Action"
+            var requiredValue = $"{requirement.Module}.{requirement.Action}";
+
+            foreach (var roleName in roleNames)
             {
-                context.Fail();
-                return;
-            }
+                // Admin role — catch-all
+                if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Succeed(requirement);
+                    return;
+                }
 
-            var identityRoleNames = await _userManager.GetRolesAsync(user);
-            if (identityRoleNames == null || identityRoleNames.Count == 0)
-            {
-                context.Fail();
-                return;
-            }
+                var identityRole = await _roleManager.FindByNameAsync(roleName);
+                if (identityRole == null) continue;
 
-            // If any identity role is Admin, succeed
-            if (identityRoleNames.Contains("Admin"))
-            {
-                context.Succeed(requirement);
-                return;
-            }
+                // Đọc claims từ bảng AspNetRoleClaims
+                var claims = await _roleManager.GetClaimsAsync(identityRole);
 
-            // Map identity role names to custom Role table (Role.RoleName)
-            var customRoleIds = await _context.Roles
-                .AsNoTracking()
-                .Where(r => identityRoleNames.Contains(r.RoleName))
-                .Select(r => r.RoleId)
-                .ToListAsync();
+                bool granted = claims.Any(c =>
+                    c.Type  == "Permission" &&
+                    c.Value.Equals(requiredValue, StringComparison.OrdinalIgnoreCase));
 
-            if (!customRoleIds.Any())
-            {
-                context.Fail();
-                return;
-            }
-
-            // Get permissions for those custom roles
-            var permissions = await _context.RolePermissions
-                .AsNoTracking()
-                .Include(rp => rp.Permission)
-                .Where(rp => customRoleIds.Contains(rp.RoleId))
-                .Select(rp => rp.Permission)
-                .ToListAsync();
-
-            if (permissions.Any(p => p.Module == requirement.Module && p.Action == requirement.Action))
-            {
-                context.Succeed(requirement);
-                return;
+                if (granted)
+                {
+                    context.Succeed(requirement);
+                    return;
+                }
             }
 
             context.Fail();

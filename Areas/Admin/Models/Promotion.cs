@@ -9,9 +9,26 @@ namespace HDKTech.Areas.Admin.Models
         [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Campaign name is required")]
+        [Required(ErrorMessage = "Tên chiến dịch không được để trống.")]
         [StringLength(200)]
         public string CampaignName { get; set; }
+
+        // ── Computed aliases ──────────────────────────────────────────
+        /// <summary>Alias cho CampaignName — dùng thống nhất trên toàn hệ thống.</summary>
+        [NotMapped]
+        public string Name
+        {
+            get => CampaignName;
+            set => CampaignName = value;
+        }
+
+        /// <summary>Phần trăm giảm giá — chỉ có giá trị khi PromotionType == "Percentage".</summary>
+        [NotMapped]
+        public decimal DiscountPercent => PromotionType == "Percentage" ? Value : 0;
+
+        /// <summary>True khi khuyến mãi đang chạy thực sự (IsActive + trong khoảng thời gian).</summary>
+        [NotMapped]
+        public bool IsCurrentlyActive => IsActive && DateTime.Now >= StartDate && DateTime.Now <= EndDate;
 
         [StringLength(500)]
         public string? Description { get; set; }

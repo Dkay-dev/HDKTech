@@ -4,94 +4,102 @@
     ViewData["Title"] = "Tạo Khuyến mãi Mới";
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight text-on-surface mb-2">Tạo Khuyến mãi Mới</h1>
-    <p class="text-zinc-500">Thêm một chiến dịch khuyến mãi mới</p>
+<div class="mb-4">
+    <h1 class="display-5 fw-bold mb-2">Tạo Khuyến mãi Mới</h1>
+    <p class="text-muted">Thêm một chiến dịch khuyến mãi mới</p>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="row">
     <!-- Form -->
-    <div class="lg:col-span-2">
-        <form method="post" class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+    <div class="col-lg-8 col-xl-9">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
             @Html.AntiForgeryToken()
 
             <!-- Tên chiến dịch -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">
-                    Tên chiến dịch <span class="text-red-500">*</span>
+                    <div class="mb-3">
+                        <label asp-for="CampaignName" class="form-label fw-bold">
+                            Tên chiến dịch <span class="text-danger">*</span>
                 </label>
-                <input type="text" asp-for="CampaignName" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: Back to School 2024" />
-                <span asp-validation-for="CampaignName" class="text-xs text-red-500 mt-1 block"></span>
+                        <input type="text" asp-for="CampaignName" class="form-control form-control-sm" placeholder="VD: Back to School 2024" />
+                        <span asp-validation-for="CampaignName" class="invalid-feedback d-block"></span>
             </div>
 
             <!-- Mô tả -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Mô tả</label>
-                <textarea asp-for="Description" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" rows="3" placeholder="Mô tả về chiến dịch..."></textarea>
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-bold">Mô tả</label>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3" placeholder="Mô tả về chiến dịch..."></textarea>
             </div>
 
             <!-- Danh mục áp dụng -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Danh mục áp dụng</label>
-                <input type="text" asp-for="ApplicableCategory" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: Laptop & Accessories" />
+                    <div class="mb-3">
+                        <label asp-for="ApplicableCategory" class="form-label fw-bold">Danh mục áp dụng</label>
+                        <input type="text" asp-for="ApplicableCategory" class="form-control form-control-sm" placeholder="VD: Laptop & Accessories" />
             </div>
 
-            <!-- Ngày bắt đầu -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">
-                        Ngày bắt đầu <span class="text-red-500">*</span>
+                    <!-- Ngày bắt đầu & kết thúc -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDate" class="form-label fw-bold">
+                                Ngày bắt đầu <span class="text-danger">*</span>
                     </label>
-                    <input type="datetime-local" asp-for="StartDate" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    <span asp-validation-for="StartDate" class="text-xs text-red-500 mt-1 block"></span>
+                            <input type="datetime-local" asp-for="StartDate" class="form-control form-control-sm" />
+                            <span asp-validation-for="StartDate" class="invalid-feedback d-block"></span>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">
-                        Ngày kết thúc <span class="text-red-500">*</span>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDate" class="form-label fw-bold">
+                                Ngày kết thúc <span class="text-danger">*</span>
                     </label>
-                    <input type="datetime-local" asp-for="EndDate" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                    <span asp-validation-for="EndDate" class="text-xs text-red-500 mt-1 block"></span>
+                            <input type="datetime-local" asp-for="EndDate" class="form-control form-control-sm" />
+                            <span asp-validation-for="EndDate" class="invalid-feedback d-block"></span>
                 </div>
             </div>
 
             <!-- Loại khuyến mãi -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">
-                    Loại khuyến mãi <span class="text-red-500">*</span>
+                    <div class="mb-3">
+                        <label asp-for="PromotionType" class="form-label fw-bold">
+                            Loại khuyến mãi <span class="text-danger">*</span>
                 </label>
-                <select asp-for="PromotionType" id="PromotionType" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        <select asp-for="PromotionType" id="PromotionType" class="form-select form-select-sm">
                     <option value="">-- Chọn loại --</option>
                     <option value="Percentage">Giảm giá %</option>
                     <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
                     <option value="FreeShip">Miễn phí vận chuyển</option>
                 </select>
-                <span asp-validation-for="PromotionType" class="text-xs text-red-500 mt-1 block"></span>
+                        <span asp-validation-for="PromotionType" class="invalid-feedback d-block"></span>
             </div>
 
             <!-- Giá trị khuyến mãi -->
-            <div id="Value-container">
-                <label class="block text-sm font-bold text-on-surface mb-2">
-                    Giá trị <span class="text-red-500">*</span>
+                    <div class="mb-3">
+                        <label asp-for="Value" class="form-label fw-bold">
+                            Giá trị <span class="text-danger">*</span>
                 </label>
-                <div class="flex gap-2">
-                    <input type="number" asp-for="Value" step="0.01" class="flex-1 px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="0" />
-                    <span id="unit" class="px-4 py-2.5 bg-surface-container text-on-surface rounded-lg font-bold">%</span>
+                        <div class="input-group input-group-sm">
+                            <input type="number" asp-for="Value" step="0.01" class="form-control" placeholder="0" />
+                            <span id="unit" class="input-group-text fw-bold">%</span>
                 </div>
-                <span asp-validation-for="Value" class="text-xs text-red-500 mt-1 block"></span>
+                        <span asp-validation-for="Value" class="invalid-feedback d-block"></span>
             </div>
 
             <!-- Mã khuyến mãi -->
-            <div>
-                <label class="block text-sm font-bold text-on-surface mb-2">Mã khuyến mãi</label>
-                <input type="text" asp-for="PromoCode" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="VD: BACK2024" />
-                <p class="text-xs text-zinc-500 mt-1">Để trống nếu không sử dụng mã</p>
+                    <div class="mb-3">
+                        <label asp-for="PromoCode" class="form-label fw-bold">Mã khuyến mãi</label>
+                        <input type="text" asp-for="PromoCode" class="form-control form-control-sm" placeholder="VD: BACK2024" />
+                        <small class="text-muted">Để trống nếu không sử dụng mã</small>
             </div>
 
-            <!-- Số lượng tối đa -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-on-surface mb-2">Số lượng tối đa</label>
-                    <input type="number" asp-for="MaxUsageCount" class="w-full px-4 py-2.5 border border-outline rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Không giới hạn nếu để trống" />
+                    <!-- Số lượng tối đa & Trạng thái -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MaxUsageCount" class="form-label fw-bold">Số lượng tối đa</label>
+                            <input type="number" asp-for="MaxUsageCount" class="form-control form-control-sm" placeholder="Không giới hạn nếu để trống" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Trạng thái</label>
+                            <div class="form-check">
+                                <input type="checkbox" asp-for="IsActive" class="form-check-input" id="IsActive" checked />
+                                <label class="form-check-label" for="IsActive">Kích hoạt</label>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-on-surface mb-2">Trạng thái</label>
@@ -103,41 +111,55 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-4 pt-6">
-                <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all">
-                    <span class="material-symbols-outlined inline mr-2">save</span>Tạo chiến dịch
+                    <div class="d-flex gap-2 pt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Tạo chiến dịch
                 </button>
-                <a href="@Url.Action("Index")" class="px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all">
-                    Hủy
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Hủy
                 </a>
             </div>
         </form>
     </div>
+        </div>
+    </div>
 
-    <!-- Preview -->
-    <div>
-        <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
-            <h3 class="text-lg font-bold text-on-surface mb-4">Xem trước</h3>
+    <!-- Preview Sidebar -->
+    <div class="col-lg-4 col-xl-3">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-4">
+                    <i class="fas fa-eye me-2"></i>Xem trước
+                </h5>
 
-            <div class="space-y-4">
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Tên chiến dịch</small>
+                    <p id="previewName" class="mb-0 fw-bold">-</p>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Mức giảm</small>
+                    <p id="previewPromo" class="mb-0 fs-5 fw-bold text-primary">-</p>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <small class="text-muted fw-bold d-block mb-1">Thời gian chạy</small>
+                    <small id="previewTime" class="text-muted d-block">-</small>
+                </div>
+
+                <hr>
+
                 <div>
-                    <span class="font-medium text-zinc-600 text-sm">Tên chiến dịch</span>
-                    <p id="previewName" class="text-on-surface font-bold">-</p>
-                </div>
-
-                <div class="border-t border-surface-container pt-4">
-                    <span class="font-medium text-zinc-600 text-sm">Khuyến mãi</span>
-                    <p id="previewPromo" class="text-lg font-black text-primary">-</p>
-                </div>
-
-                <div class="border-t border-surface-container pt-4">
-                    <span class="font-medium text-zinc-600 text-sm">Thời gian</span>
-                    <p id="previewTime" class="text-sm text-on-surface">-</p>
-                </div>
-
-                <div class="border-t border-surface-container pt-4">
-                    <span class="font-medium text-zinc-600 text-sm">Trạng thái</span>
-                    <p id="previewStatus" class="text-sm font-bold text-amber-600">Sắp diễn ra</p>
+                    <small class="text-muted fw-bold d-block mb-1">Trạng thái</small>
+                    <p id="previewStatus" class="mb-0">
+                        <span class="badge bg-warning rounded-pill text-dark">
+                            <i class="fas fa-clock me-1"></i>Sắp diễn ra
+                        </span>
+                    </p>
                 </div>
             </div>
         </div>

@@ -1,0 +1,18 @@
+@* ✅ Fix #3: View cho CartSummaryViewComponent
+   Model: int (số lượng sản phẩm trong giỏ)
+   Render badge với số lượng thực tế từ Session (server-side) *@
+
+@model int
+
+@{
+    // Ẩn badge nếu giỏ trống (UX tốt hơn là hiển thị số 0)
+    var soLuong     = Model;
+    var hienBadge   = soLuong > 0;
+    var hienThi     = soLuong > 99 ? "99+" : soLuong.ToString();
+}
+
+<span id="cartBadge"
+      class="hdk-cart-badge @(hienBadge ? "" : "d-none")"
+      data-count="@soLuong">
+    @hienThi
+</span>

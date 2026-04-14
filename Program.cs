@@ -1,5 +1,8 @@
-﻿using HDKTech.Areas.Admin.Repositories;
-using HDKTech.Areas.Identity.Data;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using HDKTech.Models;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Models.Momo;
@@ -8,9 +11,10 @@ using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 using HDKTech.Services.Momo;
 using HDKTech.Services.Vnpay;
+using HDKTech.Areas.Admin.Repositories;
+using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using HDKTech.ChucNangPhanQuyen;
 
 namespace HDKTech
 {
@@ -25,18 +29,26 @@ namespace HDKTech
             builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
 
             builder.Services
-                .AddIdentity<AppUser, IdentityRole>(options =>
-                {
-                    options.SignIn.RequireConfirmedAccount = false;
-                    options.Password.RequireDigit = false;
-                    options.Password.RequiredLength = 4;
-                    options.Password.RequireNonAlphanumeric = false;
-                    options.Password.RequireUppercase = false;
-                    options.Password.RequireLowercase = false;
-                })
-                .AddEntityFrameworkStores<HDKTechContext>()
-                .AddDefaultUI()
-                .AddDefaultTokenProviders();
+                 .AddIdentity<AppUser, IdentityRole>(options =>
+                 {
+                     // ── Password Policy ───────────────────────────────────────
+                     options.SignIn.RequireConfirmedAccount = false;
+                     options.Password.RequireDigit           = false;
+                     options.Password.RequiredLength         = 4;
+                     options.Password.RequireNonAlphanumeric = false;
+                     options.Password.RequireUppercase       = false;
+                     options.Password.RequireLowercase       = false;
+
+                     // ── Giai đoạn 4: Brute-force Protection — Account Lockout ─
+                     // Khoá tài khoản 15 phút sau 5 lần nhập sai liên tiếp.
+                     // LockoutEnabled mặc định = true cho mọi user mới đăng ký.
+                     options.Lockout.AllowedForNewUsers      = true;
+                     options.Lockout.MaxFailedAccessAttempts = 5;
+                     options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+                 })
+                 .AddEntityFrameworkStores<HDKTechContext>()
+                 .AddDefaultUI()
+                 .AddDefaultTokenProviders();
 
             // ✅ Sửa cookie Identity để hoạt động với VNPay callback
             builder.Services.ConfigureApplicationCookie(options =>
@@ -50,10 +62,18 @@ namespace HDKTech
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<ProductRepository>();
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<CategoryRepository>();
+            builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+            builder.Services.AddScoped<BrandRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             // Register Admin Repositories
+            // ✅ Fix #4: Đăng ký đúng namespace IAdminProductRepository mà Areas/Admin/Controllers/ProductController sử dụng
+            // ProductController inject: HDKTech.Areas.Admin.Repositories.IAdminProductRepository
+            // => Phải đăng ký interface đúng namespace, map tới implementation tương ứng
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository, HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
+            // Giữ lại registration cũ cho các nơi khác trong project dùng namespace Repositories.Interfaces
             builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository, HDKTech.Repositories.AdminProductRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerClickEventRepository>();
@@ -61,7 +81,36 @@ namespace HDKTech
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.ISystemLogRepository, HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
             builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
-            // ✅ Sửa Session cookie để hoạt động với VNPay callback
+            // Register Admin Services
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+            // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────
+            builder.Services.AddScoped<IInventoryService, InventoryService>();
+
+            // ── Giai đoạn 3: Smart Reporting ─────────────────────────────────
+            builder.Services.AddScoped<IReportService, ReportService>();
+
+            // ── Sprint 1: Policy-based Authorization — PermissionHandler ────────
+            // Handler mới đọc từ AspNetRoleClaims thay vì bảng custom RolePermissions.
+            // RoleManager<IdentityRole> đã được đăng ký sẵn bởi AddIdentity() ở trên.
+            builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+            // ── Sprint 1: Authorization Policies ─────────────────────────────────
+            // Tự động tạo policy cho mọi permission trong AllSystemPermissions.
+            // Format policy name: "Module.Action" (vd: "Inventory.Update")
+            // Dùng trên controller: [Authorize(Policy = "Inventory.Update")]
+            builder.Services.AddAuthorization(options =>
+            {
+                foreach (var perm in HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions)
+                {
+                    var parts = perm.Split('.');
+                    if (parts.Length == 2)
+                        options.AddPolicy(perm,
+                            p => p.AddRequirements(new PermissionRequirement(parts[0], parts[1])));
+                }
+            });
+
+            // Register Cart Service (Session) - 7 days
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromDays(7);
@@ -74,6 +123,15 @@ namespace HDKTech
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICartService, SessionCartService>();
 
+            // ── Giai đoạn 2: Observability — IMemoryCache cho Dashboard ─────
+            // Cache mặc định dùng bộ nhớ process — phù hợp single-server deployment
+            builder.Services.AddMemoryCache(options =>
+            {
+                options.SizeLimit            = null;  // không giới hạn số entry
+                options.CompactionPercentage = 0.25;  // dọn 25% khi đầy
+            });
+
+            // Add services to the container.
             builder.Services.AddControllersWithViews();
 
             // Connect VNPay API
@@ -95,10 +153,7 @@ namespace HDKTech
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<HDKTechContext>();
-                await context.Database.MigrateAsync();
-                await DataSeed.KhoiTaoDuLieuMacDinh(scope.ServiceProvider);
-                await DataSeedProductsOptimized.SeedProducts(scope.ServiceProvider);
-                await BannerSeeder.SeedBannersAsync(context);
+                await HDKTech.Data.DbInitializer.InitializeAsync(scope.ServiceProvider, context);
             }
 
             if (!app.Environment.IsDevelopment())
@@ -122,6 +177,9 @@ namespace HDKTech
             app.UseAuthentication();
             app.UseAuthorization();
 
+            // 1. Route cho các Area (Admin,...)
+            // TUYỆT ĐỐI KHÔNG để {controller=Product} ở đây. 
+            // Hãy để trống controller để nó không tự động gán Product vào ImageUrl khi bạn đăng nhập.
             app.MapControllerRoute(
                 name: "MyAreas",
                 pattern: "{area:exists}/{controller}/{action=Index}/{id?}");

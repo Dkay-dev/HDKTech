@@ -1,14 +1,19 @@
 ﻿using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
+using HDKTech.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Repositories
 {
     public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
-        public OrderRepository(HDKTechContext context) : base(context)
+        // ── Giai đoạn 1: Inventory Sync — inject IInventoryService ──────────
+        private readonly IInventoryService _inventoryService;
+
+        public OrderRepository(HDKTechContext context, IInventoryService inventoryService) : base(context)
         {
+            _inventoryService = inventoryService;
         }
 
         public async Task<Order> CreateOrderAsync(

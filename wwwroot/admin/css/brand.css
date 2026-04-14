@@ -1,0 +1,381 @@
+/* ========== HDKTech BRAND MANAGEMENT - LUXURY STYLE THEME ========== */
+/* Color Palette: Gold (#c9a84c), Black (#1a1a1a), Red (#bc000c) */
+
+/* ========== PAGE HEADER ========== */
+.hdk-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+.hdk-page-header h1 {
+    font-size: 1.875rem;
+    font-weight: 900;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.25rem;
+}
+.hdk-page-header p {
+    font-size: 0.875rem;
+    color: #666666;
+    margin: 0;
+}
+
+/* ========== CARD & FORM STYLING ========== */
+.card {
+    border: none;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
+}
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+/* ========== CARD HEADER - NEW WHITE GOLD STYLE ========== */
+.card-header {
+    background: #ffffff !important; /* Chuyển sang trắng */
+    color: #1a1a1a !important; /* Chữ tiêu đề màu đen sâu */
+    border-bottom: 1px solid #f0f0f0 !important; /* Viền mảnh sang trọng */
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+    /* Điểm nhấn cho Icon hoặc Badge trong Header */
+    .card-header i, .card-header b {
+        color: #c9a84c !important; /* Vàng Gold làm điểm nhấn */
+    }
+
+/* ========== FORM CONTROLS - LUXURY FOCUS STATES ========== */
+.form-label {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+.form-label .text-danger {
+    color: #bc000c;
+    margin-left: 2px;
+}
+
+/* Input fields - Border on focus */
+.form-control,
+.form-select,
+textarea.form-control {
+    border: 1.5px solid #dddddd;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+.form-control:focus,
+.form-select:focus,
+textarea.form-control:focus {
+    border-color: #bc000c;
+    box-shadow: 0 0 0 3px rgba(188, 0, 12, 0.1);
+    outline: none;
+}
+.form-control::placeholder,
+textarea.form-control::placeholder {
+    color: #999999;
+    font-style: italic;
+}
+
+/* ========== PREVIEW CARD ========== */
+.hdk-preview-container {
+    position: sticky;
+    top: 1rem;
+}
+.hdk-preview-card {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border: 1px solid #f0f0f0;
+}
+.hdk-preview-card-header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    color: #c9a84c;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.hdk-preview-info {
+    padding: 1rem;
+    background: #ffffff;
+}
+.hdk-preview-info-row {
+    margin-bottom: 0.75rem;
+}
+.hdk-preview-info-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #999999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+.hdk-preview-info-value {
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    word-break: break-word;
+}
+
+/* ========== BUTTONS - LUXURY THEME ========== */
+.btn-save,
+.btn-submit {
+    background-color: #bc000c;
+    border-color: #bc000c;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.btn-save:hover,
+.btn-submit:hover {
+    background-color: #9a000a;
+    border-color: #9a000a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(188, 0, 12, 0.3);
+    color: #ffffff;
+}
+.btn-save:active,
+.btn-submit:active {
+    transform: translateY(0);
+}
+
+.btn-outline-secondary {
+    border: 1.5px solid #cccccc;
+    color: #1a1a1a;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-outline-secondary:hover {
+    background-color: #f5f5f5;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+}
+
+.btn-outline-danger,
+.btn-delete {
+    border: 1.5px solid #bc000c;
+    color: #bc000c;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-outline-danger:hover,
+.btn-delete:hover {
+    background-color: #bc000c;
+    border-color: #bc000c;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(188, 0, 12, 0.3);
+}
+
+/* ========== TABLE - BRAND LIST ========== */
+.table-responsive {
+    border-radius: 0 0 12px 12px;
+}
+.table thead th {
+    background: #f8f8f8;
+    color: #1a1a1a;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    border: none;
+    padding: 1rem;
+}
+.table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+.table tbody tr:hover {
+    background-color: #fafafa;
+}
+.table tbody td {
+    padding: 1rem;
+    color: #1a1a1a;
+    vertical-align: middle;
+}
+
+/* Status Badge */
+.badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+.badge-success {
+    background-color: #28a745;
+    color: #ffffff;
+}
+.badge-warning {
+    background-color: #ffc107;
+    color: #1a1a1a;
+}
+.badge-danger {
+    background-color: #bc000c;
+    color: #ffffff;
+}
+.badge-info {
+    background-color: #17a2b8;
+    color: #ffffff;
+}
+.badge-primary {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+/* Brand Badge */
+.brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #c9a84c 0%, #e0c78f 100%);
+    color: #1a1a1a;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* ========== STATS CARDS ========== */
+.brand-card {
+    background: #ffffff;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    padding: 1.5rem;
+    text-align: center;
+}
+.brand-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    border-color: #c9a84c;
+}
+.brand-card .fw-bold {
+    font-size: 1.75rem;
+    font-weight: 900 !important;
+    margin-bottom: 0.5rem;
+    color: #bc000c;
+}
+.brand-card small {
+    color: #666666;
+    font-weight: 500;
+}
+
+/* ========== VALIDATION FEEDBACK ========== */
+.valid-feedback,
+.invalid-feedback {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+}
+.invalid-feedback {
+    color: #bc000c;
+}
+.valid-feedback {
+    color: #28a745;
+}
+
+/* ========== FORM TEXT & HELP ========== */
+.form-text {
+    font-size: 0.85rem;
+    color: #666666;
+    margin-top: 0.25rem;
+}
+
+.input-group-text {
+    border: 1.5px solid #dddddd;
+    background: #f8f8f8;
+    color: #666666;
+}
+
+/* ========== INFO PANEL ========== */
+.info-panel {
+    background: #f8f8f8;
+    border-left: 4px solid #c9a84c;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+.info-panel h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.info-panel p {
+    font-size: 0.9rem;
+    color: #666666;
+    margin-bottom: 0.5rem;
+}
+.info-panel strong {
+    color: #1a1a1a;
+}
+
+/* ========== SEARCH SECTION ========== */
+.search-box {
+    border: 1.5px solid #dddddd;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+.search-box:focus {
+    border-color: #bc000c;
+    box-shadow: 0 0 0 3px rgba(188, 0, 12, 0.1);
+    outline: none;
+}
+
+/* ========== RESPONSIVE ADJUSTMENTS ========== */
+@@media (max-width: 991.98px) {
+    .hdk-preview-container {
+        position: relative;
+        top: 0;
+        margin-top: 2rem;
+    }
+    
+    .hdk-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .table thead th,
+    .table tbody td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* ========== ANIMATION ========== */
+@@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: slideDown 0.3s ease-out;
+}

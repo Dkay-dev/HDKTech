@@ -1,9 +1,10 @@
 ﻿using HDKTech.Areas.Admin.Models;
 using HDKTech.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Data
 {
-    public static class BannerSeeder
+    public static class BannerSeed
     {
         public static async Task SeedBannersAsync(HDKTechContext context)
         {
@@ -13,7 +14,11 @@ namespace HDKTech.Data
                 return;
             }
 
-            var banners = new List<Banner>
+            using (var transaction = await context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var banners = new List<Banner>
             {
                 new Banner
                 {
@@ -110,8 +115,16 @@ namespace HDKTech.Data
 
             await context.Banners.AddRangeAsync(banners);
             await context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
         }
     }
 }
-
 
