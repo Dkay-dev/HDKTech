@@ -40,6 +40,7 @@ public class HDKTechContext : IdentityDbContext<AppUser>
     public DbSet<Promotion> Promotions { get; set; }
 
     public DbSet<VNPAYModel> VNPAYModels { get; set; }
+    public DbSet<ShippingModel> Shippings { get; set; }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

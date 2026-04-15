@@ -1,4 +1,4 @@
-﻿@model HDKTech.Models.HomeIndexViewModel
+﻿﻿@model HDKTech.Models.HomeIndexViewModel
 @using HDKTech.Utils
 @{
     ViewData["Title"] = "HDKTech - Laptop, Linh kiện máy tính chính hãng";
@@ -235,7 +235,7 @@
                         }
                     </div>
 
-                    <div class="products-grid">
+                    <div class="pc-grid">
                         @foreach (var p in catProducts)
                         {
                             @await Html.PartialAsync("_ProductCard", p)

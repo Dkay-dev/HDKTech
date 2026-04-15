@@ -4,6 +4,7 @@ using HDKTech.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HDKTech.Migrations
 {
     [DbContext(typeof(HDKTechContext))]
-    partial class HDKTechContextModelSnapshot : ModelSnapshot
+    [Migration("20260414003347_UpdateDatabase")]
+    partial class UpdateDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,6 +52,7 @@ namespace HDKTech.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
+                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -606,15 +610,6 @@ namespace HDKTech.Migrations
 
                     b.Property<string>("DiscountNote")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("FlashSaleEndTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("FlashSalePrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsFlashSale")
-                        .HasColumnType("bit");
 
                     b.Property<decimal?>("ListPrice")
                         .HasColumnType("decimal(18,2)");
