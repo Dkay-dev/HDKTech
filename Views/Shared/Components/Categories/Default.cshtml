@@ -1,32 +1,65 @@
-﻿@model IEnumerable<HDKTech.Models.Category>
+﻿@* ═══════════════════════════════════════════════════════════════════
+   Views/Shared/Components/Categories/Default.cshtml
+   ─────────────────────────────────────────────────────────────────
+   FIX 3: Cấu trúc link sidebar đúng chuẩn.
+
+   Quy tắc điều hướng:
+   • Click vào DANH MỤC CHA  → /Category/Index/{id}
+     (CategoryController xử lý, lấy tất cả sản phẩm kể cả danh mục con)
+   • Click vào DANH MỤC CON  → /Product/Filter?categoryId={id}
+     (ProductController.Filter xử lý, dùng FilterProductsAsync đệ quy)
+   • Click vào DANH MỤC TẦNG 3 → /Product/Filter?categoryId={id}
+     (Tương tự, categoryId chính là ID cụ thể của tầng 3)
+
+   Lý do không dùng asp-route-id cho tất cả:
+   • CategoryController.Index nhận `int id` và trả về view riêng với
+     sidebar/breadcrumb đặc thù cho danh mục.
+   • ProductController.Filter nhận `int? categoryId` và xử lý lọc
+     đệ quy, thích hợp cho danh mục con/tầng 3.
+   ═══════════════════════════════════════════════════════════════════ *@
+@model IEnumerable<HDKTech.Models.Category>
 
 <div class="list-group list-group-flush sidebar-mega-menu">
-    @* BƯỚC 1: LỌC CÁC DANH MỤC CHA (TẦNG 1) *@
+
+    @* ── TẦNG 1: Danh mục cha (root categories) ── *@
     @foreach (var parent in Model.Where(m => m.ParentCategoryId == null))
     {
         <div class="menu-item-container">
-            @* CLICK VÀO ĐÂY: Dẫn đến trang lọc theo Danh mục Cha *@
-            <a asp-area="" asp-controller="Category" asp-action="Index" asp-route-id="@parent.Id"
+
+            @* Click vào danh mục cha → CategoryController.Index
+               (hiển thị toàn bộ sản phẩm của danh mục + các con) *@
+            <a asp-area=""
+                   asp-controller="Category"
+                   asp-action="Index"
+                   asp-route-id="@parent.Id"
                    class="list-group-item list-group-item-action border-0 py-3 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-cpu me-2"></i> @parent.Name</span>
+                <span><i class="bi bi-cpu me-2"></i>@parent.Name</span>
                 <i class="bi bi-chevron-right small"></i>
             </a>
 
-            @* DI CHUỘT VÀO: Hiện bảng Mega Menu *@
+            @* Di chuột → Mega Menu *@
             <div class="mega-menu-panel shadow-lg">
                 <div class="row g-4">
-                    @* BƯỚC 2: LỌC CÁC NHÓM CON (TẦNG 2 - Tiêu đề đỏ) *@
+
+                    @* ── TẦNG 2: Nhóm con (group headers — màu đỏ) ── *@
                     @foreach (var group in Model.Where(m => m.ParentCategoryId == parent.Id))
                     {
                         <div class="col-md-4">
-                            <h6 class="text-danger fw-bold mb-3 text-uppercase">@group.Name</h6>
-                            
+                            @* Click vào tiêu đề nhóm → Filter với categoryId của nhóm
+                               (bao gồm tất cả sản phẩm thuộc nhóm và các tầng dưới) *@
+                            <a href="/Product/Filter?categoryId=@group.Id"
+                                   class="text-danger fw-bold mb-3 text-uppercase d-block text-decoration-none">
+                                @group.Name
+                            </a>
+
                             <ul class="list-unstyled">
-                                @* BƯỚC 3: LỌC CHI TIẾT (TẦNG 3 - Link nhỏ) *@
+                                @* ── TẦNG 3: Danh mục lá (links nhỏ) ── *@
                                 @foreach (var child in Model.Where(m => m.ParentCategoryId == group.Id))
                                 {
+                                    @* Click vào tầng 3 → Filter với categoryId cụ thể của tầng 3
+                                       Ví dụ: Laptop Gaming, CPU Intel, VGA NVIDIA v.v. *@
                                     <li class="mb-2">
-                                        <a asp-area="" asp-controller="Category" asp-action="Index" asp-route-id="@child.Id"
+                                        <a href="/Product/Filter?categoryId=@child.Id"
                                                class="text-decoration-none text-dark small-link">
                                             @child.Name
                                         </a>
@@ -35,9 +68,22 @@
                             </ul>
                         </div>
                     }
+
+                </div>
+
+                @* Footer của Mega Menu: xem tất cả danh mục cha *@
+                <div class="mega-menu-footer text-center border-top pt-2 mt-2">
+                    <a asp-area=""
+                           asp-controller="Category"
+                           asp-action="Index"
+                           asp-route-id="@parent.Id"
+                           class="text-danger small fw-semibold text-decoration-none">
+                        Xem tất cả @parent.Name
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             </div>
+
         </div>
     }
 </div>
-
