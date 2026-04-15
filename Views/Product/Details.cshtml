@@ -1,4 +1,4 @@
-﻿@model HDKTech.Models.Product
+@model HDKTech.Models.Product
 @using HDKTech.Utils
 @{
     ViewData["Title"] = Model.Name + " - HDKTech";
@@ -215,7 +215,7 @@
                                 @for (int i = 5; i >= 1; i--)
                                 {
                                     var count = Model.Reviews?.Count(x => x.Rating == i) ?? 0;
-                                    var percent = (Model.Reviews?.Count() ?? 0) > 0 ? 
+                                    var percent = (Model.Reviews?.Count() ?? 0) > 0 ?
                                         (int)((count * 100.0) / (Model.Reviews?.Count() ?? 1)) : 0;
 
                                     <div class="rating-row">
@@ -231,13 +231,52 @@
                             </div>
                         </div>
 
+                        <!-- REVIEW FORM -->
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <div id="reviewFormContainer" class="review-form-container">
+                                <h5 class="mb-3"><i class="bi bi-pencil-square"></i> Viết đánh giá của bạn</h5>
+                                <form id="reviewForm">
+                                    <input type="hidden" id="productId" value="@Model.Id" />
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Đánh giá của bạn:</label>
+                                        <div class="star-rating-input" id="starRating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <span class="star" data-value="@i" onclick="setRating(@i)">☆</span>
+                                            }
+                                            <input type="hidden" id="ratingValue" name="rating" value="0" />
+                                        </div>
+                                        <span id="ratingText" class="ms-2 text-muted"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="reviewContent" class="form-label fw-bold">Nội dung đánh giá:</label>
+                                        <textarea id="reviewContent" name="content" class="form-control" rows="4" 
+                                                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này (ít nhất 10 ký tự)..." 
+                                                  minlength="10" maxlength="500"></textarea>
+                                        <div class="form-text">Tối thiểu 10 ký tự, tối đa 500 ký tự</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" id="submitReviewBtn">
+                                        <i class="bi bi-send"></i> Gửi đánh giá
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="review-login-prompt">
+                                <i class="bi bi-lock"></i>
+                                <p>Vui lòng <a href="/Identity/Account/Login?returnUrl=/Product/Details/@Model.Id">đăng nhập</a> để đánh giá sản phẩm này.</p>
+                            </div>
+                        }
+
                         <!-- REVIEWS LIST -->
                         @if (Model.Reviews?.Any() == true)
                         {
-                            <div class="reviews-list">
+                            <div class="reviews-list mt-4" id="reviewsList">
                                 @foreach (var review in Model.Reviews.OrderByDescending(x => x.ReviewDate).Take(5))
                                 {
-                                    <div class="review-item">
+                                    <div class="review-item" data-review-id="@review.Id">
                                         <div class="review-header">
                                             <div>
                                                 <div class="review-author">@(review.User?.FullName ?? "Ẩn danh")</div>
@@ -251,17 +290,19 @@
                                             </div>
                                         </div>
 
-                                        <div class="review-title">@(review.Content?.Split('.').FirstOrDefault() ?? "Nhận xét")</div>
                                         <div class="review-content">@review.Content</div>
 
-                                        <div class="review-actions">
-                                            <button class="review-action-btn" type="button" onclick="toggleLike(this)">
-                                                👍 <span>0</span>
-                                            </button>
-                                            <button class="review-action-btn" type="button" onclick="toggleDislike(this)">
-                                                👎 <span>0</span>
-                                            </button>
-                                        </div>
+                                        @if (User.Identity?.IsAuthenticated == true && review.UserId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                                        {
+                                            <div class="review-actions">
+                                                <button class="review-action-btn btn-edit" onclick="editReview(@review.Id, @review.Rating, '@Html.Raw(review.Content?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
+                                                    <i class="bi bi-pencil"></i> Sửa
+                                                </button>
+                                                <button class="review-action-btn btn-delete" onclick="deleteReview(@review.Id)">
+                                                    <i class="bi bi-trash"></i> Xóa
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                             </div>
@@ -273,7 +314,7 @@
                         }
                         else
                         {
-                            <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">
+                            <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;" id="noReviewsMessage">
                                 <i class="bi bi-chat-left" style="font-size: 2.5rem; color: #ccc; display: block; margin-bottom: 15px;"></i>
                                 <p style="color: #999; margin: 0;">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
                             </div>
@@ -332,7 +373,240 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.2.0/js/glightbox.min.js"></script>
 <script>
     const lightbox = GLightbox({ selector: '.glightbox' });
+
+    let selectedRating = 0;
+    const ratingLabels = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Tuyệt vời'];
+
+    function setRating(rating) {
+        selectedRating = rating;
+        document.getElementById('ratingValue').value = rating;
+        document.getElementById('ratingText').textContent = ratingLabels[rating];
+
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+            star.textContent = index < rating ? '★' : '☆';
+            star.style.color = index < rating ? '#f59e0b' : '#ccc';
+        });
+    }
+
+    document.getElementById('reviewForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const productId = document.getElementById('productId').value;
+        const rating = parseInt(document.getElementById('ratingValue').value);
+        const content = document.getElementById('reviewContent').value;
+        const submitBtn = document.getElementById('submitReviewBtn');
+
+        if (rating === 0) {
+            alert('Vui lòng chọn số sao đánh giá!');
+            return;
+        }
+
+        if (content.length < 10) {
+            alert('Nội dung đánh giá phải có ít nhất 10 ký tự!');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi...';
+
+        try {
+            const response = await fetch('/Review/Add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `productId=${productId}&rating=${rating}&content=${encodeURIComponent(content)}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('reviewContent').value = '';
+                document.getElementById('ratingValue').value = '0';
+                document.getElementById('ratingText').textContent = '';
+                setRating(0);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> Gửi đánh giá';
+        }
+    });
+
+    async function deleteReview(reviewId) {
+        if (!confirm('Bạn có chắc muốn xóa đánh giá này?')) return;
+
+        try {
+            const response = await fetch('/Review/Delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `reviewId=${reviewId}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+        }
+    }
+
+    function editReview(reviewId, rating, content) {
+        selectedRating = rating;
+        document.getElementById('ratingValue').value = rating;
+        document.getElementById('ratingText').textContent = ratingLabels[rating];
+
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+            star.textContent = index < rating ? '★' : '☆';
+            star.style.color = index < rating ? '#f59e0b' : '#ccc';
+        });
+
+        document.getElementById('reviewContent').value = content;
+        document.getElementById('reviewForm').dataset.editMode = 'true';
+        document.getElementById('reviewForm').dataset.editReviewId = reviewId;
+        document.getElementById('submitReviewBtn').innerHTML = '<i class="bi bi-check"></i> Cập nhật đánh giá';
+
+        document.getElementById('reviewForm').onsubmit = async function(e) {
+            e.preventDefault();
+
+            const productId = document.getElementById('productId').value;
+            const newRating = parseInt(document.getElementById('ratingValue').value);
+            const newContent = document.getElementById('reviewContent').value;
+            const submitBtn = document.getElementById('submitReviewBtn');
+
+            if (newRating === 0) {
+                alert('Vui lòng chọn số sao đánh giá!');
+                return;
+            }
+
+            if (newContent.length < 10) {
+                alert('Nội dung đánh giá phải có ít nhất 10 ký tự!');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang cập nhật...';
+
+            try {
+                const response = await fetch('/Review/Update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reviewId=${reviewId}&rating=${newRating}&content=${encodeURIComponent(newContent)}`
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra. Vui lòng thử lại!');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        };
+
+        document.getElementById('reviewFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
 </script>
+<style>
+    .review-form-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .star-rating-input {
+        font-size: 2rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .star-rating-input .star {
+        transition: color 0.2s, transform 0.1s;
+        display: inline-block;
+        color: #ccc;
+    }
+
+    .star-rating-input .star:hover {
+        transform: scale(1.2);
+    }
+
+    .review-login-prompt {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .review-login-prompt i {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+
+    .review-login-prompt p {
+        margin: 0;
+        color: #666;
+    }
+
+    .review-login-prompt a {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    .review-item .review-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .review-action-btn.btn-edit,
+    .review-action-btn.btn-delete {
+        font-size: 0.85rem;
+        padding: 4px 12px;
+        border: 1px solid #ddd;
+        background: #f8f9fa;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .review-action-btn.btn-edit:hover {
+        background: #e7f3ff;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .review-action-btn.btn-delete:hover {
+        background: #fff5f5;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+</style>
 <script src="~/js/pages/product-details.js"></script>
 
 

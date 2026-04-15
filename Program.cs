@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,6 +67,10 @@ namespace HDKTech
             builder.Services.AddScoped<IBrandRepository, BrandRepository>();
             builder.Services.AddScoped<BrandRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+            // Register Review Services
+            builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+            builder.Services.AddScoped<IReviewService, ReviewService>();
 
             // Register Admin Repositories
             // ✅ Fix #4: Đăng ký đúng namespace IAdminProductRepository mà Areas/Admin/Controllers/ProductController sử dụng
