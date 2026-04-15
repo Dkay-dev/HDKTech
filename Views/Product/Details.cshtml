@@ -337,35 +337,38 @@
             </div>
         </div>
 
-        <div class="related-products-section">
-            <h4 class="related-section-title"><i class="bi bi-fire"></i> SẢN PHẨM LIÊN QUAN</h4>
-            <div class="related-products-grid">
-                @if (ViewBag.RelatedProducts != null)
-                {
-                    @foreach (var item in (List<HDKTech.Models.Product>)ViewBag.RelatedProducts)
-                    {
-                        var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
-                                       ?? item.Images?.FirstOrDefault()?.ImageUrl
-                                       ?? "no-image.png";
-                        var relatedImagePath = "/images/products/" + fileName;
-
-                        <div class="related-card-wrapper">
-                            <div class="related-card">
-                                <div class="related-image-container">
-                                    <a href="/Product/Details/@item.Id" class="related-image-link">
-                                        <img src="@relatedImagePath" class="related-img" alt="@item.Name" onerror="this.onerror=null; this.src='/images/products/no-image.png';">
-                                    </a>
-                                </div>
-                                <div class="related-card-body">
-                                    <div class="related-title">@item.Name</div>
-                                    <div class="related-price">@item.Price.ToString("N0")₫</div>
-                                    <a href="/Product/Details/@item.Id" class="btn-view">Xem ngay</a>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                }
+        <div class="related-products-section mt-5">
+            @* Tiêu đề đồng bộ phong cách Gaming HDK *@
+            <div class="fs-section-header mb-4">
+                <div class="fs-section-title">
+                    <i class="bi bi-fire text-danger"></i>
+                    <span>SẢN PHẨM LIÊN QUAN</span>
+                </div>
             </div>
+
+            @* Kiểm tra và Ép kiểu dữ liệu ViewBag *@
+            @{
+                var relatedItems = ViewBag.RelatedProducts as List<HDKTech.Models.Product>;
+            }
+
+            @if (relatedItems != null && relatedItems.Any())
+            {
+                <div class="pc-grid">
+                    @foreach (var item in relatedItems)
+                    {
+                        @* Sử dụng lại Partial _ProductCard để đồng bộ 100% giao diện *@
+                        @await Html.PartialAsync("_ProductCard", item)
+                    }
+                </div>
+            }
+            else
+            {
+                @* Thông báo nếu không tìm thấy máy nào cùng danh mục *@
+                <div class="alert alert-light border rounded-3 py-4 text-center">
+                    <i class="bi bi-info-circle fs-2 d-block mb-2 text-muted"></i>
+                    <p class="text-muted mb-0">HDKTech đang cập nhật thêm các sản phẩm cùng loại.</p>
+                </div>
+            }
         </div>
     </div>
 </div>
