@@ -4,6 +4,7 @@ using HDKTech.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HDKTech.Migrations
 {
     [DbContext(typeof(HDKTechContext))]
-    partial class HDKTechContextModelSnapshot : ModelSnapshot
+    [Migration("20260414163510_AddFlashSaleFields")]
+    partial class AddFlashSaleFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -765,34 +768,6 @@ namespace HDKTech.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("RolePermissions");
-                });
-
-            modelBuilder.Entity("HDKTech.Models.ShippingModel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("District")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Ward")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Shippings");
                 });
 
             modelBuilder.Entity("HDKTech.Models.SystemLog", b =>

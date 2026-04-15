@@ -4,6 +4,7 @@ namespace HDKTech.Repositories.Interfaces
 {
     public interface IProductRepository
     {
+        Task<List<Product>> GetFlashSaleProductsAsync(int limit = 5);
         Task<List<Product>> GetAllWithImagesAsync();
         Task<Product?> GetProductWithDetailsAsync(int id);
         Task<List<Product>> GetRelatedProductsAsync(int categoryId, int currentProductId, int limit);

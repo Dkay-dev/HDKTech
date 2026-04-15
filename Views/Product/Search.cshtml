@@ -123,112 +123,11 @@
         </form>
     </div>
 
-    <!-- Products Grid -->
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-        @if (Model == null || Model.Count == 0)
+    <div class="pc-grid">
+        @foreach (var item in Model)
         {
-            <div class="col-12">
-                <div class="alert alert-info text-center py-5">
-                    <i class="bi bi-search fs-1 d-block mb-3"></i>
-                    <h5>Không tìm thấy sản phẩm</h5>
-                    <p class="mb-0">Vui lòng thử từ khóa khác hoặc <a asp-controller="Home" asp-action="Index" class="fw-bold">quay lại trang chủ</a></p>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="col-12 mb-3">
-                <p class="text-muted mb-0">
-                    Tìm kiếm cho: <strong class="text-dark">@ViewBag.Keyword</strong>
-                    <span class="badge bg-secondary">@ViewBag.ResultCount kết quả</span>
-                </p>
-            </div>
-
-            @foreach (var product in Model)
-            {
-                <div class="col">
-                    <div class="card h-100 border-0 shadow-sm product-card p-2">
-                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="text-decoration-none">
-                            <div class="position-relative overflow-hidden rounded-3 text-center pt-3" style="height: 200px; background: #fff;">
-                                @if (product.Images != null && product.Images.Any())
-                                {
-                                    var fileName = product.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
-                                                   ?? product.Images?.FirstOrDefault()?.ImageUrl
-                                                   ?? "no-image.png";
-                                    var fullPath = "/images/products/" + fileName;
-
-                                    <img src="@fullPath"
-                                         class="card-img-top img-fluid product-img h-100"
-                                         alt="@product.Name"
-                                         style="object-fit: contain;"
-                                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=500&q=60';">
-                                }
-                                else
-                                {
-                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
-                                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
-                                    </div>
-                                }
-
-                                @if (product.DiscountPercent > 0)
-                                {
-                                    <span class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1 shadow-sm">
-                                        -@product.DiscountPercent%
-                                    </span>
-                                }
-                            </div>
-                        </a>
-
-                        <div class="card-body d-flex flex-column px-2 pb-2">
-                            <h6 class="card-title fw-bold text-dark text-truncate-2 mb-2">
-                                <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="text-decoration-none text-dark">
-                                    @product.Name
-                                </a>
-                            </h6>
-
-                            <p class="card-text small text-muted mb-2">
-                                @if (product.Brand != null)
-                                {
-                                    <span>@product.Brand.Name</span>
-                                }
-                            </p>
-
-                            <div class="mt-auto">
-                                <div class="price-box mb-2">
-                                    @if (product.ListPrice.HasValue && product.ListPrice > product.Price && product.ListPrice > 0)
-                                    {
-                                        <span class="text-decoration-line-through text-muted small me-1">
-                                            @product.ListPrice.Value.ToString("#,##0")₫
-                                        </span>
-                                    }
-
-                                    <div class="d-flex align-items-center">
-                                        <span class="fs-5 fw-bold text-danger me-2">@product.Price.ToString("#,##0")₫</span>
-
-                                        @if (product.DiscountPercent > 0)
-                                        {
-                                            <span class="badge border border-danger text-danger bg-white p-1" style="font-size: 0.75rem;">
-                                                -@product.DiscountPercent%
-                                            </span>
-                                        }
-                                    </div>
-                                </div>
-
-                                <div class="small mb-2">
-                                    <span class="text-warning">4.9 <i class="bi bi-star-fill"></i></span>
-                                    <span class="text-muted ms-1">(30 đánh giá)</span>
-                                </div>
-
-                                <button class="btn btn-outline-danger w-100 btn-sm fw-bold py-2 shadow-sm">
-                                    <i class="bi bi-cart3 me-1"></i> THÊM GIỎ HÀNG
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
+            @await Html.PartialAsync("_ProductCard", item, new ViewDataDictionary(ViewData) { { "ShowCompare", true } })
         }
     </div>
-</div>
 
 

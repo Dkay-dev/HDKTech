@@ -1,8 +1,3 @@
-@* ✅ Rewritten: Tailwind → Bootstrap 5 + Custom CSS Luxury
-   - Sửa lỗi nút đè lên nhau (duplicate asp-for="ImageUrl" cho cả Link và Image)
-   - Thêm @section Styles và @section Scripts
-   - Không còn class Tailwind nào *@
-
 @using HDKTech.Areas.Admin.Models
 @model Banner
 
@@ -15,202 +10,245 @@
     <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
-<!-- ========== PAGE HEADER ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
 <div class="hdk-page-header">
     <div>
-        <h1><i class="bi bi-image-fill text-danger me-2"></i>Tạo Banner Mới</h1>
-        <p>Thêm banner mới để hiển thị trên website HDKTech</p>
+        <h1><i class="bi bi-image-fill me-2" style="color:var(--gold)"></i>Tạo Banner Mới</h1>
+        <p>Thêm banner quảng cáo mới hiển thị trên website HDKTech</p>
     </div>
-    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+    <a href="@Url.Action("Index")" class="btn-banner-back">
         <i class="bi bi-arrow-left me-1"></i>Quay lại
     </a>
 </div>
 
-<!-- ========== MAIN FORM ========== -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN LAYOUT: 8 + 4 columns                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
 <div class="row g-4">
 
-    <!-- CỘT TRÁI: Form chính (chiếm 8/12 cột) -->
+    <!-- ─────────── CỘT TRÁI: Form ─────────── -->
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header">
-                <i class="bi bi-pencil-square me-2"></i>Thông tin Banner
-            </div>
-            <div class="card-body p-4">
+        <form method="post"
+              enctype="multipart/form-data"
+              id="bannerCreateForm"
+              novalidate
+              asp-action="Create"
+              asp-controller="Banner"
+              asp-area="Admin">
 
-                <form method="post" enctype="multipart/form-data" id="bannerCreateForm" novalidate>
-                    @Html.AntiForgeryToken()
+            @Html.AntiForgeryToken()
+
+            <!-- CARD 1: Thông tin cơ bản -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-info-circle me-2"></i>Thông tin cơ bản
+                </div>
+                <div class="banner-card-body">
 
                     <!-- Tên Banner -->
-                    <div class="mb-4">
-                        <label asp-for="Title" class="form-label">
-                            Tên Banner <span class="text-danger">*</span>
+                    <div class="banner-field">
+                        <label asp-for="Title" class="banner-label">
+                            Tên Banner <span class="req">*</span>
                         </label>
                         <input asp-for="Title"
-                               class="form-control"
-                               placeholder="VD: Laptop Gaming Series - Ưu đãi Hè 2026" />
-                        <span asp-validation-for="Title" class="text-danger small"></span>
-                    </div>
-
-                    <!-- Upload Ảnh Banner -->
-                    <div class="mb-4">
-                        <label class="form-label">Hình ảnh <span class="text-danger">*</span></label>
-
-                        <!-- Khu vực kéo-thả / click chọn -->
-                        <div class="hdk-img-placeholder mb-3" id="imageDropZone">
-                            <i class="bi bi-cloud-upload fs-1 text-gold"></i>
-                            <p class="fw-semibold mb-1">Kéo thả hoặc click để chọn ảnh</p>
-                            <p class="small text-muted mb-0">PNG, JPG, WebP · Tối đa 5MB · Khuyến nghị 1200×400px</p>
-                            <!-- File input ẩn -->
-                            <input type="file"
-                                   id="imageFile"
-                                   name="imageFile"
-                                   class="d-none"
-                                   accept="image/jpeg,image/png,image/webp" />
-                        </div>
-
-                        <!-- Hoặc nhập URL ảnh -->
-                        <div class="mb-2">
-                            <label class="form-label small text-muted fw-normal mb-1">Hoặc nhập URL hình ảnh:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="bi bi-link-45deg text-muted"></i>
-                                </span>
-                                <input asp-for="ImageUrl"
-                                       class="form-control"
-                                       placeholder="https://example.com/banner.jpg" />
-                            </div>
-                            <span asp-validation-for="ImageUrl" class="text-danger small"></span>
-                        </div>
-                    </div>
-
-                    <!-- ✅ Fix: Link URL riêng biệt (không dùng asp-for="ImageUrl" lần hai nữa)
-                         BUG CŨ: Có 2 trường đều bind vào ImageUrl gây đè giá trị nhau -->
-                    <div class="mb-4">
-                        <label asp-for="LinkUrl" class="form-label">
-                            Link khi click Banner
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light">
-                                <i class="bi bi-cursor text-muted"></i>
-                            </span>
-                            <input asp-for="LinkUrl"
-                                   class="form-control"
-                                   placeholder="/products/gaming-laptops hoặc https://..." />
-                        </div>
-                        <div class="form-text">Để trống nếu banner không có link.</div>
-                        <span asp-validation-for="LinkUrl" class="text-danger small"></span>
+                               class="banner-input"
+                               placeholder="Ví dụ: Flash Sale Cuối Tuần — Giảm đến 40%" />
+                        <span asp-validation-for="Title" class="banner-error"></span>
                     </div>
 
                     <!-- Mô tả -->
-                    <div class="mb-4">
-                        <label asp-for="Description" class="form-label">Mô tả</label>
+                    <div class="banner-field">
+                        <label asp-for="Description" class="banner-label">Mô tả ngắn</label>
                         <textarea asp-for="Description"
-                                  class="form-control"
-                                  rows="3"
-                                  placeholder="Mô tả ngắn về chiến dịch banner..."></textarea>
-                        <span asp-validation-for="Description" class="text-danger small"></span>
+                                  class="banner-input"
+                                  rows="2"
+                                  placeholder="Hiển thị dưới tiêu đề banner trên trang chủ..."></textarea>
+                        <span asp-validation-for="Description" class="banner-error"></span>
                     </div>
 
-                    <!-- Hàng 2 cột: Loại Banner + Thứ tự -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label asp-for="BannerType" class="form-label">Loại Banner</label>
-                            <select asp-for="BannerType" class="form-select">
-                                <option value="">-- Chọn loại banner --</option>
+                    <!-- Link URL — type="text" để NormalizeToRelativePath xử lý -->
+                    <div class="banner-field">
+                        <label asp-for="LinkUrl" class="banner-label">
+                            Link khi click Banner
+                            <span class="banner-hint-inline">
+                                (tự động chuyển thành đường dẫn tương đối)
+                            </span>
+                        </label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-link-45deg"></i></span>
+                            <input asp-for="LinkUrl"
+                                   type="text"
+                                   id="linkUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="/Category/Index/1  hoặc  https://..." />
+                        </div>
+                        <div class="banner-hint" id="linkPreview" style="display:none">
+                            → <span id="linkPreviewValue" class="text-success fw-semibold"></span>
+                        </div>
+                        <span asp-validation-for="LinkUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 2: Hình ảnh -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-image me-2"></i>Hình ảnh
+                </div>
+                <div class="banner-card-body">
+
+                    <!-- Dropzone -->
+                    <div class="banner-dropzone" id="imageDropZone">
+                        <div class="dropzone-inner">
+                            <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                            <p class="dropzone-title">Kéo thả hoặc click để chọn ảnh</p>
+                            <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 5 MB</p>
+                            <p class="dropzone-hint">Khuyến nghị: 1200×400 px cho Main Banner</p>
+                        </div>
+                        <input type="file"
+                               id="imageFile"
+                               name="imageFile"
+                               class="d-none"
+                               accept=".jpg,.jpeg,.png,.webp,.gif" />
+                    </div>
+
+                    <!-- Preview ảnh upload -->
+                    <div id="uploadPreviewWrap" class="upload-preview-wrap d-none">
+                        <img id="uploadPreviewImg" src="" alt="Preview" class="upload-preview-img" />
+                        <button type="button" class="upload-remove-btn" id="removeUpload" title="Xoá ảnh đã chọn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="banner-field-divider"><span>hoặc nhập URL</span></div>
+
+                    <!-- URL nhập tay -->
+                    <div class="banner-field">
+                        <label asp-for="ImageUrl" class="banner-label">URL hình ảnh</label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                            <input asp-for="ImageUrl"
+                                   id="imageUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="https://cdn.example.com/banner.jpg" />
+                        </div>
+                        <span asp-validation-for="ImageUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 3: Cài đặt hiển thị -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-sliders me-2"></i>Cài đặt hiển thị
+                </div>
+                <div class="banner-card-body">
+                    <div class="row g-3">
+
+                        <div class="col-sm-6">
+                            <label asp-for="BannerType" class="banner-label">
+                                Loại Banner <span class="req">*</span>
+                            </label>
+                            <select asp-for="BannerType" class="banner-select">
+                                <option value="">— Chọn vị trí —</option>
                                 <option value="Main">Trang Chủ (Main)</option>
                                 <option value="Side">Sidebar (Side)</option>
                                 <option value="Bottom">Footer (Bottom)</option>
                             </select>
-                            <span asp-validation-for="BannerType" class="text-danger small"></span>
+                            <span asp-validation-for="BannerType" class="banner-error"></span>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="DisplayOrder" class="form-label">Thứ tự hiển thị</label>
+
+                        <div class="col-sm-6">
+                            <label asp-for="DisplayOrder" class="banner-label">Thứ tự hiển thị</label>
                             <input asp-for="DisplayOrder"
                                    type="number"
-                                   class="form-control"
-                                   placeholder="0"
-                                   min="0" />
-                            <div class="form-text">Số nhỏ hơn hiển thị trước.</div>
+                                   min="0"
+                                   class="banner-input"
+                                   placeholder="0" />
+                            <span class="banner-hint">Số nhỏ hơn hiển thị trước.</span>
                         </div>
-                    </div>
 
-                    <!-- Kích hoạt -->
-                    <div class="mb-4">
-                        <div class="form-check form-switch">
-                            <input asp-for="IsActive"
-                                   class="form-check-input"
-                                   role="switch"
-                                   checked />
-                            <label asp-for="IsActive" class="form-check-label fw-semibold">
-                                Kích hoạt ngay
-                            </label>
+                        <div class="col-12">
+                            <div class="banner-toggle-row">
+                                <div>
+                                    <p class="banner-label mb-0">Trạng thái</p>
+                                    <span class="banner-hint">Bật để hiển thị ngay sau khi tạo</span>
+                                </div>
+                                <label class="banner-switch">
+                                    <input asp-for="IsActive" type="checkbox" checked />
+                                    <span class="banner-switch-track"></span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-text">Banner sẽ hiển thị trên website ngay sau khi tạo.</div>
-                    </div>
 
-                    <!-- ✅ Nút action không đè nhau — dùng d-flex gap-2 -->
-                    <div class="d-flex gap-2 align-items-center pt-2 border-top">
-                        <button type="submit" class="btn btn-danger px-4" id="btnSubmit">
-                            <i class="bi bi-check-circle me-2"></i>Tạo Banner
-                        </button>
-                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">
-                            <i class="bi bi-x me-1"></i>Huỷ
-                        </a>
                     </div>
-
-                </form>
+                </div>
             </div>
-        </div>
+
+            <!-- ACTION BUTTONS — hàng ngang, không đè nhau -->
+            <div class="d-flex gap-2 align-items-center">
+                <button type="submit" class="btn-banner-save" id="btnSubmit">
+                    <i class="bi bi-check-circle me-2"></i>Tạo Banner
+                </button>
+                <a href="@Url.Action("Index")" class="btn-banner-back">
+                    <i class="bi bi-x me-1"></i>Huỷ
+                </a>
+            </div>
+
+        </form>
     </div>
 
-    <!-- CỘT PHẢI: Preview (chiếm 4/12 cột) -->
+    <!-- ─────────── CỘT PHẢI: Preview ─────────── -->
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm position-sticky" style="top: 80px;">
-            <div class="card-header">
+        <div class="banner-preview-card">
+            <div class="banner-card-header">
                 <i class="bi bi-eye me-2"></i>Xem trước
             </div>
-            <div class="card-body p-3">
+            <div class="banner-card-body">
 
-                <!-- Preview Image -->
-                <div class="banner-preview-container mb-3">
-                    <img id="previewImage"
+                <!-- Hộp ảnh preview -->
+                <div class="preview-img-box mb-3" id="previewBox">
+                    <img id="previewFinalImg"
                          src=""
-                         alt="Preview Banner"
-                         class="w-100 rounded d-none"
-                         style="object-fit:cover; max-height:200px;" />
-                    <div id="previewPlaceholder"
-                         class="hdk-img-placeholder"
-                         style="min-height:160px; cursor:default;">
-                        <i class="bi bi-image fs-2 opacity-50"></i>
-                        <small class="text-muted">Chưa có ảnh</small>
+                         alt="Preview"
+                         class="preview-img d-none" />
+                    <div id="previewEmpty" class="preview-empty">
+                        <i class="bi bi-image"></i>
+                        <span>Chưa có ảnh</span>
                     </div>
                 </div>
 
-                <!-- Preview Info -->
-                <div class="border rounded p-3 bg-light">
-                    <div class="mb-2">
-                        <span class="form-label mb-0">Tên:</span>
-                        <p id="previewName" class="mb-0 fw-bold text-truncate">—</p>
+                <!-- Thông tin preview -->
+                <div class="preview-meta">
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Tên:</span>
+                        <span id="pvName" class="preview-meta-val">—</span>
                     </div>
-                    <div class="mb-2">
-                        <span class="form-label mb-0">Loại:</span>
-                        <p id="previewType" class="mb-0 fw-bold">—</p>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Loại:</span>
+                        <span id="pvType" class="preview-meta-val">—</span>
                     </div>
-                    <div>
-                        <span class="form-label mb-0">Trạng thái:</span>
-                        <p id="previewStatus" class="mb-0 fw-bold text-success">Kích hoạt</p>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Link:</span>
+                        <span id="pvLink" class="preview-meta-val text-truncate" style="max-width:130px">—</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Trạng thái:</span>
+                        <span id="pvStatus" class="preview-meta-val preview-status-active">Kích hoạt</span>
                     </div>
                 </div>
 
-                <!-- Tips -->
-                <div class="mt-3 p-3 bg-warning bg-opacity-10 border border-warning rounded">
-                    <p class="small fw-semibold mb-1 text-warning-emphasis">
-                        <i class="bi bi-lightbulb me-1"></i>Mẹo
-                    </p>
-                    <ul class="small mb-0 ps-3 text-muted">
-                        <li>Ảnh Main: tỉ lệ 3:1 (1200×400px)</li>
-                        <li>Ảnh Side: tỉ lệ 1:2 (300×600px)</li>
-                        <li>Dùng WebP để tốc độ tải tốt nhất</li>
+                <!-- Ghi chú kích thước -->
+                <div class="preview-size-guide">
+                    <p class="banner-hint mb-1"><strong>Kích thước khuyến nghị:</strong></p>
+                    <ul class="banner-hint mb-0 ps-3">
+                        <li>Main: 1200 × 400 px (3:1)</li>
+                        <li>Side: 300 × 600 px (1:2)</li>
+                        <li>Bottom: 1200 × 200 px (6:1)</li>
                     </ul>
                 </div>
 
@@ -222,5 +260,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/admin/js/banner-create.js" asp-append-version="true"></script>
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
 }

@@ -25,9 +25,8 @@ namespace HDKTech.Areas.Admin.Models
         /// <summary>
         /// Banner image URL (required)
         /// </summary>
-        [Required(ErrorMessage = "Image URL is required")]
         [StringLength(500, ErrorMessage = "Image URL must not exceed 500 characters")]
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
 
         /// <summary>
         /// Short description of the banner
