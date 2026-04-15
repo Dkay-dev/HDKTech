@@ -7,8 +7,11 @@
    Link in _Layout.cshtml BEFORE site.css closing tag:
      <link rel="stylesheet" href="~/css/components/product-card.css" asp-append-version="true" />
 
-   BEM naming: .pc (Block) → .pc__element → .pc--modifier
-   CSS custom properties scoped to .pc for easy theming.
+   CHANGE LOG:
+   - Removed .pc__global-link rule (invisible overlay that hijacked all clicks)
+   - .pc itself uses cursor:default — no hand pointer on the whole card
+   - cursor:pointer added only on .pc__name-link and .pc__action-btn
+   - .pc__img-wrapper replaces .pc__img-link (plain div, no navigation)
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Design tokens (scoped) ──────────────────────────────────────────── */
@@ -36,7 +39,8 @@
     overflow: hidden;
     transition: box-shadow var(--pc-transition), transform var(--pc-transition);
     height: 100%;
-    /* height: 100% ensures all cards in a CSS Grid row are equal height */
+    /* ✅ FIX: default cursor on the card itself — no hand pointer everywhere */
+    cursor: default;
 }
 
     .pc:hover {
@@ -69,10 +73,22 @@
     flex-shrink: 0;
 }
 
+/* ✅ FIX: plain div wrapper (was pc__img-link <a>) — no pointer, no nav */
+.pc__img-wrapper {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+}
+
+/* ✅ KEEP: old selector as alias so any cached markup still works */
 .pc__img-link {
     display: block;
     width: 100%;
     height: 100%;
+    /* Override inherited link cursor */
+    cursor: default;
+    text-decoration: none;
 }
 
 .pc__img {
@@ -96,6 +112,8 @@
     flex-direction: column;
     gap: 4px;
     z-index: 2;
+    /* Badges are display-only, no click needed */
+    pointer-events: none;
 }
 
 .pc__badge {
@@ -113,7 +131,6 @@
 .pc__badge--flash {
     background: var(--pc-gold);
     color: #78350f;
-    /* amber-900 on amber-400 — passes contrast */
 }
 
 .pc__badge--discount {
@@ -133,7 +150,6 @@
     left: 0;
     right: 0;
     background: rgba(17, 24, 39, 0.85);
-    /* intentional dark bg — only place in spec */
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -141,6 +157,7 @@
     gap: 6px;
     padding: 5px 8px;
     z-index: 2;
+    pointer-events: none;
 }
 
 .pc__cd-unit {
@@ -172,7 +189,7 @@
     margin-bottom: 4px;
 }
 
-/* ── Hover actions ────────────────────────────────────────────────────── */
+/* ── Hover action buttons ─────────────────────────────────────────────── */
 .pc__hover-actions {
     position: absolute;
     inset: 0;
@@ -184,7 +201,8 @@
     background: rgba(17, 24, 39, 0.5);
     opacity: 0;
     transition: opacity var(--pc-transition);
-    z-index: 3;
+    /* ✅ FIX: z-index higher than everything so buttons are always clickable */
+    z-index: 10;
     padding: 12px;
 }
 
@@ -193,6 +211,7 @@
     opacity: 1;
 }
 
+/* ✅ FIX: cursor pointer ONLY on action buttons */
 .pc__action-btn {
     display: inline-flex;
     align-items: center;
@@ -202,9 +221,13 @@
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
+    cursor: pointer; /* ← hand pointer here */
     transition: filter var(--pc-transition), transform 0.1s;
     white-space: nowrap;
+    /* ✅ Ensure button click events are never swallowed */
+    pointer-events: all;
+    position: relative;
+    z-index: 11;
 }
 
     .pc__action-btn:active {
@@ -245,13 +268,14 @@
     z-index: 1;
 }
 
-/* Brand */
+/* Brand — no cursor change, just display text */
 .pc__brand {
     font-size: 11px;
     font-weight: 600;
     color: var(--pc-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    cursor: default;
 }
 
 /* Name */
@@ -260,26 +284,26 @@
     font-size: 14px;
     font-weight: 600;
     line-height: 1.4;
-    /* Clamp to 2 lines — prevents layout shift, keeps grid aligned */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     min-height: calc(14px * 1.4 * 2);
-    /* reserve exactly 2 lines */
 }
 
+/* ✅ FIX: cursor pointer ONLY on the product name link */
 .pc__name-link {
     color: var(--pc-dark);
     text-decoration: none;
     transition: color 0.15s;
+    cursor: pointer; /* ← hand pointer here */
 }
 
     .pc__name-link:hover {
         color: var(--pc-red);
     }
 
-* 1. Hiện cố định thông số CPU/RAM và khoá chiều cao để không bị giật */
+/* Specs — plain text, default cursor */
 .pc__specs {
     list-style: none;
     margin: 8px 0;
@@ -287,18 +311,12 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    /* Khoá chiều cao cho 2 dòng specs */
     height: 40px;
     overflow: hidden;
-    /* Luôn hiện - Bỏ ẩn hiện khi hover */
     opacity: 1 !important;
     max-height: none !important;
     transition: none !important;
-}
-
-.pc:hover .pc__specs {
-    max-height: 40px !important;
-    opacity: 1 !important;
+    cursor: default;
 }
 
 .pc__spec-item {
@@ -325,12 +343,13 @@
     text-overflow: ellipsis;
 }
 
-/* Rating */
+/* Rating — no cursor change */
 .pc__rating {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 12px;
+    cursor: default;
 }
 
 .pc__stars {
@@ -359,10 +378,11 @@
     font-size: 11px;
 }
 
-/* Price zone — mt:auto pushes to bottom, keeps layout stable */
+/* Price zone — no cursor change */
 .pc__price-zone {
     margin-top: auto;
     padding-top: 6px;
+    cursor: default;
 }
 
 .pc__price-normal,
@@ -405,6 +425,7 @@
     font-size: 11px;
     color: var(--pc-red);
     font-weight: 500;
+    cursor: default;
 }
 
     .pc__stock-urgency svg {
@@ -422,59 +443,12 @@
     }
 }
 
-/* CTA */
-.pc__cta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    width: 100%;
-    padding: 9px 12px;
-    margin-top: 10px;
-    background: transparent;
-    border: 1.5px solid var(--pc-red);
-    border-radius: 8px;
-    color: var(--pc-red);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--pc-transition), color var(--pc-transition);
-}
-
-    .pc__cta:hover,
-    .pc__cta:focus-visible {
-        background: var(--pc-red);
-        color: #fff;
-        outline: none;
-    }
-
-    .pc__cta:focus-visible {
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35);
-    }
-
-.pc--flash .pc__cta {
-    border-color: var(--pc-gold);
-    color: #92400e;
-}
-
-    .pc--flash .pc__cta:hover {
-        background: var(--pc-gold);
-        color: #78350f;
-    }
-
 /* ── Grid helper class (use on the wrapper) ───────────────────────────── */
-/*
-   Usage on Home/Category/Search:
-   <div class="pc-grid">
-     @foreach (var p in products) { @await Html.PartialAsync("_ProductCard", p) }
-   </div>
-*/
 .pc-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 16px;
     align-items: stretch;
-    /* align-items: stretch = all cards fill row height → no orphan gaps */
 }
 
 /* ── Responsive overrides ─────────────────────────────────────────────── */
@@ -509,7 +483,7 @@
     .pc__img,
     .pc__hover-actions,
     .pc__specs,
-    .pc__cta {
+    .pc__action-btn {
         transition: none;
     }
 

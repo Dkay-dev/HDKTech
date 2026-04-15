@@ -7,6 +7,13 @@
                addToCartAjax() from ~/js/cart.js
    Usage     : @await Html.PartialAsync("_ProductCard", product)
                @await Html.PartialAsync("_ProductCard", product, new ViewDataDictionary(ViewData) { { "ShowCompare", true } })
+
+   FIX LOG:
+   - Removed onclick="goToDetail()" from <article> wrapper (was firing on all clicks)
+   - Removed nested duplicate <article> tags
+   - Image area no longer navigates — it's a plain div
+   - Only pc__name-link navigates to Details
+   - Hover action buttons are top-level z-index and stopPropagation-safe
    ═══════════════════════════════════════════════════════════════════════ *@
 @model HDKTech.Models.Product
 @using HDKTech.Utils
@@ -62,25 +69,26 @@
 
     // ── CSS state modifier ─────────────────────────────────────────────
     var cardMod = isFlashSale ? "pc--flash" : "";
+
+    // ── Detail URL ─────────────────────────────────────────────────────
+    var detailUrl = $"/Product/Details/{Model.Id}";
 }
 
+
 <article class="pc @cardMod" data-product-id="@Model.Id" role="listitem">
-    <article class="pc"
-             onclick="goToDetail(@Model.Id)"
-             style="cursor:pointer;">
-    @* ── IMAGE ZONE ──────────────────────────────────────────────────── *@
+
+    @* ── IMAGE ZONE — plain div, no navigation on click ──────────────── *@
     <div class="pc__image-zone">
 
-        @* Clickable image link *@
-        <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id"
-               class="pc__img-link" aria-label="Xem chi tiết @Model.Name" tabindex="-1">
+        @* Non-navigating image container *@
+        <div class="pc__img-wrapper">
             <img src="@imgPath"
                  alt="@Model.Name"
                  class="pc__img"
                  loading="lazy"
                  decoding="async"
                  onerror="this.onerror=null;this.src='/images/products/no-image.png';" />
-        </a>
+        </div>
 
         @* ── Badges overlay ──────────────────────────────────────────── *@
         <div class="pc__badges">
@@ -124,22 +132,28 @@
             </div>
         }
 
-        @* ── Hover action buttons ─────────────────────────────────────── *@
+        @* ── Hover action buttons — stopPropagation prevents any parent nav ─ *@
         <div class="pc__hover-actions" aria-hidden="true">
             <button type="button"
                     class="pc__action-btn pc__action-btn--cart"
-                    onclick="addToCartAjax(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
+                    onclick="event.stopPropagation(); addToCartAjax(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
                     aria-label="Thêm @Model.Name vào giỏ hàng">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
                 Thêm giỏ hàng
             </button>
             @if (showCompare)
             {
                 <button type="button"
                         class="pc__action-btn pc__action-btn--compare"
-                        onclick="addToCompare(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
+                        onclick="event.stopPropagation(); addToCompare(@Model.Id, '@Html.Raw(Model.Name.Replace("'", "\\'"))')"
                         aria-label="So sánh @Model.Name">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
                     So sánh
                 </button>
             }
@@ -149,19 +163,18 @@
     @* ── BODY ZONE ────────────────────────────────────────────────────── *@
     <div class="pc__body">
 
-        @* Brand label *@
+        @* Brand label — no link, no cursor pointer *@
         @if (!string.IsNullOrEmpty(brandName))
         {
             <span class="pc__brand" aria-label="Thương hiệu @brandName">@brandName</span>
         }
 
-        @* Product name — linked *@
+        @* Product name — THE ONLY element that navigates to Details *@
         <h3 class="pc__name">
-            <a asp-controller="Product" asp-action="Details" asp-route-id="@Model.Id"
-               class="pc__name-link">@Model.Name</a>
+            <a href="@detailUrl" class="pc__name-link">@Model.Name</a>
         </h3>
 
-        @* Specs preview — revealed on hover *@
+        @* Specs preview — plain text, no navigation *@
         @if (specsPreview.Any())
         {
             <ul class="pc__specs" aria-label="Thông số nhanh">
@@ -222,12 +235,9 @@
             </p>
         }
 
-        
-
     </div>
 </article>
 
-@* ── Per-card countdown script (scoped, runs once per card) ──────────── *@
 @if (isFlashSale && !string.IsNullOrEmpty(endTimeIso))
 {
     <script>
@@ -254,8 +264,3 @@
         })();
     </script>
 }
-<script>
-function goToDetail(id) {
-    window.location.href = '/Product/Details/' + id;
-}
-</script>
