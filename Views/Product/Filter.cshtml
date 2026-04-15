@@ -1,0 +1,303 @@
+@model IEnumerable<HDKTech.Models.Product>
+@{
+    ViewData["Title"] = "Lọc sản phẩm - HDKTech";
+    var currentSort = ViewBag.CurrentSort as string ?? "featured";
+    var currentPage = (int)(ViewBag.CurrentPage ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalProducts = (int)(ViewBag.TotalProducts ?? 0);
+    var categoryId = ViewBag.CategoryId as int?;
+    var brandId = ViewBag.BrandId as int?;
+    var minPrice = ViewBag.MinPrice as decimal?;
+    var maxPrice = ViewBag.MaxPrice as decimal?;
+    var cpuLine = ViewBag.CpuLine as string;
+    var vgaLine = ViewBag.VgaLine as string;
+    var ramType = ViewBag.RamType as string;
+    var keyword = ViewBag.Keyword as string;
+}
+
+<link rel="stylesheet" href="~/css/pages/category.css" />
+
+<div class="container-fluid my-4 px-lg-2">
+
+    <div class="filter-section bg-white p-3 rounded-3 shadow-sm mb-4 border-light">
+        <form asp-controller="Product" asp-action="Filter" method="get" id="filterForm" class="w-100">
+
+            @if (categoryId.HasValue)
+            {
+                <input type="hidden" name="categoryId" value="@categoryId" />
+            }
+            @if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                <input type="hidden" name="keyword" value="@keyword" />
+            }
+
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="/" class="text-decoration-none text-muted small">
+                            <i class="bi bi-house-fill me-1"></i>Trang chủ
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active small" aria-current="page">
+                        Kết quả lọc (@totalProducts sản phẩm)
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3"
+                            type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-tag me-1"></i> Giá
+                    </button>
+                    <ul class="dropdown-menu p-2" style="min-width:220px;">
+                        <li><a class="dropdown-item" href="@BuildFilterUrl(categoryId, brandId, 0, 5000000, currentSort, cpuLine, vgaLine, ramType, keyword)">Dưới 5 triệu</a></li>
+                        <li><a class="dropdown-item" href="@BuildFilterUrl(categoryId, brandId, 5000000, 10000000, currentSort, cpuLine, vgaLine, ramType, keyword)">5 – 10 triệu</a></li>
+                        <li><a class="dropdown-item" href="@BuildFilterUrl(categoryId, brandId, 10000000, 20000000, currentSort, cpuLine, vgaLine, ramType, keyword)">10 – 20 triệu</a></li>
+                        <li><a class="dropdown-item" href="@BuildFilterUrl(categoryId, brandId, 20000000, null, currentSort, cpuLine, vgaLine, ramType, keyword)">Trên 20 triệu</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="@BuildFilterUrl(categoryId, brandId, null, null, currentSort, cpuLine, vgaLine, ramType, keyword)">Xóa lọc giá</a></li>
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3"
+                            type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-cpu me-1"></i> CPU
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach (var cpu in new[] { "i3", "i5", "i7", "i9", "Ryzen 5", "Ryzen 7", "Ryzen 9" })
+                        {
+                            <li>
+                                <a class="dropdown-item @(cpuLine == cpu ? "active" : "")"
+                                       href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpu, vgaLine, ramType, keyword)">
+                                    @cpu
+                                </a>
+                            </li>
+                        }
+                        @if (!string.IsNullOrEmpty(cpuLine))
+                        {
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, null, vgaLine, ramType, keyword)">Xóa lọc CPU</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3"
+                            type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-gpu-card me-1"></i> VGA
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach (var vga in new[] { "RTX 4050", "RTX 4060", "RTX 4070", "RTX 4080", "RTX 4090" })
+                        {
+                            <li>
+                                <a class="dropdown-item @(vgaLine == vga ? "active" : "")"
+                                       href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vga, ramType, keyword)">
+                                    @vga
+                                </a>
+                            </li>
+                        }
+                        @if (!string.IsNullOrEmpty(vgaLine))
+                        {
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, null, ramType, keyword)">Xóa lọc VGA</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3"
+                            type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-memory me-1"></i> RAM
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach (var ram in new[] { "DDR4", "DDR5" })
+                        {
+                            <li>
+                                <a class="dropdown-item @(ramType == ram ? "active" : "")"
+                                       href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vgaLine, ram, keyword)">
+                                    @ram
+                                </a>
+                            </li>
+                        }
+                        @if (!string.IsNullOrEmpty(ramType))
+                        {
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vgaLine, null, keyword)">Xóa lọc RAM</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                @{
+                    var hasAnyFilter = brandId.HasValue || minPrice.HasValue || maxPrice.HasValue
+                                    || !string.IsNullOrEmpty(cpuLine)
+                                    || !string.IsNullOrEmpty(vgaLine)
+                                    || !string.IsNullOrEmpty(ramType);
+                }
+                @if (hasAnyFilter)
+                {
+                    <a href="@BuildFilterUrl(categoryId, null, null, null, currentSort, null, null, null, keyword)"
+                           class="btn btn-outline-danger btn-sm px-3">
+                        <i class="bi bi-x-circle me-1"></i> Xóa tất cả bộ lọc
+                    </a>
+                }
+            </div>
+
+            @if (hasAnyFilter || !string.IsNullOrEmpty(cpuLine) || !string.IsNullOrEmpty(vgaLine) || !string.IsNullOrEmpty(ramType))
+            {
+                <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                    <span class="text-muted small me-1">Đang lọc:</span>
+                    @if (minPrice.HasValue || maxPrice.HasValue)
+                    {
+                        <span class="badge bg-primary rounded-pill">
+                            Giá: @(minPrice?.ToString("N0") ?? "0")₫ – @(maxPrice?.ToString("N0") ?? "∞")₫
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(cpuLine))
+                    {
+                        <span class="badge bg-secondary rounded-pill">CPU: @cpuLine</span>
+                    }
+                    @if (!string.IsNullOrEmpty(vgaLine))
+                    {
+                        <span class="badge bg-secondary rounded-pill">VGA: @vgaLine</span>
+                    }
+                    @if (!string.IsNullOrEmpty(ramType))
+                    {
+                        <span class="badge bg-secondary rounded-pill">RAM: @ramType</span>
+                    }
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                <small class="text-muted">
+                    Tìm thấy <strong>@totalProducts</strong> sản phẩm
+                </small>
+                <div class="sort-wrapper border rounded-2 px-3 py-1 bg-light">
+                    <span class="small text-muted me-1">
+                        <i class="bi bi-sort-down"></i> Xếp theo:
+                    </span>
+                    <select name="sortBy"
+                            class="border-0 bg-transparent fw-bold small sort-select shadow-none"
+                            style="cursor:pointer;outline:none;"
+                            onchange="document.getElementById('filterForm').submit();">
+                        @foreach (var opt in new[] {
+                            ("featured",  "Nổi bật"),
+                            ("price_asc", "Giá tăng dần"),
+                            ("price_desc","Giá giảm dần"),
+                            ("name_asc",  "Tên A→Z"),
+                            ("new",       "Mới nhất")
+                        })
+                        {
+                            <option value="@opt.Item1" selected="@(currentSort == opt.Item1)">
+                                @opt.Item2
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="pc-grid">
+            @foreach (var product in Model)
+            {
+                @await Html.PartialAsync("_ProductCard", product)
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <nav aria-label="Page navigation" class="d-flex justify-content-center mt-5 mb-4">
+                <ul class="pagination">
+                    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                        <a class="page-link"
+                               href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vgaLine, ramType, keyword, currentPage - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @{
+                        int startP = Math.Max(1, currentPage - 2);
+                        int endP = Math.Min(totalPages, currentPage + 2);
+                    }
+                    @for (int p = startP; p <= endP; p++)
+                    {
+                        <li class="page-item @(p == currentPage ? "active" : "")">
+                            <a class="page-link"
+                                   href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vgaLine, ramType, keyword, p)">
+                                @p
+                            </a>
+                        </li>
+                    }
+
+                    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                        <a class="page-link"
+                               href="@BuildFilterUrl(categoryId, brandId, minPrice, maxPrice, currentSort, cpuLine, vgaLine, ramType, keyword, currentPage + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="text-center text-muted small mb-5">
+                Trang <strong>@currentPage</strong> / <strong>@totalPages</strong>
+                &nbsp;·&nbsp; <strong>@totalProducts</strong> sản phẩm
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-search display-1 text-muted opacity-50 mb-3 d-block"></i>
+            <h5 class="text-muted">Không tìm thấy sản phẩm nào phù hợp</h5>
+            <p class="text-muted small">Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác.</p>
+            <a href="/" class="btn btn-outline-danger rounded-pill px-4 mt-2">
+                <i class="bi bi-house me-2"></i>Về trang chủ
+            </a>
+        </div>
+    }
+</div>
+
+@functions {
+    /// <summary>
+    /// Helper xây URL cho các link bộ lọc trong View, giữ nguyên các tham số
+    /// không thay đổi và cập nhật tham số mới được truyền vào.
+    /// </summary>
+    string BuildFilterUrl(
+        int? catId,
+        int? bId,
+        decimal? minP,
+        decimal? maxP,
+        string sort,
+        string? cpu,
+        string? vga,
+        string? ram,
+        string? kw,
+        int pg = 1)
+    {
+        var qs = new System.Text.StringBuilder("/Product/Filter?");
+        if (catId.HasValue) qs.Append($"categoryId={catId}&");
+        if (bId.HasValue) qs.Append($"brandId={bId}&");
+        if (minP.HasValue) qs.Append($"minPrice={minP}&");
+        if (maxP.HasValue) qs.Append($"maxPrice={maxP}&");
+        if (!string.IsNullOrEmpty(sort)) qs.Append($"sortBy={Uri.EscapeDataString(sort)}&");
+        if (!string.IsNullOrEmpty(cpu)) qs.Append($"cpuLine={Uri.EscapeDataString(cpu)}&");
+        if (!string.IsNullOrEmpty(vga)) qs.Append($"vgaLine={Uri.EscapeDataString(vga)}&");
+        if (!string.IsNullOrEmpty(ram)) qs.Append($"ramType={Uri.EscapeDataString(ram)}&");
+        if (!string.IsNullOrEmpty(kw)) qs.Append($"keyword={Uri.EscapeDataString(kw)}&");
+        if (pg > 1) qs.Append($"page={pg}&");
+        return qs.ToString().TrimEnd('&', '?');
+    }
+}
