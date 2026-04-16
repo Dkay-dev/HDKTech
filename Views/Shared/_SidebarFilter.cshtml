@@ -1,0 +1,430 @@
+@*
+  _SidebarFilter.cshtml
+  ─────────────────────────────────────────────────────────────────────
+  Usage:
+    @await Html.PartialAsync("_SidebarFilter")
+
+  Expects in ViewBag:
+    CategoryId       int?
+    SelectedBrandIds List<int>
+    AvailableBrands  List<string>  (brand names — JS also reads data-id)
+    CpuLines         List<string>
+    MinPrice         decimal?
+    MaxPrice         decimal?
+    CpuLine          string?
+    VgaLine          string?
+    RamType          string?
+    CurrentSort      string
+    Keyword          string?
+  ─────────────────────────────────────────────────────────────────────
+*@
+
+@{
+    var categoryId       = ViewBag.CategoryId as int?;
+    var selectedBrandIds = ViewBag.SelectedBrandIds as List<int> ?? new List<int>();
+    var availableBrands  = ViewBag.AvailableBrands as List<string> ?? new List<string>();
+    var cpuLines         = ViewBag.CpuLines as List<string> ?? new List<string>();
+    var minPrice         = ViewBag.MinPrice as decimal?;
+    var maxPrice         = ViewBag.MaxPrice as decimal?;
+    var activeCpuLine    = ViewBag.CpuLine as string ?? "";
+    var activeVgaLine    = ViewBag.VgaLine as string ?? "";
+    var activeRamType    = ViewBag.RamType as string ?? "";
+    var keyword          = ViewBag.Keyword as string ?? "";
+    var currentSort      = ViewBag.CurrentSort as string ?? "featured";
+    var brandIdsRaw      = ViewBag.BrandIds as string ?? "";
+}
+
+<style>
+/* ── Sidebar shell ─────────────────────────────────────────────────── */
+.fsb {
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 0.82rem;
+    color: #374151;
+    position: sticky;
+    top: 150px;
+    max-height: calc(100vh - 170px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+.fsb::-webkit-scrollbar { width: 4px; }
+.fsb::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.fsb__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+}
+.fsb__head-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fsb__head-title i { color: #ef4444; }
+.fsb__reset {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color .2s, background .2s;
+}
+.fsb__reset:hover { color: #ef4444; background: #fef2f2; }
+
+/* ── Section ───────────────────────────────────────────────────────── */
+.fsb__section {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid #f5f5f5;
+}
+.fsb__section:last-of-type { border-bottom: none; }
+.fsb__section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #9ca3af;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.fsb__section-label i { color: #ef4444; font-size: 0.78rem; }
+
+/* ── Checkbox rows ─────────────────────────────────────────────────── */
+.fsb__check-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 2px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .15s;
+    user-select: none;
+}
+.fsb__check-row:hover { background: #f9fafb; }
+.fsb__check-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #ef4444;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.fsb__check-label {
+    flex: 1;
+    line-height: 1.2;
+    cursor: pointer;
+}
+.fsb__check-row input:checked ~ .fsb__check-label {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* ── Chip-style option rows (CPU / VGA / RAM) ─────────────────────── */
+.fsb__chip-group { display: flex; flex-wrap: wrap; gap: 5px; }
+.fsb__chip {
+    padding: 3px 9px;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 0.73rem;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+    color: #374151;
+    line-height: 1.4;
+}
+.fsb__chip:hover { border-color: #ef4444; color: #ef4444; }
+.fsb__chip.active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ── Price inputs ──────────────────────────────────────────────────── */
+.fsb__price-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.fsb__price-input {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: #374151;
+    background: #f9fafb;
+    outline: none;
+    transition: border-color .15s;
+    min-width: 0;
+}
+.fsb__price-input:focus { border-color: #ef4444; background: #fff; }
+.fsb__price-sep { color: #9ca3af; font-size: 0.75rem; flex-shrink: 0; }
+.fsb__price-shortcuts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.fsb__price-preset {
+    padding: 2px 7px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    background: #f9fafb;
+    color: #6b7280;
+    transition: all .15s;
+    line-height: 1.4;
+}
+.fsb__price-preset:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+
+/* ── Sort select ───────────────────────────────────────────────────── */
+.fsb__sort-select {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: #374151;
+    background: #f9fafb;
+    cursor: pointer;
+    outline: none;
+}
+.fsb__sort-select:focus { border-color: #ef4444; }
+
+/* ── Apply button ──────────────────────────────────────────────────── */
+.fsb__footer {
+    padding: 10px 14px 12px;
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    gap: 7px;
+}
+.fsb__apply-btn {
+    flex: 1;
+    padding: 7px 0;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    letter-spacing: 0.3px;
+}
+.fsb__apply-btn:hover { background: #dc2626; }
+.fsb__apply-btn:active { transform: scale(0.98); }
+.fsb__clear-btn {
+    padding: 7px 12px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all .2s;
+}
+.fsb__clear-btn:hover { background: #fef2f2; color: #ef4444; border-color: #ef4444; }
+
+/* ── Active-filter badges ──────────────────────────────────────────── */
+.fsb__active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 14px 0;
+}
+.fsb__active-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    color: #ef4444;
+    font-weight: 600;
+}
+.fsb__active-tag button {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0;
+}
+</style>
+
+<aside class="fsb" id="filterSidebar">
+
+    <!-- HEADER -->
+    <div class="fsb__head">
+        <span class="fsb__head-title">
+            <i class="bi bi-sliders"></i> Bộ lọc
+        </span>
+        <button class="fsb__reset" id="fsbResetAll" type="button">
+            Xóa tất cả
+        </button>
+    </div>
+
+    <!-- ACTIVE FILTERS BADGES -->
+    <div class="fsb__active-filters" id="fsbActiveBadges" style="display:none;"></div>
+
+    <!-- SORT ORDER -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-sort-down-alt"></i> Sắp xếp
+        </div>
+        <select class="fsb__sort-select" id="fsbSort" data-param="sortBy">
+            <option value="featured" selected="@(currentSort=="featured")">Nổi bật</option>
+            <option value="new" selected="@(currentSort=="new")">Mới nhất</option>
+            <option value="price_asc" selected="@(currentSort=="price_asc")">Giá tăng dần</option>
+            <option value="price_desc" selected="@(currentSort=="price_desc")">Giá giảm dần</option>
+            <option value="name_asc" selected="@(currentSort=="name_asc")">Tên A → Z</option>
+        </select>
+    </div>
+
+    <!-- BRANDS -->
+    @if (availableBrands.Any())
+    {
+        <div class="fsb__section">
+            <div class="fsb__section-label">
+                <i class="bi bi-building"></i> Thương hiệu
+            </div>
+            @foreach (var brand in availableBrands)
+            {
+                <label class="fsb__check-row">
+                    <input type="checkbox"
+                           class="fsb-brand-cb"
+                           value="@brand"
+                           @(selectedBrandIds.Any() && selectedBrandIds.Contains(brand.GetHashCode()) ? "checked" : "") />
+                    <span class="fsb__check-label">@brand</span>
+                </label>
+            }
+        </div>
+    }
+
+    <!-- PRICE RANGE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-tag"></i> Khoảng giá
+        </div>
+        <div class="fsb__price-group">
+            <input type="number"
+                   class="fsb__price-input"
+                   id="fsbMinPrice"
+                   placeholder="Từ"
+                   min="0"
+                   step="500000"
+                   value="@(minPrice.HasValue ? minPrice.Value.ToString("0") : "")" />
+            <span class="fsb__price-sep">–</span>
+            <input type="number"
+                   class="fsb__price-input"
+                   id="fsbMaxPrice"
+                   placeholder="Đến"
+                   min="0"
+                   step="500000"
+                   value="@(maxPrice.HasValue ? maxPrice.Value.ToString("0") : "")" />
+        </div>
+        <div class="fsb__price-shortcuts">
+            <button type="button" class="fsb__price-preset" data-min="0"        data-max="5000000">Dưới 5tr</button>
+            <button type="button" class="fsb__price-preset" data-min="5000000"  data-max="10000000">5–10tr</button>
+            <button type="button" class="fsb__price-preset" data-min="10000000" data-max="20000000">10–20tr</button>
+            <button type="button" class="fsb__price-preset" data-min="20000000" data-max="">Trên 20tr</button>
+        </div>
+    </div>
+
+    <!-- CPU LINE -->
+    @if (cpuLines.Any())
+    {
+        <div class="fsb__section">
+            <div class="fsb__section-label">
+                <i class="bi bi-cpu"></i> Dòng CPU
+            </div>
+            <div class="fsb__chip-group">
+                @foreach (var cpu in cpuLines)
+                {
+                    <span class="fsb__chip fsb-spec-chip @(activeCpuLine==cpu?"active":"")"
+                          data-param="cpuLine"
+                          data-value="@cpu">@cpu</span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- VGA LINE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-gpu-card"></i> Dòng VGA
+        </div>
+        <div class="fsb__chip-group">
+            @foreach (var vga in new[] { "RTX 4050","RTX 4060","RTX 4070","RTX 4080","RTX 4090" })
+            {
+                <span class="fsb__chip fsb-spec-chip @(activeVgaLine==vga?"active":"")"
+                      data-param="vgaLine"
+                      data-value="@vga">@vga</span>
+            }
+        </div>
+    </div>
+
+    <!-- RAM TYPE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-memory"></i> Loại RAM
+        </div>
+        <div class="fsb__chip-group">
+            @foreach (var ram in new[] { "DDR4", "DDR5" })
+            {
+                <span class="fsb__chip fsb-spec-chip @(activeRamType==ram?"active":"")"
+                      data-param="ramType"
+                      data-value="@ram">@ram</span>
+            }
+        </div>
+    </div>
+
+    <!-- STOCK STATUS -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-check-circle"></i> Tình trạng
+        </div>
+        <div class="fsb__chip-group">
+            <span class="fsb__chip fsb-spec-chip" data-param="status" data-value="1">Còn hàng</span>
+            <span class="fsb__chip fsb-spec-chip" data-param="status" data-value="0">Hết hàng</span>
+        </div>
+    </div>
+
+    <!-- FOOTER: APPLY / CLEAR -->
+    <div class="fsb__footer">
+        <button type="button" class="fsb__clear-btn" id="fsbClearBtn">
+            <i class="bi bi-x-circle me-1"></i>Xóa
+        </button>
+        <button type="button" class="fsb__apply-btn" id="fsbApplyBtn">
+            <i class="bi bi-check2 me-1"></i>Áp dụng
+        </button>
+    </div>
+</aside>
+
+<!-- Hidden anchor for category context -->
+<input type="hidden" id="fsbCategoryId" value="@(categoryId?.ToString() ?? "")" />
+<input type="hidden" id="fsbKeyword"    value="@keyword" />
+<input type="hidden" id="fsbInitBrands" value="@brandIdsRaw" />
+
+<script src="~/js/filter-handler.js" defer></script>

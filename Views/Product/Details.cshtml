@@ -338,7 +338,6 @@
         </div>
 
         <div class="related-products-section mt-5">
-            @* Tiêu đề đồng bộ phong cách Gaming HDK *@
             <div class="fs-section-header mb-4">
                 <div class="fs-section-title">
                     <i class="bi bi-fire text-danger"></i>
@@ -346,9 +345,9 @@
                 </div>
             </div>
 
-            @* Kiểm tra và Ép kiểu dữ liệu ViewBag *@
             @{
-                var relatedItems = ViewBag.RelatedProducts as List<HDKTech.Models.Product>;
+                // Ép kiểu và lấy đúng 4 sản phẩm đầu tiên
+                var relatedItems = (ViewBag.RelatedProducts as List<HDKTech.Models.Product>)?.Take(4).ToList();
             }
 
             @if (relatedItems != null && relatedItems.Any())
@@ -356,7 +355,6 @@
                 <div class="pc-grid">
                     @foreach (var item in relatedItems)
                     {
-                        @* Sử dụng lại Partial _ProductCard để đồng bộ 100% giao diện *@
                         @await Html.PartialAsync("_ProductCard", item)
                     }
                 </div>
