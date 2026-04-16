@@ -3,16 +3,23 @@
     public class ProductFilterModel
     {
         public int? CategoryId { get; set; }
+
+        // FIX: Filter brands by NAME (string), not by hash/int.
+        // Populated from "brandNames=Dell,ASUS,Lenovo" query-string.
+        public List<string>? BrandNames { get; set; }
+
+        // Keep single BrandId for backwards compatibility with any old code
         public int? BrandId { get; set; }
+
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
-        public int? Status { get; set; } // 1: Có hàng, 0: Hết hàng
-        public string? SortBy { get; set; } // featured, name_asc, name_desc, price_asc, price_desc, new
+        public int? Status { get; set; }          // 1: Còn hàng, 0: Hết hàng
+        public string? SortBy { get; set; }
         public string? SearchKeyword { get; set; }
-        
-        // Đặc biệt cho laptop
-        public string? CpuLine { get; set; } // i3, i5, i7, i9, Ryzen 5, etc.
-        public string? VgaLine { get; set; } // RTX 4050, RTX 4060, etc.
-        public string? RamType { get; set; } // DDR4, DDR5, etc.
+
+        // Laptop specs
+        public string? CpuLine { get; set; }
+        public string? VgaLine { get; set; }
+        public string? RamType { get; set; }
     }
 }

@@ -14,8 +14,7 @@ namespace HDKTech.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // DETAILS — trang chi tiết sản phẩm
-        // FIX: Đảo tham số GetRelatedProductsAsync cho khớp interface mới
+        // DETAILS
         // ─────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Details(int? id)
         {
@@ -24,7 +23,6 @@ namespace HDKTech.Controllers
             var product = await _productRepo.GetProductWithDetailsAsync(id.Value);
             if (product == null) return NotFound();
 
-            // FIX: currentProductId trước, categoryId sau
             ViewBag.RelatedProducts = await _productRepo.GetRelatedProductsAsync(
                 currentProductId: product.Id,
                 categoryId: product.CategoryId,
@@ -34,17 +32,19 @@ namespace HDKTech.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // SEARCH — tìm kiếm toàn bộ sản phẩm
+        // SEARCH
         // ─────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Search(
             string keyword,
             string sortBy = "featured",
             decimal? minPrice = null,
             decimal? maxPrice = null,
-            int? brandId = null)
+            string? brandNames = null)
         {
             if (string.IsNullOrWhiteSpace(keyword))
                 return RedirectToAction("Index", "Home");
+
+            var parsedBrands = ParseBrandNames(brandNames);
 
             var filter = new ProductFilterModel
             {
@@ -52,7 +52,7 @@ namespace HDKTech.Controllers
                 SortBy = sortBy,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
-                BrandId = brandId
+                BrandNames = parsedBrands
             };
 
             var products = await _productRepo.FilterProductsAsync(filter);
@@ -61,24 +61,24 @@ namespace HDKTech.Controllers
             ViewBag.Keyword = keyword;
             ViewBag.ResultCount = products.Count;
             ViewBag.Brands = brands;
-            ViewBag.CurrentFilters = filter;
             ViewBag.CurrentSort = sortBy;
+            ViewBag.SelectedBrandNames = parsedBrands;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.BrandNames = brandNames ?? "";
 
             return View(products);
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // FILTER — FIX 2: Endpoint chính xử lý tất cả tham số từ Sidebar
+        // FILTER  — receives brandNames as comma-separated brand name string
         //
-        // URL ví dụ từ sidebar:
-        //   /Product/Filter?categoryId=5&brandId=2&minPrice=10000000&sortBy=price_asc
-        //   /Product/Filter?categoryId=15             ← lọc theo danh mục cha
-        //
-        // Kết quả trả về View dùng .pc-grid + _ProductCard.cshtml
+        // URL example:
+        //   /Product/Filter?categoryId=5&brandNames=Dell,ASUS&minPrice=10000000
         // ─────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Filter(
             int? categoryId = null,
-            int? brandId = null,
+            string? brandNames = null,
             decimal? minPrice = null,
             decimal? maxPrice = null,
             int? status = null,
@@ -89,10 +89,12 @@ namespace HDKTech.Controllers
             string? keyword = null,
             int page = 1)
         {
+            var parsedBrands = ParseBrandNames(brandNames);
+
             var filter = new ProductFilterModel
             {
                 CategoryId = categoryId,
-                BrandId = brandId,
+                BrandNames = parsedBrands,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
                 Status = status,
@@ -105,37 +107,40 @@ namespace HDKTech.Controllers
 
             var allProducts = await _productRepo.FilterProductsAsync(filter);
 
-            // ── Phân trang ────────────────────────────────────────────────────
+            // ── Pagination ────────────────────────────────────────────────────
             const int pageSize = 16;
-            var totalProducts = allProducts.Count;
-            var totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
+            int totalProducts = allProducts.Count;
+            int totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
             if (page < 1) page = 1;
             if (page > totalPages && totalPages > 0) page = totalPages;
 
-            var paged = allProducts
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            var paged = allProducts.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-            // ── ViewBag cho View ──────────────────────────────────────────────
+            // ── Brands available under this category (recursive) ──────────────
+            var availableBrands = await _productRepo.GetUniqueBrandsByCategory(categoryId ?? 0);
+            var cpuLines = await _productRepo.GetUniqueCpuLines();
+
             ViewBag.CurrentSort = sortBy;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.TotalProducts = totalProducts;
             ViewBag.CategoryId = categoryId;
-            ViewBag.BrandId = brandId;
+            ViewBag.BrandNames = brandNames ?? "";
+            ViewBag.SelectedBrandNames = parsedBrands;
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
             ViewBag.CpuLine = cpuLine;
             ViewBag.VgaLine = vgaLine;
             ViewBag.RamType = ramType;
             ViewBag.Keyword = keyword;
+            ViewBag.Brands = availableBrands;
+            ViewBag.CpuLines = cpuLines;
 
             return View(paged);
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // FLASH SALE — trang Flash Sale
+        // FLASH SALE
         // ─────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> FlashSale()
         {
@@ -149,8 +154,20 @@ namespace HDKTech.Controllers
 
             ViewBag.FlashSaleEndTime = endTime.ToString("o");
             ViewBag.TotalProducts = products.Count;
-
             return View(products);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Helper: "Dell,ASUS,Lenovo" → List<string>
+        // ─────────────────────────────────────────────────────────────────────
+        private static List<string> ParseBrandNames(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return new List<string>();
+            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                      .Select(s => s.Trim())
+                      .Where(s => !string.IsNullOrEmpty(s))
+                      .Distinct()
+                      .ToList();
         }
     }
 }
