@@ -39,15 +39,15 @@ namespace HDKTech.Areas.Admin.Services
             => await GetDashboardDataAsync(string.Empty);
 
         /// <summary>
-        /// Overload role-aware: WarehouseStaff chỉ nhận dữ liệu kho + đơn cần xử lý.
+        /// Overload role-aware: Staff chỉ nhận dữ liệu kho + đơn cần xử lý.
         /// Các role khác (Admin, Manager) nhận toàn bộ data được cache.
         /// </summary>
         public async Task<DashboardViewModel> GetDashboardDataAsync(string viewerRole)
         {
-            // WarehouseStaff: build nhanh, không cache (data nhẹ, không cần revenue)
-            if (string.Equals(viewerRole, "WarehouseStaff", StringComparison.OrdinalIgnoreCase))
+            // Staff: build nhanh, không cache (data nhẹ, không cần revenue)
+            if (string.Equals(viewerRole, "Staff", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogDebug("[Dashboard] WarehouseStaff mode — build warehouse-only data.");
+                _logger.LogDebug("[Dashboard] Staff mode — build warehouse-only data.");
                 return await BuildWarehouseAsync(viewerRole);
             }
 
@@ -90,7 +90,7 @@ namespace HDKTech.Areas.Admin.Services
             {
                 // Đơn hàng cần xử lý (Status 0 = Chờ xác nhận, 1 = Đang xử lý)
                 vm.PendingOrders = await _context.Orders.AsNoTracking()
-                    .CountAsync(o => o.Status == 0 || o.Status == 1);
+                    .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
 
                 vm.TotalOrders = await _context.Orders.AsNoTracking().CountAsync();
 
@@ -123,14 +123,14 @@ namespace HDKTech.Areas.Admin.Services
                 // 5 đơn hàng chờ xử lý gần nhất
                 vm.RecentOrders = await _context.Orders.AsNoTracking()
                     .Include(o => o.User)
-                    .Where(o => o.Status == 0 || o.Status == 1)
+                    .Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed)
                     .OrderByDescending(o => o.OrderDate)
                     .Take(5)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[Dashboard] Lỗi build WarehouseStaff data.");
+                _logger.LogError(ex, "[Dashboard] Lỗi build Staff data.");
             }
 
             return vm;
@@ -160,7 +160,7 @@ namespace HDKTech.Areas.Admin.Services
                 // ── [1] Doanh thu tổng (chỉ đơn Đã giao = Status 3) ─────────
                 vm.TotalRevenue = await _context.Orders
                     .AsNoTracking()
-                    .Where(o => o.Status == 3)
+                    .Where(o => o.Status == OrderStatus.Delivered)
                     .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
                 // ── [2] Tổng đơn hàng ────────────────────────────────────────
@@ -168,7 +168,7 @@ namespace HDKTech.Areas.Admin.Services
 
                 // ── [3] Đơn chờ xử lý (Status 0 = Chờ xác nhận, 1 = Đang xử lý)
                 vm.PendingOrders = await _context.Orders.AsNoTracking()
-                    .CountAsync(o => o.Status == 0 || o.Status == 1);
+                    .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
 
                 // ── [4a] Tồn kho thấp — count ────────────────────────────────
                 const int lowStockThreshold = 10;
@@ -240,7 +240,7 @@ namespace HDKTech.Areas.Admin.Services
                     var dateOnly = date.Date;
                     var nextDay  = dateOnly.AddDays(1);
                     var rev = await _context.Orders.AsNoTracking()
-                        .Where(o => o.Status == 3
+                        .Where(o => o.Status == OrderStatus.Delivered
                             && o.OrderDate >= dateOnly
                             && o.OrderDate < nextDay)
                         .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
@@ -262,14 +262,14 @@ namespace HDKTech.Areas.Admin.Services
                     .CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
 
                 vm.TodayRevenue = await _context.Orders.AsNoTracking()
-                    .Where(o => o.Status == 3
+                    .Where(o => o.Status == OrderStatus.Delivered
                         && o.OrderDate >= today
                         && o.OrderDate < tomorrow)
                     .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
                 // ── [12] Giá trị đơn hàng trung bình (AOV) ──────────────────
                 vm.AverageOrderValue = await _context.Orders.AsNoTracking()
-                    .Where(o => o.Status == 3)
+                    .Where(o => o.Status == OrderStatus.Delivered)
                     .AverageAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
                 // ── [13] Giai đoạn 2: Banner ROI — Top 3 ────────────────────

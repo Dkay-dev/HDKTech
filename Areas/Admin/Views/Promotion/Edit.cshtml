@@ -33,12 +33,6 @@
                         <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
             </div>
 
-            <!-- Danh mục áp dụng -->
-                    <div class="mb-3">
-                        <label asp-for="ApplicableCategory" class="form-label fw-bold">Danh mục áp dụng</label>
-                        <input type="text" asp-for="ApplicableCategory" class="form-control form-control-sm" />
-            </div>
-
             <!-- Ngày -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -55,9 +49,10 @@
                     <div class="mb-3">
                         <label asp-for="PromotionType" class="form-label fw-bold">Loại khuyến mãi</label>
                         <select asp-for="PromotionType" id="PromotionType" class="form-select form-select-sm">
-                    <option value="Percentage">Giảm giá %</option>
-                    <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
-                    <option value="FreeShip">Miễn phí vận chuyển</option>
+                    <option value="@((int)PromotionType.Percentage)">Giảm giá %</option>
+                    <option value="@((int)PromotionType.FixedAmount)">Giảm giá cố định (VNĐ)</option>
+                    <option value="@((int)PromotionType.FreeShip)">Miễn phí vận chuyển</option>
+                    <option value="@((int)PromotionType.FlashSale)">Flash Sale</option>
                 </select>
             </div>
 
@@ -66,7 +61,7 @@
                         <label asp-for="Value" class="form-label fw-bold">Giá trị</label>
                         <div class="input-group input-group-sm">
                             <input type="number" asp-for="Value" step="0.01" class="form-control" />
-                            <span id="unit" class="input-group-text fw-bold">@(Model.PromotionType == "Percentage" ? "%" : Model.PromotionType == "FixedAmount" ? "₫" : "")</span>
+                            <span id="unit" class="input-group-text fw-bold">@(Model.PromotionType == PromotionType.Percentage ? "%" : Model.PromotionType == PromotionType.FixedAmount ? "₫" : "")</span>
                 </div>
             </div>
 
@@ -174,10 +169,13 @@
     const loaiSelect = document.getElementById('PromotionType');
     const unitSpan = document.getElementById('unit');
 
+    const TYPE_PERCENTAGE = '@((int)PromotionType.Percentage)';
+    const TYPE_FIXED = '@((int)PromotionType.FixedAmount)';
+
     loaiSelect.addEventListener('change', function() {
-        if (this.value === 'Percentage') {
+        if (this.value === TYPE_PERCENTAGE) {
             unitSpan.textContent = '%';
-        } else if (this.value === 'FixedAmount') {
+        } else if (this.value === TYPE_FIXED) {
             unitSpan.textContent = '₫';
         } else {
             unitSpan.textContent = '';

@@ -22,10 +22,10 @@ namespace HDKTech.Repositories
         {
             return await _context.OrderItems
                 .Include(oi => oi.Order)
-                .AnyAsync(oi => oi.Order != null 
-                    && oi.Order.UserId == userId 
-                    && oi.ProductId == productId 
-                    && oi.Order.Status >= 3);
+                .AnyAsync(oi => oi.Order != null
+                    && oi.Order.UserId == userId
+                    && oi.ProductId == productId
+                    && oi.Order.Status == OrderStatus.Delivered);
         }
 
         public async Task<bool> HasUserReviewedProductAsync(string userId, int productId)

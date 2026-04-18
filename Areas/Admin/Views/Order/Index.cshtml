@@ -163,12 +163,14 @@
                         @foreach (var o in orders)
                         {
                             var (badgeCls, statusLabel) = o.Status switch {
-                                0 => ("bg-warning text-dark", "Chờ xác nhận"),
-                                1 => ("bg-info text-dark",    "Đang xử lý"),
-                                2 => ("bg-primary",           "Đang giao"),
-                                3 => ("bg-success",           "Đã giao"),
-                                4 => ("bg-secondary",         "Đã hủy"),
-                                _ => ("bg-light text-dark",   "Không rõ")
+                                HDKTech.Models.OrderStatus.Pending    => ("bg-warning text-dark", "Chờ xác nhận"),
+                                HDKTech.Models.OrderStatus.Confirmed  => ("bg-info text-dark",    "Đã xác nhận"),
+                                HDKTech.Models.OrderStatus.Packing    => ("bg-info text-dark",    "Đang đóng gói"),
+                                HDKTech.Models.OrderStatus.Shipping   => ("bg-primary",           "Đang giao"),
+                                HDKTech.Models.OrderStatus.Delivered  => ("bg-success",           "Đã giao"),
+                                HDKTech.Models.OrderStatus.Cancelled  => ("bg-secondary",         "Đã hủy"),
+                                HDKTech.Models.OrderStatus.Returned   => ("bg-dark",              "Trả hàng"),
+                                _                                     => ("bg-light text-dark",   "Không rõ")
                             };
                             <tr>
                                 <td>
@@ -196,7 +198,7 @@
                                            class="btn btn-outline-primary btn-act" title="Xem chi tiết">
                                             <i class="fa-solid fa-eye fa-xs"></i>
                                         </a>
-                                        @if (o.Status != 3 && o.Status != 4)
+                                        @if (o.Status != HDKTech.Models.OrderStatus.Delivered && o.Status != HDKTech.Models.OrderStatus.Cancelled)
                                         {
                                             <button type="button"
                                                     class="btn btn-outline-danger btn-act btn-cancel"

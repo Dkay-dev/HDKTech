@@ -5,12 +5,12 @@
     ViewData["Title"] = $"Đơn hàng {Model.OrderCode}";
 
     var (badgeCls, statusLabel) = Model.Status switch {
-        0 => ("bg-warning text-dark", "Chờ xác nhận"),
-        1 => ("bg-info text-dark",    "Đang xử lý"),
-        2 => ("bg-primary",           "Đang giao"),
-        3 => ("bg-success",           "Đã giao"),
-        4 => ("bg-secondary",         "Đã hủy"),
-        _ => ("bg-light text-dark",   "Không rõ")
+        OrderStatus.Pending   => ("bg-warning text-dark", "Chờ xác nhận"),
+        OrderStatus.Confirmed => ("bg-info text-dark",    "Đang xử lý"),
+        OrderStatus.Shipping  => ("bg-primary",           "Đang giao"),
+        OrderStatus.Delivered => ("bg-success",           "Đã giao"),
+        OrderStatus.Cancelled => ("bg-secondary",         "Đã hủy"),
+        _                     => ("bg-light text-dark",   "Không rõ")
     };
 
     var itemTotal = Model.Items?.Sum(i => i.UnitPrice * i.Quantity) ?? 0;
@@ -98,7 +98,7 @@
                         </div>
                         <div class="col-12">
                             <p class="text-muted mb-1">Địa chỉ giao hàng</p>
-                            <p class="fw-bold">@Model.ShippingAddress</p>
+                            <p class="fw-bold">@(Model.ShippingAddressFull ?? Model.ShippingAddressLine)</p>
                         </div>
                         <div class="col-sm-6">
                             <p class="text-muted mb-1">Phí vận chuyển</p>
@@ -213,7 +213,7 @@
             </div>
 
             <!-- Cập nhật trạng thái -->
-            @if (Model.Status != 4)
+            @if (Model.Status != HDKTech.Models.OrderStatus.Cancelled)
             {
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white fw-semibold border-bottom">
@@ -221,19 +221,19 @@
                     </div>
                     <div class="card-body d-grid gap-2">
                         @{
-                            var btnDefs = new (int Status, string Cls, string Icon, string Label)[]
+                            var btnDefs = new (HDKTech.Models.OrderStatus Status, string Cls, string Icon, string Label)[]
                             {
-                                (0, "btn-outline-warning", "fa-clock",            "Chờ xác nhận"),
-                                (1, "btn-outline-info",    "fa-gear",             "Đang xử lý"),
-                                (2, "btn-outline-primary", "fa-truck",            "Đang giao"),
-                                (3, "btn-outline-success", "fa-circle-check",     "Đã giao"),
+                                (HDKTech.Models.OrderStatus.Pending,   "btn-outline-warning", "fa-clock",        "Chờ xác nhận"),
+                                (HDKTech.Models.OrderStatus.Confirmed, "btn-outline-info",    "fa-gear",         "Đã xác nhận"),
+                                (HDKTech.Models.OrderStatus.Shipping,  "btn-outline-primary", "fa-truck",        "Đang giao"),
+                                (HDKTech.Models.OrderStatus.Delivered, "btn-outline-success", "fa-circle-check", "Đã giao"),
                             };
                         }
                         @foreach (var b in btnDefs)
                         {
                             <button type="button"
                                     class="btn btn-sm @b.Cls status-btn"
-                                    data-status="@b.Status"
+                                    data-status="@((int)b.Status)"
                                     @(Model.Status == b.Status ? "disabled" : "")>
                                 <i class="fa-solid @b.Icon me-2"></i>@b.Label
                                 @if (Model.Status == b.Status)
@@ -251,7 +251,7 @@
             }
 
             <!-- Ghi chú trạng thái đã hoàn tất / đã hủy -->
-            @if (Model.Status == 3)
+            @if (Model.Status == HDKTech.Models.OrderStatus.Delivered)
             {
                 <div class="alert alert-success border-0">
                     <i class="fa-solid fa-circle-check me-2"></i>
@@ -259,7 +259,7 @@
                     <small>Tồn kho đã được trừ tự động.</small>
                 </div>
             }
-            @if (Model.Status == 4)
+            @if (Model.Status == HDKTech.Models.OrderStatus.Cancelled)
             {
                 <div class="alert alert-secondary border-0">
                     <i class="fa-solid fa-ban me-2"></i>

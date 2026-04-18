@@ -1,7 +1,7 @@
 // ✅ Fix #1: Override trang Login của Identity
 // Thêm logic redirect theo Role sau khi đăng nhập thành công:
-//   - Admin / Manager / WarehouseStaff → /Admin/Dashboard
-//   - Customer (mặc định)             → returnUrl hoặc trang chủ
+//   - Admin / Manager / Staff → /Admin/Dashboard
+//   - Customer (mặc định)     → returnUrl hoặc trang chủ
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -36,7 +36,7 @@ namespace HDKTech.Areas.Identity.Pages.Account
         public string? ErrorMessage { get; set; }
 
         // ── Danh sách Role được điều hướng vào Admin Area ─────────────────────
-        private static readonly string[] AdminRoles = { "Admin", "Manager", "WarehouseStaff" };
+        private static readonly string[] AdminRoles = { "Admin", "Manager", "Staff" };
 
         public class InputModel
         {

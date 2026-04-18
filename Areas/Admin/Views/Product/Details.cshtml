@@ -361,9 +361,8 @@
                     <label class="form-label">Giá bán (₫) <span class="required">*</span></label>
                     <div style="position: relative;">
                         <span class="currency-symbol">₫</span>
-                        <input asp-for="Price" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0" />
+                        <input name="DefaultVariant.Price" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0" value="@(Model?.DefaultVariant?.Price)" />
                     </div>
-                    <span asp-validation-for="Price" style="color: #ff2222; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
                 <!-- Suggested Price -->
@@ -371,7 +370,7 @@
                     <label class="form-label">Giá niêm yết (₫)</label>
                     <div style="position: relative;">
                         <span class="currency-symbol">₫</span>
-                        <input asp-for="ListPrice" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0 (tùy chọn)" />
+                        <input name="DefaultVariant.ListPrice" type="number" step="1000" class="form-input" style="width: 100%; padding-left: 32px;" placeholder="0 (tùy chọn)" value="@(Model?.DefaultVariant?.ListPrice)" />
                     </div>
                     <p class="help-text">Để trống nếu giá bán = giá niêm yết</p>
                 </div>
@@ -383,59 +382,6 @@
                         <option value="1" selected="@(Model?.Status == 1)">✓ Hoạt động</option>
                         <option value="0" selected="@(Model?.Status == 0)">✗ Ngừng bán</option>
                     </select>
-                </div>
-                <!-- Flash Sale Section -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white fw-semibold border-bottom">
-                        <i class="fa-solid fa-bolt text-warning me-2"></i>Flash Sale
-                    </div>
-                    <div class="card-body row g-3">
-
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input asp-for="IsFlashSale"
-                                       class="form-check-input"
-                                       id="isFlashSaleToggle"
-                                       role="switch" />
-                                <label class="form-check-label fw-semibold" for="isFlashSaleToggle">
-                                    Kích hoạt Flash Sale
-                                </label>
-                            </div>
-                        </div>
-
-                        <div id="flashSaleFields" style="display:none;" class="col-12">
-                            <div class="row g-3">
-                                <div class="col-sm-6">
-                                    <label asp-for="FlashSalePrice" class="form-label fw-semibold">
-                                        Giá Flash Sale (₫) <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white text-warning fw-bold">₫</span>
-                                        <input asp-for="FlashSalePrice"
-                                               type="number" step="1000" min="0"
-                                               class="form-control"
-                                               placeholder="Giá sau giảm..." />
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label asp-for="FlashSaleEndTime" class="form-label fw-semibold">
-                                        Thời gian kết thúc <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="FlashSaleEndTime"
-                                           type="datetime-local"
-                                           class="form-control" />
-                                </div>
-                                <div class="col-12">
-                                    <div class="alert alert-warning py-2 mb-0 small">
-                                        <i class="fa-solid fa-circle-info me-1"></i>
-                                        Giá Flash Sale phải thấp hơn giá bán gốc.
-                                        Sau thời gian kết thúc, sản phẩm sẽ tự động trở về giá thường.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
                 </div>
             </div>
         </div>
@@ -466,7 +412,7 @@
                 <!-- Warranty -->
                 <div class="form-group">
                     <label class="form-label">Thông tin bảo hành</label>
-                    <input asp-for="WarrantyInfo" class="form-input" style="width: 100%;" placeholder="VD: 24 tháng chính hãng" />
+                    <input name="DefaultVariant.WarrantyInfo" class="form-input" style="width: 100%;" placeholder="VD: 24 tháng chính hãng" />
                 </div>
 
                 @*<!-- Promotion - Removed: Use separate Promotion model instead -->
@@ -509,35 +455,13 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const toggle = document.getElementById('isFlashSaleToggle');
-        const fields = document.getElementById('flashSaleFields');
         const productForm = document.getElementById('productForm');
 
-        // 1. Hàm xử lý ẩn/hiện khung nhập Flash Sale
-        function updateFlashSaleFields() {
-            if (toggle && fields) {
-                if (toggle.checked) {
-                    fields.style.display = 'block';
-                    // Tự động thêm required khi bật
-                    fields.querySelectorAll('input').forEach(i => i.required = true);
-                } else {
-                    fields.style.display = 'none';
-                    fields.querySelectorAll('input').forEach(i => i.required = false);
-                }
-            }
-        }
-
-        if (toggle) {
-            toggle.addEventListener('change', updateFlashSaleFields);
-            updateFlashSaleFields(); // Chạy ngay khi load trang
-        }
-
-        // 2. Form Validation trước khi Submit
         productForm.addEventListener('submit', function(e) {
             const name = document.querySelector('[name="Name"]').value.trim();
             const categoryId = document.querySelector('[name="CategoryId"]').value;
             const brandId = document.querySelector('[name="BrandId"]').value;
-            const price = parseFloat(document.querySelector('[name="Price"]').value);
+            const price = parseFloat(document.querySelector('[name="DefaultVariant.Price"]').value);
             const description = document.querySelector('[name="Description"]').value.trim();
 
             if (!name) { alert('⚠️ Vui lòng nhập tên sản phẩm'); e.preventDefault(); return; }
@@ -545,23 +469,6 @@
             if (!brandId) { alert('⚠️ Vui lòng chọn thương hiệu'); e.preventDefault(); return; }
             if (!price || price <= 0) { alert('⚠️ Giá bán phải lớn hơn 0'); e.preventDefault(); return; }
             if (!description) { alert('⚠️ Vui lòng nhập mô tả'); e.preventDefault(); return; }
-
-            // Logic kiểm tra riêng cho Flash Sale
-            if (toggle.checked) {
-                const flashPrice = parseFloat(document.querySelector('[name="FlashSalePrice"]').value);
-                const endTime = document.querySelector('[name="FlashSaleEndTime"]').value;
-
-                if (!flashPrice || flashPrice >= price) {
-                    alert('⚠️ Giá Flash Sale phải nhỏ hơn giá gốc!');
-                    e.preventDefault();
-                    return;
-                }
-                if (!endTime) {
-                    alert('⚠️ Vui lòng chọn thời gian kết thúc Flash Sale!');
-                    e.preventDefault();
-                    return;
-                }
-            }
         });
     });
 </script>

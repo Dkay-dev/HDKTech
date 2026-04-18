@@ -7,7 +7,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
+    [Authorize(Policy = "Dashboard.View")]
     [Route("admin/[controller]")]
     public class DashboardController : Controller
     {
@@ -31,9 +31,10 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 // Sprint 3: Role-based Experience — truyền role vào Service để lọc dữ liệu
-                var role = User.IsInRole("Admin")         ? "Admin"
-                         : User.IsInRole("Manager")       ? "Manager"
-                         : User.IsInRole("WarehouseStaff")? "WarehouseStaff"
+                // Lưu ý: role "WarehouseStaff" trước đây là typo; hệ thống dùng role "Staff".
+                var role = User.IsInRole("Admin")   ? "Admin"
+                         : User.IsInRole("Manager") ? "Manager"
+                         : User.IsInRole("Staff")   ? "Staff"
                          : string.Empty;
 
                 var vm = await _dashboardService.GetDashboardDataAsync(role);

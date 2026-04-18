@@ -161,11 +161,11 @@
                                             </div>
                                         </td>
                                         <td class="text-end fw-bold text-danger small">
-                                            @p.Price.ToString("N0") ₫
+                                            @((p.DisplayPrice ?? 0m).ToString("N0")) ₫
                                         </td>
                                         <td class="text-center">
                                             @{
-                                                var qty = p.Inventories?.Sum(k => k.Quantity) ?? 0;
+                                                var qty = p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0;
                                             }
                                             <span class="badge @(qty > 0 ? "bg-success bg-opacity-75" : "bg-danger bg-opacity-75")">
                                                 @qty

@@ -1,8 +1,4 @@
-@* ✅ Fix #5: Sửa lỗi trắng trang Khuyến mãi
-   - Thêm @using đầy đủ cho namespace Promotion
-   - Kiểm tra null/empty trước khi render
-   - Loại bỏ Tailwind CSS lẫn lộn với Bootstrap - chỉ dùng Bootstrap thuần
-   - Sửa cấu trúc div lồng nhau bị lỗi gây crash view *@
+@* ✅ Fix #5: Sửa lỗi trắng trang & Fix lỗi Build CS0019 (Enum Comparison) *@
 
 @using HDKTech.Areas.Admin.Models
 @model IEnumerable<Promotion>
@@ -16,15 +12,15 @@
     var now = DateTime.Now;
 
     int tongChienDich = promotions.Count();
-    int dangChay      = promotions.Count(p => p.IsCurrentlyActive);
-    int sapDienRa     = promotions.Count(p => !p.IsCurrentlyActive && p.StartDate > now);
+    int dangChay = promotions.Count(p => p.IsCurrentlyActive);
+    // FIX: So sánh với Enum PromotionStatus.Scheduled thay vì so sánh logic thời gian rời rạc
+    int sapDienRa = promotions.Count(p => p.Status == PromotionStatus.Scheduled);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/admin/css/promotion.css" asp-append-version="true" />
 }
 
-<!-- ========== HEADER ========== -->
 <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between mb-4 gap-3">
     <div>
         <h1 class="fw-bold mb-1">
@@ -37,7 +33,6 @@
     </a>
 </div>
 
-<!-- ========== THÔNG BÁO TempData ========== -->
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -53,7 +48,6 @@
     </div>
 }
 
-<!-- ========== THỐNG KÊ NHANH ========== -->
 <div class="row g-3 mb-4">
     <div class="col-sm-4">
         <div class="card border-0 shadow-sm h-100">
@@ -98,7 +92,6 @@
     </div>
 </div>
 
-<!-- ========== DANH SÁCH CHIẾN DỊCH ========== -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 fw-bold">
@@ -110,8 +103,6 @@
     </div>
 
     <div class="card-body p-0">
-
-        @* ✅ Fix #5 - Kiểm tra null/empty - hiển thị UI thông báo thay vì để trắng trang *@
         @if (!promotions.Any())
         {
             <div class="text-center py-5 my-3">
@@ -143,7 +134,6 @@
                         @foreach (var promo in promotions.OrderByDescending(p => p.CreatedAt))
                         {
                             <tr>
-                                <!-- Tên chiến dịch -->
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="bg-light rounded p-2 flex-shrink-0">
@@ -151,15 +141,10 @@
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold small">@promo.CampaignName</p>
-                                            @if (!string.IsNullOrEmpty(promo.ApplicableCategory))
-                                            {
-                                                <small class="text-muted">@promo.ApplicableCategory</small>
-                                            }
                                         </div>
                                     </div>
                                 </td>
 
-                                <!-- Thời gian -->
                                 <td>
                                     <small class="d-block fw-semibold">
                                         @promo.StartDate.ToString("dd/MM/yyyy") → @promo.EndDate.ToString("dd/MM/yyyy")
@@ -181,17 +166,17 @@
                                     <small class="@remainingClass">@remainingText</small>
                                 </td>
 
-                                <!-- Mã / Mức giảm -->
                                 <td>
                                     @if (!string.IsNullOrEmpty(promo.PromoCode))
                                     {
                                         <code class="small d-block">@promo.PromoCode</code>
                                     }
-                                    @if (promo.PromotionType == "Percentage")
+                                    @* FIX: So sánh Enum thay vì String *@
+                                    @if (promo.PromotionType == PromotionType.Percentage)
                                     {
                                         <span class="badge bg-danger">@promo.Value% OFF</span>
                                     }
-                                    else if (promo.PromotionType == "FixedAmount")
+                                    else if (promo.PromotionType == PromotionType.FixedAmount)
                                     {
                                         <span class="badge bg-primary">-@promo.Value.ToString("#,##0")₫</span>
                                     }
@@ -201,7 +186,6 @@
                                     }
                                 </td>
 
-                                <!-- Lượt dùng -->
                                 <td>
                                     <span class="fw-bold">@promo.UsageCount</span>
                                     @if (promo.MaxUsageCount.HasValue)
@@ -210,15 +194,15 @@
                                     }
                                 </td>
 
-                                <!-- Trạng thái -->
                                 <td>
-                                    @if (promo.IsCurrentlyActive)
+                                    @* FIX: Sử dụng IsCurrentlyActive từ Model hoặc so sánh Enum Status *@
+                                    @if (promo.Status == PromotionStatus.Running)
                                     {
                                         <span class="badge bg-success rounded-pill">
                                             <i class="fas fa-circle-notch fa-spin me-1"></i>Đang chạy
                                         </span>
                                     }
-                                    else if (promo.StartDate > now)
+                                    else if (promo.Status == PromotionStatus.Scheduled)
                                     {
                                         <span class="badge bg-warning rounded-pill text-dark">
                                             <i class="fas fa-clock me-1"></i>Sắp diễn ra
@@ -232,15 +216,14 @@
                                     }
                                 </td>
 
-                                <!-- Hành động -->
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="@Url.Action("Details", new { id = promo.Id })"
-                                           class="btn btn-outline-info" title="Chi tiết">
+                                               class="btn btn-outline-info" title="Chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="@Url.Action("Edit", new { id = promo.Id })"
-                                           class="btn btn-outline-primary" title="Chỉnh sửa">
+                                               class="btn btn-outline-primary" title="Chỉnh sửa">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <form method="post"
@@ -250,7 +233,7 @@
                                             <button type="submit"
                                                     class="btn btn-outline-danger"
                                                     title="Xóa"
-                                                    onclick="return confirmXoa('@promo.CampaignName')">
+                                                    onclick="return confirm('Bạn có chắc muốn xóa khuyến mãi @promo.CampaignName?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>

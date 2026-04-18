@@ -32,12 +32,6 @@
                         <textarea asp-for="Description" class="form-control form-control-sm" rows="3" placeholder="Mô tả về chiến dịch..."></textarea>
             </div>
 
-            <!-- Danh mục áp dụng -->
-                    <div class="mb-3">
-                        <label asp-for="ApplicableCategory" class="form-label fw-bold">Danh mục áp dụng</label>
-                        <input type="text" asp-for="ApplicableCategory" class="form-control form-control-sm" placeholder="VD: Laptop & Accessories" />
-            </div>
-
                     <!-- Ngày bắt đầu & kết thúc -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -63,9 +57,10 @@
                 </label>
                         <select asp-for="PromotionType" id="PromotionType" class="form-select form-select-sm">
                     <option value="">-- Chọn loại --</option>
-                    <option value="Percentage">Giảm giá %</option>
-                    <option value="FixedAmount">Giảm giá cố định (VNĐ)</option>
-                    <option value="FreeShip">Miễn phí vận chuyển</option>
+                            <option value="@((int)PromotionType.Percentage)">Giảm giá %</option>
+                            <option value="@((int)PromotionType.FixedAmount)">Giảm giá cố định (VNĐ)</option>
+                            <option value="@((int)PromotionType.FreeShip)">Miễn phí vận chuyển</option>
+                            <option value="@((int)PromotionType.FlashSale)">Flash Sale</option>
                 </select>
                         <span asp-validation-for="PromotionType" class="invalid-feedback d-block"></span>
             </div>
@@ -173,10 +168,15 @@
     const previewPromo = document.getElementById('previewPromo');
     const previewTime = document.getElementById('previewTime');
 
+    const TYPE_PERCENTAGE = '@((int)PromotionType.Percentage)';
+    const TYPE_FIXED = '@((int)PromotionType.FixedAmount)';
+    const TYPE_FREESHIP = '@((int)PromotionType.FreeShip)';
+    const TYPE_FLASHSALE = '@((int)PromotionType.FlashSale)';
+
     loaiSelect.addEventListener('change', function() {
-        if (this.value === 'Percentage') {
+        if (this.value === TYPE_PERCENTAGE) {
             unitSpan.textContent = '%';
-        } else if (this.value === 'FixedAmount') {
+        } else if (this.value === TYPE_FIXED) {
             unitSpan.textContent = '₫';
         } else {
             unitSpan.textContent = '';
@@ -193,11 +193,12 @@
     function updatePreview() {
         const Value = document.getElementById('Value').value;
         const loai = loaiSelect.value;
-        
+
         let text = '-';
         if (Value && loai) {
-            if (loai === 'Percentage') text = `Giảm ${Value}%`;
-            else if (loai === 'FixedAmount') text = `Giảm ${parseInt(Value).toLocaleString('vi-VN')}₫`;
+            if (loai === TYPE_PERCENTAGE) text = `Giảm ${Value}%`;
+            else if (loai === TYPE_FIXED) text = `Giảm ${parseInt(Value).toLocaleString('vi-VN')}₫`;
+            else if (loai === TYPE_FLASHSALE) text = `Flash Sale ${Value}%`;
             else text = `Miễn phí vận chuyển`;
         }
         previewPromo.textContent = text;

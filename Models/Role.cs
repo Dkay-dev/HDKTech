@@ -1,25 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
+// File này đã bị loại bỏ khi hệ phân quyền custom được hợp nhất vào
+// ASP.NET Identity. Giữ lại namespace rỗng để các file khác không phải
+// xoá `using HDKTech.Models;`. Không compile thêm kiểu nào ở đây.
 namespace HDKTech.Models
 {
-    [Table("Roles")]
-    public class Role
-    {
-        [Key]
-        public int RoleId { get; set; }
-
-        [Required(ErrorMessage = "Tên role không được để trống")]
-        [StringLength(50)]
-        public string RoleName { get; set; }
-
-        [StringLength(500)]
-        public string Description { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        public virtual ICollection<RolePermission> RolePermissions { get; set; }
-    }
+    // Intentionally empty — see IdentityRoleSeed & RoleController.
 }

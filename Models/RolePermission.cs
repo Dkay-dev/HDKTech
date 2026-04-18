@@ -1,23 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
+// File này đã bị loại bỏ khi hệ phân quyền custom được hợp nhất vào
+// ASP.NET Identity. RolePermission cũ = AspNetRoleClaims với Type="permission".
 namespace HDKTech.Models
 {
-    [Table("RolePermissions")]
-    public class RolePermission
-    {
-        [Key]
-        public int RolePermissionId { get; set; }
-
-        [ForeignKey("Role")]
-        public int RoleId { get; set; }
-
-        [ForeignKey("Permission")]
-        public int PermissionId { get; set; }
-
-        public DateTime AssignedAt { get; set; } = DateTime.Now;
-
-        public virtual Role Role { get; set; }
-        public virtual Permission Permission { get; set; }
-    }
+    // Intentionally empty — see AspNetRoleClaims.
 }

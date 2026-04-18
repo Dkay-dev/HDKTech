@@ -26,7 +26,7 @@ namespace HDKTech.Repositories
         public async Task<Brand?> GetByIdWithProductsAsync(int id)
             => await _dbSet
                 .Include(b => b.Products).ThenInclude(p => p.Images)
-                .Include(b => b.Products).ThenInclude(p => p.Inventories)
+                .Include(b => b.Products).ThenInclude(p => p.Variants).ThenInclude(v => v.Inventories)
                 .FirstOrDefaultAsync(b => b.Id == id);
 
         public new async Task<bool> AddAsync(Brand brand)

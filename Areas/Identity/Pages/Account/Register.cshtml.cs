@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -101,7 +100,7 @@ namespace HDKTech.Areas.Identity.Pages.Account
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, PhanQuyen.User.ToString());
+                    await _userManager.AddToRoleAsync(user, "Customer");
                     _logger.LogInformation("Người dùng đã tạo tài khoản mới thành công.");
 
                     var userId = await _userManager.GetUserIdAsync(user);

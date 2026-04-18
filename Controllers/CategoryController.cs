@@ -1,6 +1,7 @@
-﻿using HDKTech.Repositories;
-using HDKTech.Repositories.Interfaces;
+﻿// Controllers/CategoryController.cs — refactored
 using HDKTech.Models;
+using HDKTech.Services;
+using HDKTech.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HDKTech.Controllers
@@ -8,80 +9,65 @@ namespace HDKTech.Controllers
     public class CategoryController : Controller
     {
         private readonly CategoryRepository _categoryRepo;
-        private readonly IProductRepository _productRepo;
-        private readonly ILogger<CategoryController> _logger;
+        private readonly IProductService _productService;
 
         public CategoryController(
             CategoryRepository categoryRepo,
-            IProductRepository productRepo,
-            ILogger<CategoryController> logger)
+            IProductService productService)
         {
             _categoryRepo = categoryRepo;
-            _productRepo = productRepo;
-            _logger = logger;
+            _productService = productService;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // INDEX — hiển thị sản phẩm theo danh mục
-        // URL: /Category/Index/{id}?sortBy=price_asc&brandId=2&minPrice=5000000
-        // ─────────────────────────────────────────────────────────────────────
         public async Task<IActionResult> Index(
             int id,
             string sortBy = "featured",
+            string? brandIds = null,
             decimal? minPrice = null,
             decimal? maxPrice = null,
-            int? brandId = null,
-            string? cpuLine = null,
-            string? vgaLine = null,
-            string? ramType = null,
-            int? status = null,
+            string? cpuFilter = null,
+            string? vgaFilter = null,
+            string? ramFilter = null,
             int page = 1)
         {
             var category = await _categoryRepo.GetByIdAsync(id);
             if (category == null) return RedirectToAction("Index", "Home");
 
-            // Dùng FilterProductsAsync — logic đệ quy danh mục con đã nằm trong Repository
+            var parsedBrandIds = ParseIntList(brandIds);
+
             var filter = new ProductFilterModel
             {
                 CategoryId = id,
-                BrandId = brandId,
+                BrandIds = parsedBrandIds,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
-                Status = status,
                 SortBy = sortBy,
-                CpuLine = cpuLine,
-                VgaLine = vgaLine,
-                RamType = ramType
+                CpuFilter = cpuFilter,
+                VgaFilter = vgaFilter,
+                RamFilter = ramFilter,
+                Page = page,
+                PageSize = 16
             };
 
-            var allProducts = await _productRepo.FilterProductsAsync(filter);
-
-            // ── Phân trang ────────────────────────────────────────────────────
-            const int pageSize = 16;
-            var totalProducts = allProducts.Count;
-            var totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
-            if (page < 1) page = 1;
-            if (page > totalPages && totalPages > 0) page = totalPages;
-
-            var paged = allProducts
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            // ── Lấy dữ liệu cho dropdown filter ──────────────────────────────
-            var brands = await _productRepo.GetUniqueBrandsByCategory(id);
-            var cpuLines = await _productRepo.GetUniqueCpuLines();
+            var result = await _productService.FilterAsync(filter);
 
             ViewBag.CategoryName = category.Name;
             ViewBag.CategoryId = id;
-            ViewBag.Brands = brands;
-            ViewBag.CpuLines = cpuLines;
             ViewBag.CurrentSort = sortBy;
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.TotalProducts = totalProducts;
+            ViewBag.TotalPages = result.TotalPages;
+            ViewBag.TotalProducts = result.TotalCount;
+            ViewBag.SelectedBrandIds = parsedBrandIds;
+            ViewBag.FilterOptions = result.Options; // Dynamic!
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
 
-            return View(paged);
+            return View(result.Products);
         }
+
+        private static List<int> ParseIntList(string? raw)
+            => (raw ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(s => int.TryParse(s.Trim(), out var id) ? id : 0)
+                           .Where(id => id > 0).Distinct().ToList();
     }
 }

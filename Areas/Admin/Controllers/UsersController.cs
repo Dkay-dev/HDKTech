@@ -5,12 +5,16 @@ using Microsoft.EntityFrameworkCore;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Services;
-using HDKTech.Areas.Admin.Constants;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
+    /// <summary>
+    /// UsersController refactor — dùng hoàn toàn ASP.NET Identity.
+    ///  - Role lấy từ AspNetUserRoles qua <see cref="UserManager{TUser}.GetRolesAsync"/>.
+    ///  - Đổi role dùng AddToRole / RemoveFromRoles (không đụng DB trực tiếp).
+    /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Route("admin/[controller]")]
     public class UsersController : Controller
     {
@@ -20,15 +24,14 @@ namespace HDKTech.Areas.Admin.Controllers
         private readonly ISystemLogService          _logService;
         private readonly ILogger<UsersController>   _logger;
 
-        // ── VIP Threshold ──────────────────────────────────────────────────────
-        private const decimal VipThreshold = 5_000_000m; // 5 triệu VNĐ
+        private const decimal VipThreshold = 5_000_000m;
 
         public UsersController(
-            UserManager<AppUser>      userManager,
-            RoleManager<IdentityRole> roleManager,
-            HDKTechContext            db,
-            ISystemLogService         logService,
-            ILogger<UsersController>  logger)
+            UserManager<AppUser>       userManager,
+            RoleManager<IdentityRole>  roleManager,
+            HDKTechContext             db,
+            ISystemLogService          logService,
+            ILogger<UsersController>   logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -37,51 +40,60 @@ namespace HDKTech.Areas.Admin.Controllers
             _logger      = logger;
         }
 
-        // ── GET /admin/users ──────────────────────────────────────────────────
+        // ── GET /admin/users ──────────────────────────────────────────
         [HttpGet("")]
         [HttpGet("index")]
         public async Task<IActionResult> Index(string? search, int page = 1, int pageSize = 20)
         {
-            // 1. Lấy tất cả user, eager load Orders để tính TotalSpent
-            var usersQuery = _userManager.Users
+            var q = _db.Users
+                .AsNoTracking()
                 .Include(u => u.Orders)
-                .AsNoTracking();
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                usersQuery = usersQuery.Where(u =>
+                q = q.Where(u =>
                     u.FullName.ToLower().Contains(s) ||
-                    u.Email!.ToLower().Contains(s));
+                    (u.Email != null && u.Email.ToLower().Contains(s)));
             }
 
-            var allUsers = await usersQuery.OrderBy(u => u.FullName).ToListAsync();
+            var allUsers = await q.OrderBy(u => u.FullName).ToListAsync();
 
-            // 2. Map sang ViewModel (phải async vì GetRolesAsync)
+            // Lấy role name cho từng user (AspNetUserRoles join AspNetRoles).
+            // Dùng IQueryable để khỏi N+1 khi danh sách dài.
+            var userIds = allUsers.Select(u => u.Id).ToList();
+            var userRoleMap = await (
+                from ur in _db.UserRoles.AsNoTracking()
+                join r  in _db.Roles.AsNoTracking() on ur.RoleId equals r.Id
+                where userIds.Contains(ur.UserId)
+                select new { ur.UserId, r.Name }
+            ).ToListAsync();
+
+            var roleByUser = userRoleMap
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Name ?? "").First());
+
             var now = DateTime.UtcNow;
-            var viewModels = new List<UserListViewModel>();
-
-            foreach (var u in allUsers)
+            var viewModels = allUsers.Select(u =>
             {
-                var roles      = await _userManager.GetRolesAsync(u);
                 var totalSpent = u.Orders?
-                    .Where(o => o.Status == AdminConstants.OrderDelivered)
+                    .Where(o => o.Status == OrderStatus.Delivered)
                     .Sum(o => o.TotalAmount) ?? 0m;
 
-                viewModels.Add(new UserListViewModel
+                return new UserListViewModel
                 {
                     Id         = u.Id,
                     FullName   = u.FullName,
                     Email      = u.Email ?? "",
-                    Role       = roles.FirstOrDefault() ?? "—",
+                    Role       = roleByUser.TryGetValue(u.Id, out var rn) ? rn : "—",
                     IsLocked   = u.LockoutEnd.HasValue && u.LockoutEnd.Value > now,
                     TotalSpent = totalSpent,
                     IsVip      = totalSpent >= VipThreshold,
-                    CreatedAt  = u.CreatedAt,
-                });
-            }
+                    CreatedAt  = u.CreatedAt
+                };
+            }).ToList();
 
-            // 3. Phân trang
             var totalCount = viewModels.Count;
             var paged      = viewModels.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
@@ -91,18 +103,19 @@ namespace HDKTech.Areas.Admin.Controllers
             ViewBag.TotalCount= totalCount;
             ViewBag.TotalPages= (int)Math.Ceiling((double)totalCount / pageSize);
 
-            // 4. Danh sách role để dropdown Sửa Role
-            ViewBag.AllRoles = _roleManager.Roles.Select(r => r.Name).ToList();
+            // AllRoles: tất cả role trong AspNetRoles.
+            ViewBag.AllRoles = await _roleManager.Roles
+                .AsNoTracking()
+                .OrderBy(r => r.Name)
+                .Select(r => r.Name ?? "")
+                .ToListAsync();
 
             return View(paged);
         }
 
-        // ── POST /admin/users/update-role ─────────────────────────────────────
-        /// <summary>
-        /// Cập nhật role cho user. Gọi UpdateSecurityStampAsync để ép user đó logout.
-        /// </summary>
+        // ── POST /admin/users/update-role ─────────────────────────────
         [HttpPost("update-role")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "RequireAdmin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateUserRole(string userId, string newRole)
         {
@@ -113,25 +126,45 @@ namespace HDKTech.Areas.Admin.Controllers
             if (user == null)
                 return Json(new { success = false, message = "Không tìm thấy người dùng." });
 
-            // Kiểm tra role tồn tại
             if (!await _roleManager.RoleExistsAsync(newRole))
                 return Json(new { success = false, message = $"Role '{newRole}' không tồn tại." });
 
             var currentRoles = await _userManager.GetRolesAsync(user);
-            var oldRole      = currentRoles.FirstOrDefault() ?? "—";
+            var oldRoleName  = currentRoles.FirstOrDefault() ?? "—";
 
-            // Xoá toàn bộ role cũ rồi gán role mới
-            if (currentRoles.Any())
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            // Idempotent — nếu role đã đúng, bỏ qua việc đụng DB.
+            if (currentRoles.Count == 1 &&
+                string.Equals(currentRoles[0], newRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = $"Người dùng đã ở role '{newRole}'."
+                });
+            }
+
+            if (currentRoles.Count > 0)
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Không gỡ được role cũ: " +
+                            string.Join("; ", removeResult.Errors.Select(e => e.Description))
+                    });
+            }
 
             var addResult = await _userManager.AddToRoleAsync(user, newRole);
             if (!addResult.Succeeded)
-            {
-                var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                return Json(new { success = false, message = errors });
-            }
+                return Json(new
+                {
+                    success = false,
+                    message = "Không gán được role mới: " +
+                        string.Join("; ", addResult.Errors.Select(e => e.Description))
+                });
 
-            // Ép logout — security stamp thay đổi → cookie cũ invalid ngay lập tức
+            // Ép refresh security stamp → cookie cũ bị vô hiệu
             await _userManager.UpdateSecurityStampAsync(user);
 
             var actor = User.Identity?.Name ?? "System";
@@ -139,27 +172,30 @@ namespace HDKTech.Areas.Admin.Controllers
                 username   : actor,
                 actionType : "Update",
                 module     : "User",
-                description: $"Cập nhật role của '{user.FullName}' từ '{oldRole}' → '{newRole}'",
+                description: $"Cập nhật role của '{user.FullName}' từ '{oldRoleName}' → '{newRole}'",
                 entityId   : user.Id,
                 entityName : user.FullName,
-                oldValue   : oldRole,
+                oldValue   : oldRoleName,
                 newValue   : newRole,
                 userRole   : User.IsInRole("Admin") ? "Admin" : "Manager",
                 userId     : user.Id);
 
-            return Json(new { success = true, message = $"Đã cập nhật role thành '{newRole}'. Người dùng sẽ phải đăng nhập lại." });
+            return Json(new
+            {
+                success = true,
+                message = $"Đã cập nhật role thành '{newRole}'. Người dùng sẽ phải đăng nhập lại."
+            });
         }
 
-        // ── POST /admin/users/lock ─────────────────────────────────────────────
+        // ── POST /admin/users/lock ────────────────────────────────────
         [HttpPost("lock")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "RequireAdmin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> LockAccount(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
 
-            // Khoá 100 năm = vĩnh viễn
             await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
             await _userManager.UpdateSecurityStampAsync(user);
 
@@ -179,9 +215,9 @@ namespace HDKTech.Areas.Admin.Controllers
             return Json(new { success = true, message = $"Đã khoá tài khoản '{user.FullName}'." });
         }
 
-        // ── POST /admin/users/unlock ───────────────────────────────────────────
+        // ── POST /admin/users/unlock ──────────────────────────────────
         [HttpPost("unlock")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "RequireAdmin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UnlockAccount(string userId)
         {
@@ -190,10 +226,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
             await _userManager.SetLockoutEndDateAsync(user, null);
             await _userManager.ResetAccessFailedCountAsync(user);
-
-            // ✅ Identity Sync: Cập nhật SecurityStamp khi mở khoá
-            // Điều này đảm bảo nếu cookie session cũ vẫn còn (từ trước khi khoá),
-            // nó sẽ bị vô hiệu hoá. User cần đăng nhập lại với tài khoản đã được mở khoá.
             await _userManager.UpdateSecurityStampAsync(user);
 
             var actor = User.Identity?.Name ?? "System";
@@ -201,7 +233,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 username   : actor,
                 actionType : "Unlock",
                 module     : "User",
-                description: $"Mở khoá tài khoản của '{user.FullName}' ({user.Email}). SecurityStamp đã reset.",
+                description: $"Mở khoá tài khoản của '{user.FullName}' ({user.Email}).",
                 entityId   : user.Id,
                 entityName : user.FullName,
                 oldValue   : "Locked",
@@ -213,7 +245,6 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 
-    // ── ViewModel ─────────────────────────────────────────────────────────────
     public class UserListViewModel
     {
         public string   Id         { get; set; } = "";

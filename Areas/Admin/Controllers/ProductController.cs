@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
 using HDKTech.Data;
-using HDKTech.Utils;
 using Microsoft.EntityFrameworkCore;
 
 using HDKTech.Areas.Admin.Repositories;
@@ -10,7 +9,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Route("admin/[controller]")]
     public class ProductController : Controller
     {
@@ -19,7 +18,6 @@ namespace HDKTech.Areas.Admin.Controllers
         private readonly HDKTechContext _context;
         private readonly IWebHostEnvironment _env;
 
-        // Thư mục lưu ảnh sản phẩm (tương đối trong wwwroot)
         private const string ImgFolder = "images/products";
 
         public ProductController(
@@ -29,23 +27,22 @@ namespace HDKTech.Areas.Admin.Controllers
             IWebHostEnvironment env)
         {
             _productRepo = productRepo;
-            _logger = logger;
-            _context = context;
-            _env = env;
+            _logger      = logger;
+            _context     = context;
+            _env         = env;
         }
 
         // ──────────────────────────────────────────────────────────────
-        // INDEX — danh sách sản phẩm với search + filter + phân trang
-        // GET: /admin/product
+        // INDEX
         // ──────────────────────────────────────────────────────────────
         [HttpGet("")]
         [HttpGet("index")]
         public async Task<IActionResult> Index(
             string searchTerm = "",
-            int? categoryId = null,
-            int? brandId = null,
-            int page = 1,
-            int pageSize = 15)
+            int? categoryId   = null,
+            int? brandId      = null,
+            int page          = 1,
+            int pageSize      = 15)
         {
             try
             {
@@ -54,34 +51,35 @@ namespace HDKTech.Areas.Admin.Controllers
                     .Include(p => p.Category)
                     .Include(p => p.Brand)
                     .Include(p => p.Images)
-                    .Include(p => p.Inventories);
+                    .Include(p => p.Variants).ThenInclude(v => v.Inventories);
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
-                    query = query.Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm));
+                    query = query.Where(p =>
+                        p.Name.Contains(searchTerm) ||
+                        (p.Description != null && p.Description.Contains(searchTerm)));
 
-                if (categoryId.HasValue)
-                    query = query.Where(p => p.CategoryId == categoryId.Value);
-
-                if (brandId.HasValue)
-                    query = query.Where(p => p.BrandId == brandId.Value);
+                if (categoryId.HasValue) query = query.Where(p => p.CategoryId == categoryId.Value);
+                if (brandId.HasValue)    query = query.Where(p => p.BrandId    == brandId.Value);
 
                 var totalCount = await query.CountAsync();
-                var products = await query
+                var products   = await query
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                // Dropdowns cho filter
-                ViewBag.Categories   = await _context.Categories.AsNoTracking().Where(c => c.ParentCategoryId == null).OrderBy(c => c.Name).ToListAsync();
-                ViewBag.Brands       = await _context.Brands.AsNoTracking().OrderBy(b => b.Name).ToListAsync();
-                ViewBag.SearchTerm   = searchTerm;
-                ViewBag.CategoryId   = categoryId;
-                ViewBag.BrandId      = brandId;
-                ViewBag.CurrentPage  = page;
-                ViewBag.PageSize     = pageSize;
-                ViewBag.TotalPages   = (int)Math.Ceiling(totalCount / (double)pageSize);
-                ViewBag.TotalCount   = totalCount;
+                ViewBag.Categories  = await _context.Categories.AsNoTracking()
+                                        .Where(c => c.ParentCategoryId == null)
+                                        .OrderBy(c => c.Name).ToListAsync();
+                ViewBag.Brands      = await _context.Brands.AsNoTracking()
+                                        .OrderBy(b => b.Name).ToListAsync();
+                ViewBag.SearchTerm  = searchTerm;
+                ViewBag.CategoryId  = categoryId;
+                ViewBag.BrandId     = brandId;
+                ViewBag.CurrentPage = page;
+                ViewBag.PageSize    = pageSize;
+                ViewBag.TotalPages  = (int)Math.Ceiling(totalCount / (double)pageSize);
+                ViewBag.TotalCount  = totalCount;
 
                 return View(products);
             }
@@ -94,43 +92,52 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // DETAILS — xem/chỉnh sửa sản phẩm
-        // GET: /admin/product/details/{id}
+        // DETAILS — xem + sửa (Variants hiển thị trong view)
         // ──────────────────────────────────────────────────────────────
         [HttpGet("details/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
             var product = await _productRepo.GetProductByIdAsync(id);
-            if (product == null) { TempData["Error"] = "Sản phẩm không tìm thấy."; return RedirectToAction(nameof(Index)); }
+            if (product == null)
+            {
+                TempData["Error"] = "Sản phẩm không tìm thấy.";
+                return RedirectToAction(nameof(Index));
+            }
             await LoadDropdowns();
+            ViewBag.Variants = product.Variants?.OrderByDescending(v => v.IsDefault).ToList()
+                               ?? new List<ProductVariant>();
             return View(product);
         }
 
         // ──────────────────────────────────────────────────────────────
-        // CREATE — form tạo mới
-        // GET: /admin/product/create
+        // CREATE
         // ──────────────────────────────────────────────────────────────
         [HttpGet("create")]
-        [Authorize(Policy = "Product.Create")]   // ← GĐ4: Granular Security
+        [Authorize(Policy = "Product.Create")]
         public async Task<IActionResult> Create()
         {
             await LoadDropdowns();
             return View(new Product { Status = 1, CreatedAt = DateTime.Now });
         }
 
-        // POST: /admin/product/create
         [HttpPost("create")]
         [Authorize(Policy = "Product.Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Product product, IList<IFormFile> images, int stockQuantity = 0)
+        public async Task<IActionResult> Create(
+            Product product,
+            IList<IFormFile> images,
+            [Bind(Prefix = "DefaultVariant")] ProductVariant DefaultVariant,
+            int InitialStock = 0)
         {
-            // 1. Loại bỏ Validation cho các bảng liên quan
             ModelState.Remove(nameof(Product.Category));
             ModelState.Remove(nameof(Product.Brand));
             ModelState.Remove(nameof(Product.Images));
-            ModelState.Remove(nameof(Product.Inventories));
-            ModelState.Remove(nameof(Product.OrderItems));
+            ModelState.Remove(nameof(Product.Variants));
             ModelState.Remove(nameof(Product.Reviews));
+            ModelState.Remove(nameof(Product.Tags));
+
+            foreach (var key in ModelState.Keys.Where(k => k.StartsWith("DefaultVariant")).ToList())
+                ModelState.Remove(key);
 
             if (!ModelState.IsValid)
             {
@@ -141,33 +148,42 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 product.CreatedAt = DateTime.Now;
-
-                // --- ĐẢM BẢO DỮ LIỆU FLASH SALE ĐƯỢC GÁN ---
-                // Thông thường EF Core sẽ tự động map nếu tên trường ở View 
-                // và Model khớp nhau. Nhưng để chắc chắn, bạn có thể check:
-                if (!product.IsFlashSale)
-                {
-                    product.FlashSalePrice = null;
-                    product.FlashSaleEndTime = null;
-                }
-
-                // 2. Lưu sản phẩm thông qua Repo hoặc Context
                 var created = await _productRepo.CreateProductAsync(product);
 
-                // 3. Lưu ảnh nếu có
                 if (images?.Count > 0)
                     await SaveProductImages(created.Id, images, created.Category?.Name);
 
-                // 4. Tạo tồn kho
-                if (stockQuantity > 0)
+                if (DefaultVariant != null && DefaultVariant.Price > 0)
                 {
-                    _context.Inventories.Add(new Inventory
+                    var sku = string.IsNullOrWhiteSpace(DefaultVariant.Sku)
+                        ? $"P{created.Id}-DEFAULT"
+                        : DefaultVariant.Sku.Trim();
+
+                    var variant = new ProductVariant
                     {
-                        ProductId = created.Id,
-                        Quantity = stockQuantity,
-                        UpdatedAt = DateTime.Now
-                    });
+                        ProductId   = created.Id,
+                        Sku         = sku,
+                        VariantName = "Mặc định",
+                        Price       = DefaultVariant.Price,
+                        ListPrice   = DefaultVariant.ListPrice,
+                        IsActive    = true,
+                        IsDefault   = true,
+                        CreatedAt   = DateTime.Now
+                    };
+                    _context.ProductVariants.Add(variant);
                     await _context.SaveChangesAsync();
+
+                    if (InitialStock > 0)
+                    {
+                        _context.Inventories.Add(new Inventory
+                        {
+                            ProductId        = created.Id,
+                            ProductVariantId = variant.Id,
+                            Quantity         = InitialStock,
+                            UpdatedAt        = DateTime.Now
+                        });
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
                 TempData["Success"] = $"Tạo sản phẩm \"{created.Name}\" thành công!";
@@ -183,23 +199,28 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // EDIT — cập nhật sản phẩm (dùng chung view Details)
-        // POST: /admin/product/edit/{id}
+        // EDIT
         // ──────────────────────────────────────────────────────────────
         [HttpPost("edit/{id:int}")]
         [Authorize(Policy = "Product.Update")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Product product, IList<IFormFile> images)
+        public async Task<IActionResult> Edit(
+            int id,
+            Product product,
+            IList<IFormFile> images,
+            [Bind(Prefix = "DefaultVariant")] ProductVariant DefaultVariant)
         {
             if (id != product.Id) return BadRequest();
 
-            // Bỏ validation các bảng liên quan để tránh lỗi vặt
             ModelState.Remove(nameof(Product.Category));
             ModelState.Remove(nameof(Product.Brand));
             ModelState.Remove(nameof(Product.Images));
-            ModelState.Remove(nameof(Product.Inventories));
-            ModelState.Remove(nameof(Product.OrderItems));
+            ModelState.Remove(nameof(Product.Variants));
             ModelState.Remove(nameof(Product.Reviews));
+            ModelState.Remove(nameof(Product.Tags));
+
+            foreach (var key in ModelState.Keys.Where(k => k.StartsWith("DefaultVariant")).ToList())
+                ModelState.Remove(key);
 
             if (!ModelState.IsValid)
             {
@@ -209,31 +230,55 @@ namespace HDKTech.Areas.Admin.Controllers
 
             try
             {
-                // 1. Lấy bản gốc từ DB ra để Update (Cách này an toàn nhất)
-                var existingProduct = await _context.Products.FindAsync(id);
-                if (existingProduct == null) return NotFound();
+                var existing = await _context.Products
+                    .Include(p => p.Variants)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+                if (existing == null) return NotFound();
 
-                // 2. Cập nhật các thông tin cơ bản
-                existingProduct.Name = product.Name;
-                existingProduct.Price = product.Price;
-                existingProduct.ListPrice = product.ListPrice;
-                existingProduct.CategoryId = product.CategoryId;
-                existingProduct.BrandId = product.BrandId;
-                existingProduct.Status = product.Status;
-                existingProduct.Description = product.Description;
-                existingProduct.Specifications = product.Specifications;
-                existingProduct.WarrantyInfo = product.WarrantyInfo;
+                existing.Name             = product.Name;
+                existing.Slug             = product.Slug;
+                existing.CategoryId       = product.CategoryId;
+                existing.BrandId          = product.BrandId;
+                existing.WarrantyPolicyId = product.WarrantyPolicyId;
+                existing.Status           = product.Status;
+                existing.Description      = product.Description;
+                existing.Specifications   = product.Specifications;
+                existing.UpdatedAt        = DateTime.Now;
 
-                // 3. QUAN TRỌNG: Cập nhật Flash Sale
-                existingProduct.IsFlashSale = product.IsFlashSale;
-                existingProduct.FlashSalePrice = product.FlashSalePrice;
-                existingProduct.FlashSaleEndTime = product.FlashSaleEndTime;
+                if (DefaultVariant != null && DefaultVariant.Price > 0)
+                {
+                    var defVariant = existing.Variants?.FirstOrDefault(v => v.IsDefault)
+                                     ?? existing.Variants?.FirstOrDefault();
 
-                // 4. Lưu trực tiếp qua Context hoặc qua Repo (Nếu Repo của bạn gọi SaveChanges)
-                _context.Update(existingProduct);
+                    if (defVariant == null)
+                    {
+                        defVariant = new ProductVariant
+                        {
+                            ProductId   = existing.Id,
+                            Sku         = string.IsNullOrWhiteSpace(DefaultVariant.Sku)
+                                            ? $"P{existing.Id}-DEFAULT"
+                                            : DefaultVariant.Sku.Trim(),
+                            VariantName = "Mặc định",
+                            Price       = DefaultVariant.Price,
+                            ListPrice   = DefaultVariant.ListPrice,
+                            IsActive    = true,
+                            IsDefault   = true,
+                            CreatedAt   = DateTime.Now
+                        };
+                        _context.ProductVariants.Add(defVariant);
+                    }
+                    else
+                    {
+                        defVariant.Price     = DefaultVariant.Price;
+                        defVariant.ListPrice = DefaultVariant.ListPrice;
+                        if (!string.IsNullOrWhiteSpace(DefaultVariant.Sku))
+                            defVariant.Sku = DefaultVariant.Sku.Trim();
+                        defVariant.UpdatedAt = DateTime.Now;
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
-                // Xử lý ảnh mới nếu có
                 if (images?.Count > 0)
                 {
                     var cat = await _context.Categories.FindAsync(product.CategoryId);
@@ -253,8 +298,7 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // DELETE IMAGE — xóa ảnh đơn lẻ (AJAX)
-        // POST: /admin/product/delete-image/{imageId}
+        // DELETE IMAGE (AJAX)
         // ──────────────────────────────────────────────────────────────
         [HttpPost("delete-image/{imageId:int}")]
         [ValidateAntiForgeryToken]
@@ -265,7 +309,6 @@ namespace HDKTech.Areas.Admin.Controllers
                 var img = await _context.ProductImages.FindAsync(imageId);
                 if (img == null) return Json(new { success = false, message = "Không tìm thấy ảnh." });
 
-                // Xóa file vật lý
                 DeletePhysicalFile(img.ImageUrl);
 
                 _context.ProductImages.Remove(img);
@@ -279,10 +322,6 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // SET DEFAULT IMAGE (AJAX)
-        // POST: /admin/product/set-default-image/{imageId}
-        // ──────────────────────────────────────────────────────────────
         [HttpPost("set-default-image/{imageId:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SetDefaultImage(int imageId)
@@ -307,21 +346,23 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ──────────────────────────────────────────────────────────────
         // DELETE PRODUCT
-        // POST: /admin/product/delete/{id}
         // ──────────────────────────────────────────────────────────────
         [HttpPost("delete/{id:int}")]
-        [Authorize(Policy = "Product.Delete")]   // ← GĐ4: Granular Security
+        [Authorize(Policy = "Product.Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 var product = await _productRepo.GetProductByIdAsync(id);
-                if (product == null) { TempData["Error"] = "Sản phẩm không tìm thấy."; return RedirectToAction(nameof(Index)); }
+                if (product == null)
+                {
+                    TempData["Error"] = "Sản phẩm không tìm thấy.";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 var (success, error, imageUrls) = await _productRepo.DeleteProductAsync(id);
 
-                // Xóa ảnh vật lý sau khi xóa khỏi DB
                 if (imageUrls != null)
                     foreach (var imgUrl in imageUrls) DeletePhysicalFile(imgUrl);
 
@@ -339,27 +380,29 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // UPDATE STOCK (AJAX)
-        // POST: /admin/product/update-stock/{id}
+        // UPDATE STOCK (AJAX) — theo variant
         // ──────────────────────────────────────────────────────────────
-        [HttpPost("update-stock/{id:int}")]
-        [Authorize(Policy = "Inventory.Update")]  // ← GĐ4: Granular Security
+        [HttpPost("update-stock/{variantId:int}")]
+        [Authorize(Policy = "Inventory.Update")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStock(int id, int quantity)
+        public async Task<IActionResult> UpdateStock(int variantId, int quantity)
         {
-            if (quantity < 0) return Json(new { success = false, message = "Số lượng không hợp lệ." });
-            var ok = await _productRepo.UpdateProductStockAsync(id, quantity);
-            return Json(new { success = ok, message = ok ? "Cập nhật kho thành công." : "Cập nhật kho thất bại." });
+            if (quantity < 0)
+                return Json(new { success = false, message = "Số lượng không hợp lệ." });
+
+            var ok = await _productRepo.UpdateVariantStockAsync(variantId, quantity);
+            return Json(new
+            {
+                success = ok,
+                message = ok ? "Cập nhật kho thành công." : "Cập nhật kho thất bại."
+            });
         }
 
         // ──────────────────────────────────────────────────────────────
         // PRIVATE HELPERS
         // ──────────────────────────────────────────────────────────────
-
-        /// <summary>Lưu danh sách ảnh upload vào wwwroot/images/products/[productId]/</summary>
         private async Task SaveProductImages(int productId, IList<IFormFile> files, string? categoryName = null)
         {
-            // Tạo sub-folder theo productId để dễ quản lý
             var subFolder = productId.ToString();
             var uploadDir = Path.Combine(_env.WebRootPath, ImgFolder, subFolder);
             Directory.CreateDirectory(uploadDir);
@@ -370,13 +413,12 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 if (file.Length == 0) continue;
 
-                // Chỉ chấp nhận ảnh
                 var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
                 if (!new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext)) continue;
 
-                var fileName   = $"{Guid.NewGuid():N}{ext}";
-                var physPath   = Path.Combine(uploadDir, fileName);
-                var relUrl     = $"/{ImgFolder}/{subFolder}/{fileName}";
+                var fileName = $"{Guid.NewGuid():N}{ext}";
+                var physPath = Path.Combine(uploadDir, fileName);
+                var relUrl   = $"/{ImgFolder}/{subFolder}/{fileName}";
 
                 await using var stream = new FileStream(physPath, FileMode.Create);
                 await file.CopyToAsync(stream);
@@ -385,30 +427,31 @@ namespace HDKTech.Areas.Admin.Controllers
                 {
                     ProductId = productId,
                     ImageUrl  = relUrl,
-                    IsDefault = isFirst,   // ảnh đầu tiên là mặc định
+                    IsDefault = isFirst,
                     AltText   = Path.GetFileNameWithoutExtension(file.FileName),
                     CreatedAt = DateTime.Now
                 });
-
                 isFirst = false;
             }
 
             await _context.SaveChangesAsync();
         }
 
-        /// <summary>Xóa file ảnh vật lý khỏi wwwroot</summary>
         private void DeletePhysicalFile(string? relUrl)
         {
             if (string.IsNullOrWhiteSpace(relUrl)) return;
             try
             {
-                var path = Path.Combine(_env.WebRootPath, relUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                var path = Path.Combine(_env.WebRootPath,
+                    relUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
                 if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
             }
-            catch (Exception ex) { _logger.LogWarning(ex, "Không thể xóa file: {Url}", relUrl); }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể xóa file: {Url}", relUrl);
+            }
         }
 
-        /// <summary>Load dropdowns Brand + Category cho form</summary>
         private async Task LoadDropdowns()
         {
             ViewBag.Categories = await _context.Categories
@@ -418,7 +461,9 @@ namespace HDKTech.Areas.Admin.Controllers
             ViewBag.Brands = await _context.Brands
                 .OrderBy(b => b.Name)
                 .ToListAsync();
+            ViewBag.WarrantyPolicies = await _context.WarrantyPolicies
+                .OrderBy(w => w.Name)
+                .ToListAsync();
         }
     }
 }
-

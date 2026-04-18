@@ -1,14 +1,14 @@
-﻿using HDKTech.Models;
+using HDKTech.Models;
 using HDKTech.Data;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace HDKTech.Repositories
 {
     /// <summary>
-    /// Admin Product Repository - Handles all product CRUD operations
-    /// Uses Entity Framework Core for data access
+    /// Bản Admin repo "alias" trong namespace HDKTech.Repositories — giữ để
+    /// tương thích với Program.cs cũ (registration thứ 2). Toàn bộ logic
+    /// giờ deferred tới namespace mới trong Areas/Admin/Repositories.
     /// </summary>
     public class AdminProductRepository : IAdminProductRepository
     {
@@ -18,417 +18,225 @@ namespace HDKTech.Repositories
         public AdminProductRepository(HDKTechContext context, ILogger<AdminProductRepository> logger)
         {
             _context = context;
-            _logger = logger;
+            _logger  = logger;
         }
 
-        #region Read Operations
+        // ── Read ────────────────────────────────────────────────────
+        public async Task<IEnumerable<Product>> GetAllProductsAsync() =>
+            await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
 
-        public async Task<IEnumerable<Product>> GetAllProductsAsync()
-        {
-            try
-            {
-                return await _context.Products
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .Include(p => p.Images)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving all products");
-                return new List<Product>();
-            }
-        }
+        public async Task<Product?> GetProductByIdAsync(int id) =>
+            await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Images)
+                .Include(p => p.Variants).ThenInclude(v => v.Inventories)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-        public async Task<Product> GetProductByIdAsync(int id)
-        {
-            try
-            {
-                return await _context.Products
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .Include(p => p.Images)
-                    .Include(p => p.Inventories)
-                    .FirstOrDefaultAsync(p => p.Id == id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving product by id: {ProductId}", id);
-                return null;
-            }
-        }
+        public async Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId) =>
+            await _context.Products
+                .Where(p => p.CategoryId == categoryId)
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
 
-        public async Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId)
-        {
-            try
-            {
-                return await _context.Products
-                    .Where(p => p.Id == categoryId)
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving products by category: {CategoryId}", categoryId);
-                return new List<Product>();
-            }
-        }
-
-        public async Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId)
-        {
-            try
-            {
-                return await _context.Products
-                    .Where(p => p.Id == brandId)
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving products by brand: {BrandId}", brandId);
-                return new List<Product>();
-            }
-        }
+        public async Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId) =>
+            await _context.Products
+                .Where(p => p.BrandId == brandId)
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
 
         public async Task<(IEnumerable<Product> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize)
         {
-            try
-            {
-                var query = _context.Products
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .Include(p => p.Images);
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Images)
+                .Include(p => p.Variants);
 
-                var totalCount = await query.CountAsync();
-                var products = await query
-                    .OrderBy(p => p.Name)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
+            var totalCount = await query.CountAsync();
+            var products = await query
+                .OrderBy(p => p.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-                return (products, totalCount);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving paged products");
-                return (new List<Product>(), 0);
-            }
+            return (products, totalCount);
         }
 
-        #endregion
-
-        #region Create Operations
-
+        // ── Create ──────────────────────────────────────────────────
         public async Task<Product> CreateProductAsync(Product product)
         {
-            try
-            {
-                if (product == null)
-                {
-                    throw new ArgumentNullException(nameof(product));
-                }
-
-                _context.Products.Add(product);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Product created successfully: {ProductName}", product.Name);
-                return product;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating product");
-                throw;
-            }
+            if (product == null) throw new ArgumentNullException(nameof(product));
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+            return product;
         }
 
-        #endregion
-
-        #region Update Operations
-
+        // ── Update ──────────────────────────────────────────────────
         public async Task<bool> UpdateProductAsync(Product product)
         {
-            try
-            {
-                if (product == null)
-                {
-                    throw new ArgumentNullException(nameof(product));
-                }
+            if (product == null) return false;
 
-                var existingProduct = await _context.Products.FindAsync(product.Id);
-                if (existingProduct == null)
-                {
-                    _logger.LogWarning("Product not found for update: {ProductId}", product.Id);
-                    return false;
-                }
+            var existing = await _context.Products.FindAsync(product.Id);
+            if (existing == null) return false;
 
-                // Update properties
-                existingProduct.Name = product.Name;
-                existingProduct.Description = product.Description;
-                existingProduct.Price = product.Price;
-                existingProduct.Id = product.Id;
-                existingProduct.Id = product.Id;
-                existingProduct.Status = product.Status;
-                existingProduct.Specifications = product.Specifications;
-                existingProduct.WarrantyInfo = product.WarrantyInfo;
-                existingProduct.DiscountNote = product.DiscountNote;
-                existingProduct.ListPrice = product.ListPrice;
+            existing.Name             = product.Name;
+            existing.Slug             = product.Slug;
+            existing.Description      = product.Description;
+            existing.CategoryId       = product.CategoryId;
+            existing.BrandId          = product.BrandId;
+            existing.WarrantyPolicyId = product.WarrantyPolicyId;
+            existing.Status           = product.Status;
+            existing.Specifications   = product.Specifications;
+            existing.UpdatedAt        = DateTime.Now;
 
-                _context.Products.Update(existingProduct);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Product updated successfully: {ProductName}", product.Name);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating product: {ProductId}", product.Id);
-                return false;
-            }
+            _context.Products.Update(existing);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public async Task<bool> UpdateProductStockAsync(int productId, int quantity)
+        public async Task<bool> UpdateVariantStockAsync(int productVariantId, int quantity)
         {
-            try
-            {
-                var product = await _context.Products.FindAsync(productId);
-                if (product == null)
-                {
-                    _logger.LogWarning("Product not found for stock update: {ProductId}", productId);
-                    return false;
-                }
+            var inv = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ProductVariantId == productVariantId);
 
-                // Update stock in Inventory table (inventory is managed separately)
-                var Inventory = await _context.Inventories.FirstOrDefaultAsync(k => k.ProductId == productId);
-                if (Inventory != null)
-                {
-                    Inventory.Quantity = quantity;
-                    Inventory.UpdatedAt = DateTime.Now;
-                    _context.Inventories.Update(Inventory);
-                    await _context.SaveChangesAsync();
-                }
-
-                _logger.LogInformation("Product stock updated: {ProductId}, Quantity: {Quantity}", productId, quantity);
-                return true;
-            }
-            catch (Exception ex)
+            if (inv == null)
             {
-                _logger.LogError(ex, "Error updating product stock: {ProductId}", productId);
-                return false;
+                var variant = await _context.ProductVariants.FindAsync(productVariantId);
+                if (variant == null) return false;
+
+                _context.Inventories.Add(new Inventory
+                {
+                    ProductVariantId = productVariantId,
+                    ProductId        = variant.ProductId,
+                    Quantity         = quantity,
+                    UpdatedAt        = DateTime.Now
+                });
             }
+            else
+            {
+                inv.Quantity  = quantity;
+                inv.UpdatedAt = DateTime.Now;
+                _context.Inventories.Update(inv);
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public async Task<bool> UpdateProductPriceAsync(int productId, decimal price)
+        public async Task<bool> UpdateVariantPriceAsync(int productVariantId, decimal price)
         {
-            try
-            {
-                var product = await _context.Products.FindAsync(productId);
-                if (product == null)
-                {
-                    _logger.LogWarning("Product not found for price update: {ProductId}", productId);
-                    return false;
-                }
+            var variant = await _context.ProductVariants.FindAsync(productVariantId);
+            if (variant == null) return false;
 
-                product.Price = price;
-                _context.Products.Update(product);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Product price updated: {ProductId}, Price: {Price}", productId, price);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating product price: {ProductId}", productId);
-                return false;
-            }
+            variant.Price     = price;
+            variant.UpdatedAt = DateTime.Now;
+            _context.ProductVariants.Update(variant);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        #endregion
-
-        #region Delete Operations
-
+        // ── Delete ──────────────────────────────────────────────────
         public async Task<bool> DeleteProductAsync(int id)
         {
-            try
-            {
-                var product = await _context.Products.FindAsync(id);
-                if (product == null)
-                {
-                    _logger.LogWarning("Product not found for deletion: {ProductId}", id);
-                    return false;
-                }
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return false;
 
-                _context.Products.Remove(product);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Product deleted successfully: {ProductId}", id);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting product: {ProductId}", id);
-                return false;
-            }
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> DeleteProductsAsync(IEnumerable<int> ids)
         {
-            try
-            {
-                var products = await _context.Products
-                    .Where(p => ids.Contains(p.Id))
-                    .ToListAsync();
+            var products = await _context.Products
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
 
-                if (products.Count == 0)
-                {
-                    _logger.LogWarning("No products found for bulk deletion");
-                    return false;
-                }
+            if (products.Count == 0) return false;
 
-                _context.Products.RemoveRange(products);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Products deleted successfully: Count: {Count}", products.Count);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting multiple products");
-                return false;
-            }
+            _context.Products.RemoveRange(products);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        #endregion
-
-        #region Search and Filter
-
+        // ── Search / Filter ─────────────────────────────────────────
         public async Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    return await GetAllProductsAsync();
-                }
+            if (string.IsNullOrWhiteSpace(searchTerm)) return await GetAllProductsAsync();
 
-                var lowerSearchTerm = searchTerm.ToLower();
-                return await _context.Products
-                    .Where(p => p.Name.ToLower().Contains(lowerSearchTerm) ||
-                                p.Description.ToLower().Contains(lowerSearchTerm))
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error searching products: {SearchTerm}", searchTerm);
-                return new List<Product>();
-            }
+            var kw = searchTerm.ToLower();
+            return await _context.Products
+                .Where(p =>
+                    p.Name.ToLower().Contains(kw) ||
+                    (p.Description != null && p.Description.ToLower().Contains(kw)))
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Product>> FilterProductsAsync(ProductFilterCriteria criteria)
         {
-            try
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Images)
+                .Include(p => p.Variants).ThenInclude(v => v.Inventories)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(criteria.SearchTerm))
             {
-                var query = _context.Products.AsQueryable();
-
-                // Search term filter
-                if (!string.IsNullOrWhiteSpace(criteria.SearchTerm))
-                {
-                    var lowerSearchTerm = criteria.SearchTerm.ToLower();
-                    query = query.Where(p => p.Name.ToLower().Contains(lowerSearchTerm) ||
-                                            p.Description.ToLower().Contains(lowerSearchTerm));
-                }
-
-                // Category filter
-                if (criteria.CategoryId.HasValue)
-                {
-                    query = query.Where(p => p.Id == criteria.CategoryId.Value);
-                }
-
-                // Brand filter
-                if (criteria.BrandId.HasValue)
-                {
-                    query = query.Where(p => p.Id == criteria.BrandId.Value);
-                }
-
-                // Price range filter
-                if (criteria.MinPrice.HasValue)
-                {
-                    query = query.Where(p => p.Price >= criteria.MinPrice.Value);
-                }
-
-                if (criteria.MaxPrice.HasValue)
-                {
-                    query = query.Where(p => p.Price <= criteria.MaxPrice.Value);
-                }
-
-                // In stock filter
-                if (criteria.InStock.HasValue && criteria.InStock.Value)
-                {
-                    query = query.Where(p => p.Inventories.Any(k => k.Quantity > 0));
-                }
-
-                // Active filter
-                if (criteria.IsActive.HasValue && criteria.IsActive.Value)
-                {
-                    query = query.Where(p => p.Status == 1); // Assuming 1 = active
-                }
-
-                return await query
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .Include(p => p.Images)
-                    .Include(p => p.Inventories)
-                    .OrderBy(p => p.Name)
-                    .ToListAsync();
+                var kw = criteria.SearchTerm.ToLower();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(kw) ||
+                    (p.Description != null && p.Description.ToLower().Contains(kw)));
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error filtering products");
-                return new List<Product>();
-            }
+
+            if (criteria.CategoryId.HasValue)
+                query = query.Where(p => p.CategoryId == criteria.CategoryId.Value);
+            if (criteria.BrandId.HasValue)
+                query = query.Where(p => p.BrandId == criteria.BrandId.Value);
+
+            if (criteria.MinPrice.HasValue)
+                query = query.Where(p => p.Variants.Any(v => v.IsActive && v.Price >= criteria.MinPrice.Value));
+            if (criteria.MaxPrice.HasValue)
+                query = query.Where(p => p.Variants.Any(v => v.IsActive && v.Price <= criteria.MaxPrice.Value));
+
+            if (criteria.InStock == true)
+                query = query.Where(p =>
+                    p.Variants.Any(v => v.Inventories.Any(i => i.Quantity - i.ReservedQuantity > 0)));
+
+            if (criteria.IsActive == true)
+                query = query.Where(p => p.Status == 1);
+
+            return await query.OrderBy(p => p.Name).ToListAsync();
         }
 
-        #endregion
+        // ── Exists ──────────────────────────────────────────────────
+        public async Task<bool> ProductExistsAsync(int id) =>
+            await _context.Products.AnyAsync(p => p.Id == id);
 
-        #region Check Existence
-
-        public async Task<bool> ProductExistsAsync(int id)
+        public async Task<bool> CheckSkuExistsAsync(string sku, int? excludeVariantId = null)
         {
-            try
-            {
-                return await _context.Products.AnyAsync(p => p.Id == id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking product existence: {ProductId}", id);
-                return false;
-            }
+            if (string.IsNullOrWhiteSpace(sku)) return false;
+            var q = _context.ProductVariants.Where(v => v.Sku == sku);
+            if (excludeVariantId.HasValue)
+                q = q.Where(v => v.Id != excludeVariantId.Value);
+            return await q.AnyAsync();
         }
-
-        public async Task<bool> CheckSkuExistsAsync(string sku, int? excludeProductId = null)
-        {
-            try
-            {
-                // Note: Product model doesn't have SKU property. This method is here for interface compliance.
-                // If SKU is needed, it should be added to the Product model.
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking SKU existence: {SKU}", sku);
-                return false;
-            }
-        }
-
-        #endregion
     }
 }
-
-
