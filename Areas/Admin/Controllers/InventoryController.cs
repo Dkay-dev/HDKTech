@@ -18,7 +18,7 @@ namespace HDKTech.Areas.Admin.Controllers
     /// AuditLog    : SystemLogs via ISystemLogService
     /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Route("admin/inventory")]
     public class InventoryController : Controller
     {
@@ -49,10 +49,10 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                // Query Products JOIN Inventories (LEFT JOIN để thấy cả SP chưa có kho)
+                // Query Products JOIN Variants JOIN Inventories (1 product → n variant → n inventory)
                 var query = _db.Products
                     .AsNoTracking()
-                    .Include(p => p.Inventories)
+                    .Include(p => p.Variants).ThenInclude(v => v.Inventories)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
@@ -60,24 +60,28 @@ namespace HDKTech.Areas.Admin.Controllers
 
                 var totalCount = await query.CountAsync();
 
-                // Materialize trước (tránh EF không dịch được string format)
                 var products = await query
                     .OrderBy(p => p.Name)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                // Map sang InventoryViewModel trong bộ nhớ
-                var items = products.Select(p => new InventoryViewModel
+                var items = products.Select(p =>
                 {
-                    ProductId   = p.Id,
-                    ProductName = p.Name,
-                    // SKU: dùng Id format P-00001 (Product chưa có cột SKU riêng)
-                    SKU         = $"P-{p.Id:D5}",
-                    Stock       = p.Inventories?.Sum(i => i.Quantity) ?? 0,
-                    UpdatedAt   = p.Inventories?.Any() == true
-                                    ? p.Inventories.Max(i => i.UpdatedAt)
-                                    : p.CreatedAt
+                    var inventories = p.Variants?
+                        .SelectMany(v => v.Inventories ?? Enumerable.Empty<Inventory>())
+                        .ToList() ?? new List<Inventory>();
+
+                    return new InventoryViewModel
+                    {
+                        ProductId   = p.Id,
+                        ProductName = p.Name,
+                        SKU         = p.DefaultVariant?.Sku ?? $"P-{p.Id:D5}",
+                        Stock       = inventories.Sum(i => i.Quantity),
+                        UpdatedAt   = inventories.Any()
+                                        ? inventories.Max(i => i.UpdatedAt)
+                                        : p.CreatedAt
+                    };
                 }).ToList();
 
                 ViewBag.Search     = search;
@@ -116,35 +120,41 @@ namespace HDKTech.Areas.Admin.Controllers
 
             try
             {
-                // Kiểm tra product tồn tại
+                // Kiểm tra product tồn tại + default variant
                 var product = await _db.Products
-                    .AsNoTracking()
+                    .Include(p => p.Variants)
                     .FirstOrDefaultAsync(p => p.Id == productId);
 
                 if (product == null)
                     return Json(new { success = false, message = "Không tìm thấy sản phẩm." });
 
-                // Lấy bản ghi Inventory (1-1 theo ProductId)
+                var defaultVariant = product.Variants?
+                    .FirstOrDefault(v => v.IsDefault)
+                    ?? product.Variants?.FirstOrDefault();
+
+                if (defaultVariant == null)
+                    return Json(new { success = false, message = "Sản phẩm chưa có cấu hình nào — hãy tạo Variant trước." });
+
                 var inventory = await _db.Inventories
-                    .FirstOrDefaultAsync(i => i.ProductId == productId);
+                    .FirstOrDefaultAsync(i => i.ProductVariantId == defaultVariant.Id);
 
                 int oldStock;
 
                 if (inventory == null)
                 {
-                    // Chưa có bản ghi kho → tạo mới
                     oldStock  = 0;
                     inventory = new Inventory
                     {
-                        ProductId = productId,
-                        Quantity  = newStock,
-                        UpdatedAt = DateTime.Now
+                        ProductId        = productId,
+                        ProductVariantId = defaultVariant.Id,
+                        Quantity         = newStock,
+                        UpdatedAt        = DateTime.Now
                     };
                     _db.Inventories.Add(inventory);
                 }
                 else
                 {
-                    oldStock          = inventory.Quantity;
+                    oldStock            = inventory.Quantity;
                     inventory.Quantity  = newStock;
                     inventory.UpdatedAt = DateTime.Now;
                     _db.Inventories.Update(inventory);

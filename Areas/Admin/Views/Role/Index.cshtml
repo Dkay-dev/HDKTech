@@ -1,24 +1,26 @@
-﻿@model List<HDKTech.Areas.Admin.Controllers.IdentityRoleListItem>
+@model IEnumerable<HDKTech.Areas.Admin.Controllers.RoleListItem>
 @{
     ViewData["Title"] = "Phân quyền - Quản lý Vai trò";
+    var totalPermissions = HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions.Count;
+    var protectedNames   = new HashSet<string>(
+        new[] { "Admin", "Manager", "Staff", "Customer" },
+        StringComparer.OrdinalIgnoreCase);
 }
 
-<!-- Header -->
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2 text-primary"></i>Phân quyền</h4>
-        <small class="text-muted">Quản lý vai trò và quyền hạn người dùng trong hệ thống</small>
+        <small class="text-muted">Quản lý vai trò và quyền hạn người dùng trong hệ thống (ASP.NET Identity)</small>
     </div>
     <a asp-area="Admin" asp-controller="Role" asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i> Thêm vai trò mới
     </a>
 </div>
 
-<!-- Stats Cards -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fw-bold fs-4 text-primary">@Model.Count</div>
+            <div class="fw-bold fs-4 text-primary">@Model.Count()</div>
             <small class="text-muted">Tổng vai trò</small>
         </div>
     </div>
@@ -30,13 +32,12 @@
     </div>
     <div class="col-6 col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fw-bold fs-4 text-info">@HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions.Count</div>
+            <div class="fw-bold fs-4 text-info">@totalPermissions</div>
             <small class="text-muted">Tổng quyền hệ thống</small>
         </div>
     </div>
 </div>
 
-<!-- Bảng vai trò -->
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -54,17 +55,9 @@
                     @if (Model.Any())
                     {
                         int idx = 1;
-                        @foreach (var role in Model)
+                        foreach (var role in Model)
                         {
-                            var isProtected = new[] { "Admin", "Manager", "User", "WarehouseStaff" }
-                                .Contains(role.Name, StringComparer.OrdinalIgnoreCase);
-                            var badgeColor = role.Name switch
-                            {
-                                "Admin"          => "danger",
-                                "Manager"        => "warning text-dark",
-                                "WarehouseStaff" => "info text-dark",
-                                _                => "secondary"
-                            };
+                            var isProtected = protectedNames.Contains(role.Name);
 
                             <tr>
                                 <td class="ps-3 text-muted small">@(idx++)</td>
@@ -72,7 +65,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white bg-primary"
                                              style="width:34px;height:34px;font-size:.8rem;flex-shrink:0">
-                                            @role.Name[0].ToString().ToUpper()
+                                            @(string.IsNullOrEmpty(role.Name) ? "?" : role.Name.Substring(0, 1).ToUpper())
                                         </div>
                                         <div>
                                             <span class="fw-semibold">@role.Name</span>
@@ -82,7 +75,7 @@
                                                     <i class="bi bi-lock-fill me-1"></i>Hệ thống
                                                 </span>
                                             }
-                                            <div class="text-muted" style="font-size:.7rem">ID: @role.Id[..8]…</div>
+                                            <div class="text-muted" style="font-size:.7rem">ID: @role.Id</div>
                                         </div>
                                     </div>
                                 </td>
@@ -93,14 +86,14 @@
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-info text-dark">
-                                        <i class="bi bi-key me-1"></i>@role.PermissionCount / @HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions.Count
+                                        <i class="bi bi-key me-1"></i>@role.PermissionCount / @totalPermissions
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="btn-group btn-group-sm">
                                         <a asp-area="Admin" asp-controller="Role" asp-action="ManagePermissions"
-                                           asp-route-roleName="@role.Name"
-                                           class="btn btn-outline-primary" title="Quản lý quyền">
+                                               asp-route-roleCode="@role.Name"
+                                               class="btn btn-outline-primary" title="Quản lý quyền">
                                             <i class="bi bi-shield-check me-1"></i>Phân quyền
                                         </a>
                                         @if (!isProtected)
@@ -121,7 +114,7 @@
                         <tr>
                             <td colspan="5" class="text-center text-muted py-5">
                                 <i class="bi bi-shield-x fs-2 d-block mb-2"></i>
-                                Chưa có vai trò nào.
+                                Chưa có vai trò nào trong hệ thống.
                                 <a asp-area="Admin" asp-controller="Role" asp-action="Create">Tạo vai trò đầu tiên</a>
                             </td>
                         </tr>
@@ -132,7 +125,6 @@
     </div>
 </div>
 
-<!-- Delete Modal -->
 <div class="modal fade" id="deleteRoleModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -144,7 +136,7 @@
                 Bạn có chắc muốn xoá vai trò <strong id="deleteRoleName"></strong>?
                 <div class="alert alert-warning mt-3 mb-0 py-2 small">
                     <i class="bi bi-exclamation-triangle me-1"></i>
-                    Tất cả quyền hạn (claims) của vai trò này sẽ bị xoá vĩnh viễn. Hành động được ghi vào Audit Log.
+                    Tất cả quyền hạn liên quan sẽ bị xoá vĩnh viễn khỏi DB.
                 </div>
             </div>
             <div class="modal-footer">
@@ -158,47 +150,48 @@
 </div>
 
 @section Scripts {
-@Html.AntiForgeryToken()
-<script>
-    let deleteRoleId   = null;
-    let deleteModal    = null;
+    @Html.AntiForgeryToken()
+    <script>
+        // Giữ nguyên Script xử lý xóa vai trò — giờ dùng RoleId = Identity GUID string
+        let deleteRoleId = null;
+        let deleteModal = null;
 
-    document.querySelectorAll('.btn-delete-role').forEach(btn => {
-        btn.addEventListener('click', function () {
-            deleteRoleId = this.dataset.id;
-            document.getElementById('deleteRoleName').textContent = this.dataset.name;
-            deleteModal  = new bootstrap.Modal(document.getElementById('deleteRoleModal'));
-            deleteModal.show();
-        });
-    });
-
-    document.getElementById('confirmDeleteRole')?.addEventListener('click', async function () {
-        if (!deleteRoleId) return;
-        const btn   = this;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xoá...';
-
-        try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
-            const res   = await fetch('/admin/role/delete', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body:    `roleId=${encodeURIComponent(deleteRoleId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+        document.querySelectorAll('.btn-delete-role').forEach(btn => {
+            btn.addEventListener('click', function () {
+                deleteRoleId = this.dataset.id;
+                document.getElementById('deleteRoleName').textContent = this.dataset.name;
+                deleteModal = new bootstrap.Modal(document.getElementById('deleteRoleModal'));
+                deleteModal.show();
             });
-            const data = await res.json();
-            if (data.success) {
-                deleteModal?.hide();
-                window.location.reload();
-            } else {
-                alert(data.message || 'Lỗi khi xoá vai trò');
+        });
+
+        document.getElementById('confirmDeleteRole')?.addEventListener('click', async function () {
+            if (!deleteRoleId) return;
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xoá...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+                const res = await fetch('/admin/role/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `roleId=${encodeURIComponent(deleteRoleId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+                const data = await res.json();
+                if (data.success) {
+                    deleteModal?.hide();
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Lỗi khi xoá vai trò');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash me-1"></i>Xoá';
+                }
+            } catch (e) {
+                alert('Lỗi kết nối máy chủ');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-trash me-1"></i>Xoá';
             }
-        } catch (e) {
-            alert('Lỗi kết nối máy chủ');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-trash me-1"></i>Xoá';
-        }
-    });
-</script>
+        });
+    </script>
 }

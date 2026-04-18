@@ -7,7 +7,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "RequireAdmin")]
     [Route("admin/promotion")]
     public class PromotionController : Controller
     {

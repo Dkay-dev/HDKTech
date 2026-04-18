@@ -71,8 +71,8 @@ namespace HDKTech.Repositories
             return await _dbSet
                 .Include(c => c.Products)
                     .ThenInclude(p => p.Images)
-                .Include(c => c.Products)
-                    .ThenInclude(p => p.Inventories)
+                .Include(c => c.Products).ThenInclude(p => p.Variants)
+                    .ThenInclude(v => v.Inventories)
                 .Include(c => c.ParentCategory)
                 .Include(c => c.SubCategories)
                     .ThenInclude(sc => sc.Products)

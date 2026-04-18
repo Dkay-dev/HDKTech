@@ -1,92 +1,79 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using HDKTech.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
-using HDKTech.Models;
 
 namespace HDKTech.ChucNangPhanQuyen
 {
     /// <summary>
-    /// Policy-based Authorization Handler — Sprint 1 Refactor.
+    /// Policy-based Authorization Handler — đọc hoàn toàn từ ASP.NET Identity.
     ///
-    /// Thay vì đọc từ bảng custom RolePermissions, handler này truy vấn
-    /// bảng chuẩn của ASP.NET Identity: AspNetRoleClaims.
+    /// Flow mới (sau khi hợp nhất vào Identity):
+    ///   1. Lấy user hiện tại qua <see cref="UserManager{AppUser}"/>.
+    ///   2. Lấy danh sách role của user (<see cref="UserManager{AppUser}.GetRolesAsync"/>).
+    ///   3. Với mỗi role, lấy claim của role (<see cref="RoleManager{IdentityRole}.GetClaimsAsync"/>)
+    ///      trong đó Claim.Type == "permission" và Claim.Value == "Module.Action".
+    ///   4. Nếu có ít nhất 1 role chứa claim khớp requirement → Succeed.
     ///
-    /// Flow:
-    ///   User → AspNetUserRoles → IdentityRole → AspNetRoleClaims
-    ///   Claim Type  = "Permission"
-    ///   Claim Value = "Module.Action"  (vd: "Inventory.Update", "Product.Delete")
-    ///
-    /// Để gán quyền cho Role: dùng RoleController.SavePermissions()
-    /// hoặc gọi trực tiếp: await _roleManager.AddClaimAsync(role, new Claim("Permission","Inventory.Update"))
+    /// Admin luôn bypass (được gán đủ permission lúc seed, nhưng shortcut để tránh query thừa).
     /// </summary>
     public class PermissionHandler : AuthorizationHandler<PermissionRequirement>
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<AppUser>   _userManager;
+        public const string PermissionClaimType = "permission";
+
+        private readonly UserManager<AppUser>      _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
         public PermissionHandler(
-            IHttpContextAccessor       httpContextAccessor,
-            UserManager<AppUser>       userManager,
-            RoleManager<IdentityRole>  roleManager)
+            UserManager<AppUser>      userManager,
+            RoleManager<IdentityRole> roleManager)
         {
-            _httpContextAccessor = httpContextAccessor;
-            _userManager         = userManager;
-            _roleManager         = roleManager;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         protected override async Task HandleRequirementAsync(
             AuthorizationHandlerContext context,
-            PermissionRequirement       requirement)
+            PermissionRequirement requirement)
         {
-            var userPrincipal = _httpContextAccessor.HttpContext?.User;
-
-            if (userPrincipal == null || !userPrincipal.Identity!.IsAuthenticated)
+            if (context.User?.Identity?.IsAuthenticated != true)
             {
                 context.Fail();
                 return;
             }
 
-            // Admin role — bypass mọi kiểm tra quyền
-            if (userPrincipal.IsInRole("Admin"))
+            var user = await _userManager.GetUserAsync(context.User);
+            if (user == null)
+            {
+                context.Fail();
+                return;
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Count == 0)
+            {
+                context.Fail();
+                return;
+            }
+
+            // Admin bypass
+            if (roles.Contains(Areas.Admin.Constants.AdminConstants.AdminRole))
             {
                 context.Succeed(requirement);
                 return;
             }
 
-            var userId = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) { context.Fail(); return; }
+            var targetValue = $"{requirement.Module}.{requirement.Action}";
 
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) { context.Fail(); return; }
-
-            var roleNames = await _userManager.GetRolesAsync(user);
-            if (!roleNames.Any()) { context.Fail(); return; }
-
-            // Giá trị cần tìm trong AspNetRoleClaims: "Module.Action"
-            var requiredValue = $"{requirement.Module}.{requirement.Action}";
-
-            foreach (var roleName in roleNames)
+            foreach (var roleName in roles)
             {
-                // Admin role — catch-all
-                if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    context.Succeed(requirement);
-                    return;
-                }
+                var role = await _roleManager.FindByNameAsync(roleName);
+                if (role == null) continue;
 
-                var identityRole = await _roleManager.FindByNameAsync(roleName);
-                if (identityRole == null) continue;
-
-                // Đọc claims từ bảng AspNetRoleClaims
-                var claims = await _roleManager.GetClaimsAsync(identityRole);
-
-                bool granted = claims.Any(c =>
-                    c.Type  == "Permission" &&
-                    c.Value.Equals(requiredValue, StringComparison.OrdinalIgnoreCase));
-
-                if (granted)
+                var claims = await _roleManager.GetClaimsAsync(role);
+                if (claims.Any(c =>
+                        c.Type == PermissionClaimType &&
+                        string.Equals(c.Value, targetValue, StringComparison.OrdinalIgnoreCase)))
                 {
                     context.Succeed(requirement);
                     return;

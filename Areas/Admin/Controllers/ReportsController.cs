@@ -10,7 +10,7 @@ namespace HDKTech.Areas.Admin.Controllers
     /// Được bảo vệ bởi Policy "Report.Export".
     /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]        // Fallback bảo vệ toàn Controller
+    [Authorize(Policy = "RequireManager")]      // Fallback bảo vệ toàn Controller
     [Authorize(Policy = "Report.Export")]       // Granular Security — GĐ1
     [Route("admin/[controller]")]
     public class ReportsController : Controller

@@ -97,10 +97,10 @@
                                             }
                                         </td>
                                         <td>@product.Name</td>
-                                        <td class="fw-bold" style="color: #bc000c;">@product.Price.ToString("C0")</td>
+                                        <td class="fw-bold" style="color: #bc000c;">@((product.DisplayPrice ?? 0m).ToString("C0"))</td>
                                         <td class="text-center">
                                             @{
-                                                var qty = product.Inventories?.Sum(k => k.Quantity) ?? 0;
+                                                var qty = product.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0;
                                             }
                                             @if (qty > 0)
                                             {
@@ -154,7 +154,7 @@
                     <!-- Total Inventory -->
                     <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
                         <div class="hdk-preview-info-label">Tổng Kho</div>
-                        <div class="hdk-preview-info-value fw-bold" style="font-size: 1.5rem;">@(brand.Products?.Sum(p => p.Inventories?.Sum(k => k.Quantity) ?? 0) ?? 0)</div>
+                        <div class="hdk-preview-info-value fw-bold" style="font-size: 1.5rem;">@(brand.Products?.Sum(p => p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0) ?? 0)</div>
                     </div>
 
                     <!-- Inventory Value -->
@@ -162,7 +162,7 @@
                         <div class="hdk-preview-info-label">Giá Trị Kho</div>
                         <div class="hdk-preview-info-value fw-bold" style="font-size: 1.25rem; color: #c9a84c;">
                             @{
-                                var inventory = brand.Products?.Sum(p => p.Price * (p.Inventories?.Sum(k => k.Quantity) ?? 0)) ?? 0;
+                                var inventory = brand.Products?.Sum(p => (p.DisplayPrice ?? 0m) * (p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0)) ?? 0;
                                 @inventory.ToString("C0")
                             }
                         </div>

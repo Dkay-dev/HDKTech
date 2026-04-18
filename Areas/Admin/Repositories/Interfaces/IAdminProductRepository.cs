@@ -1,44 +1,41 @@
-﻿using HDKTech.Models;
+using HDKTech.Models;
 
 namespace HDKTech.Areas.Admin.Repositories
 {
     /// <summary>
-    /// Interface for Product repository operations
-    /// Handles all CRUD operations for the Product model
+    /// Interface for Product repository operations (Admin).
+    /// Price/stock giờ thao tác qua ProductVariant + Inventory.
     /// </summary>
     public interface IAdminProductRepository
     {
-        // Read operations
+        // Read
         Task<IEnumerable<Product>> GetAllProductsAsync();
-        Task<Product> GetProductByIdAsync(int id);
+        Task<Product?> GetProductByIdAsync(int id);
         Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId);
         Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId);
         Task<(IEnumerable<Product> products, int totalCount)> GetProductsPagedAsync(int pageNumber, int pageSize);
 
-        // Create operations
+        // Create
         Task<Product> CreateProductAsync(Product product);
 
-        // Update operations
+        // Update
         Task<bool> UpdateProductAsync(Product product);
-        Task<bool> UpdateProductStockAsync(int productId, int quantity);
-        Task<bool> UpdateProductPriceAsync(int productId, decimal price);
+        Task<bool> UpdateVariantStockAsync(int productVariantId, int quantity);
+        Task<bool> UpdateVariantPriceAsync(int productVariantId, decimal price);
 
-        // Delete operations — returns (success, error, imageUrls) so controller can delete physical files
-        Task<(bool success, string error, IList<string> imageUrls)> DeleteProductAsync(int id);
+        // Delete
+        Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(int id);
         Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(IEnumerable<int> ids);
 
-        // Search and filter
+        // Search & Filter
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);
         Task<IEnumerable<Product>> FilterProductsAsync(ProductFilterCriteria criteria);
 
-        // Check existence
+        // Exists
         Task<bool> ProductExistsAsync(int id);
-        Task<bool> CheckSkuExistsAsync(string sku, int? excludeProductId = null);
+        Task<bool> CheckSkuExistsAsync(string sku, int? excludeVariantId = null);
     }
 
-    /// <summary>
-    /// Filter criteria for product search and filtering
-    /// </summary>
     public class ProductFilterCriteria
     {
         public string? SearchTerm { get; set; }

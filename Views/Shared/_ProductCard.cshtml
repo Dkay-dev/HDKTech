@@ -19,17 +19,17 @@
 @using HDKTech.Utils
 
 @{
-    // ── State Detection ────────────────────────────────────────────────
-    var isFlashSale = Model.IsFlashSaleActive;
-    var displayPrice = Model.CurrentPrice;
-    var originalPrice = Model.Price;
-    var hasDiscount = Model.ListPrice.HasValue && Model.ListPrice > originalPrice;
-    var discountPct = Model.DiscountPercent;
+    // ── State Detection (post-refactor: giá & flash sale đi qua Variant/Promotion) ──
+    var defaultVariant = Model.DefaultVariant;
+    var displayPrice   = Model.DisplayPrice ?? 0m;
+    var originalPrice  = displayPrice;
+    var listPrice      = Model.DisplayListPrice;
+    var hasDiscount    = listPrice.HasValue && listPrice > displayPrice;
+    var discountPct    = defaultVariant?.DiscountPercent ?? 0;
 
-    // Flash Sale end time for inline countdown (ISO 8601)
-    var endTimeIso = isFlashSale && Model.FlashSaleEndTime.HasValue
-        ? Model.FlashSaleEndTime.Value.ToString("o")
-        : "";
+    // Flash sale info đã chuyển sang bảng Promotion → ViewBag có thể inject endTime
+    var isFlashSale    = (ViewBag.IsFlashSale as bool?) ?? false;
+    var endTimeIso     = ViewBag.FlashSaleEndTime as string ?? "";
 
     // ── Image ──────────────────────────────────────────────────────────
     var rawImg = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
@@ -50,8 +50,9 @@
         })
         .ToList();
 
-    // ── Inventory stock for urgency signal ─────────────────────────────
-    var stock = Model.Inventories?.Sum(i => i.Quantity) ?? 0;
+    // ── Inventory stock for urgency signal (sum across variants) ──────
+    var stock = Model.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>())
+                               .Sum(i => i.Quantity) ?? 0;
     var showStockUrgency = stock > 0 && stock <= 5;
 
     // ── Rating (real avg from Reviews) ─────────────────────────────────
@@ -220,7 +221,7 @@
                     <span class="pc__price-current">@displayPrice.ToString("N0")₫</span>
                     @if (hasDiscount)
                     {
-                        <span class="pc__price-original">@Model.ListPrice!.Value.ToString("N0")₫</span>
+                        <span class="pc__price-original">@listPrice!.Value.ToString("N0")₫</span>
                     }
                 </div>
             }

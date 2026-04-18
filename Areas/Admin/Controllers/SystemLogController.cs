@@ -8,7 +8,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "RequireAdmin")]
     [Route("admin/[controller]")]
     public class SystemLogController : Controller
     {

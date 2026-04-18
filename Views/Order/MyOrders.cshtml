@@ -45,20 +45,26 @@
                                     <td>
                                         @switch (order.Status)
                                         {
-                                            case 0:
+                                            case HDKTech.Models.OrderStatus.Pending:
                                                 <span class="badge bg-warning text-dark">Chờ Xác Nhận</span>
                                                 break;
-                                            case 1:
-                                                <span class="badge bg-info">Đang Xử Lý</span>
+                                            case HDKTech.Models.OrderStatus.Confirmed:
+                                                <span class="badge bg-info">Đã Xác Nhận</span>
                                                 break;
-                                            case 2:
+                                            case HDKTech.Models.OrderStatus.Packing:
+                                                <span class="badge bg-info">Đang Đóng Gói</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Shipping:
                                                 <span class="badge bg-primary">Đang Giao</span>
                                                 break;
-                                            case 3:
+                                            case HDKTech.Models.OrderStatus.Delivered:
                                                 <span class="badge bg-success">Đã Giao</span>
                                                 break;
-                                            case 4:
+                                            case HDKTech.Models.OrderStatus.Cancelled:
                                                 <span class="badge bg-danger">Đã Hủy</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Returned:
+                                                <span class="badge bg-dark">Trả Hàng</span>
                                                 break;
                                             default:
                                                 <span class="badge bg-secondary">Không Xác Định</span>

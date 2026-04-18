@@ -5,13 +5,14 @@ using Microsoft.EntityFrameworkCore;
 namespace HDKTech.Services
 {
     /// <summary>
-    /// Giai đoạn 1 — Inventory Sync: Engine xử lý tồn kho.
-    /// Thay đổi entity qua DbContext chung (scoped) — transaction do caller quản lý.
+    /// InventoryService — refactor sau khi Inventory gắn vào ProductVariant.
+    /// Các hàm lookup giờ dùng ProductVariantId (từ CartItem / OrderItem).
+    /// Khi vẫn cần tương thích, fallback sang ProductId (denormalized).
     /// </summary>
     public class InventoryService : IInventoryService
     {
-        private readonly HDKTechContext     _context;
-        private readonly ISystemLogService  _logService;
+        private readonly HDKTechContext            _context;
+        private readonly ISystemLogService         _logService;
         private readonly ILogger<InventoryService> _logger;
 
         public InventoryService(
@@ -24,26 +25,21 @@ namespace HDKTech.Services
             _logger     = logger;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ReserveStock — Trừ kho khi đặt hàng (gọi trong Transaction)
-        // KHÔNG gọi SaveChanges: caller sẽ save cùng lúc với Order.
-        // ─────────────────────────────────────────────────────────────────────
+        // ── ReserveStock ────────────────────────────────────────────
         public async Task<(bool Success, string Message)> ReserveStockAsync(List<CartItem> items)
         {
             foreach (var item in items)
             {
-                var inv = await _context.Inventories
-                    .FirstOrDefaultAsync(i => i.ProductId == item.ProductId);
+                var inv = await GetInventoryForAsync(item.ProductVariantId, item.ProductId);
 
                 if (inv == null)
-                    return (false, $"Không tìm thấy tồn kho cho sản phẩm ID {item.ProductId}.");
+                    return (false, $"Không tìm thấy tồn kho cho cấu hình ID {item.ProductVariantId}.");
 
                 if (inv.Quantity < item.Quantity)
                     return (false,
-                        $"Sản phẩm ID {item.ProductId} không đủ hàng " +
+                        $"Cấu hình ID {item.ProductVariantId} không đủ hàng " +
                         $"(còn {inv.Quantity}, cần {item.Quantity}).");
 
-                // Chỉ thay đổi entity — SaveChanges do OrderRepository.CreateOrderAsync xử lý
                 inv.Quantity  -= item.Quantity;
                 inv.UpdatedAt  = DateTime.Now;
             }
@@ -51,9 +47,7 @@ namespace HDKTech.Services
             return (true, "OK");
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ReleaseStock — Hoàn kho khi hủy đơn (standalone, tự SaveChanges + Log)
-        // ─────────────────────────────────────────────────────────────────────
+        // ── ReleaseStock ────────────────────────────────────────────
         public async Task<bool> ReleaseStockAsync(
             List<OrderItem> items,
             string username = "System",
@@ -61,40 +55,38 @@ namespace HDKTech.Services
         {
             if (items == null || !items.Any()) return true;
 
-            var releasedItems = new List<(int ProductId, int Released, int NewQty)>();
+            var released = new List<(int VariantId, int Released, int NewQty)>();
 
             foreach (var item in items)
             {
-                var inv = await _context.Inventories
-                    .FirstOrDefaultAsync(i => i.ProductId == item.ProductId);
-
+                var inv = await GetInventoryForAsync(item.ProductVariantId, item.ProductId);
                 if (inv == null)
                 {
-                    _logger.LogWarning("ReleaseStock: Không có bản ghi Inventory cho ProductId {Id}", item.ProductId);
+                    _logger.LogWarning(
+                        "ReleaseStock: Không có Inventory cho variant {V} / product {P}",
+                        item.ProductVariantId, item.ProductId);
                     continue;
                 }
 
-                var newQty   = inv.Quantity + item.Quantity;
+                var newQty    = inv.Quantity + item.Quantity;
                 inv.Quantity  = newQty;
                 inv.UpdatedAt = DateTime.Now;
 
-                releasedItems.Add((item.ProductId, item.Quantity, newQty));
+                released.Add((item.ProductVariantId, item.Quantity, newQty));
             }
 
-            // Lưu toàn bộ thay đổi kho trong 1 lần
             await _context.SaveChangesAsync();
 
-            // ── Auto Audit Log ─────────────────────────────────────────────
-            foreach (var (productId, released, newQty) in releasedItems)
+            foreach (var (variantId, amount, newQty) in released)
             {
                 await _logService.LogActionAsync(
                     username   : username,
                     actionType : "InventoryRelease",
                     module     : "Inventory",
-                    description: $"Hoàn kho SP#{productId}: +{released} (tồn kho mới: {newQty})",
-                    entityId   : productId.ToString(),
-                    entityName : $"Product#{productId}",
-                    oldValue   : (newQty - released).ToString(),
+                    description: $"Hoàn kho Variant#{variantId}: +{amount} (tồn mới: {newQty})",
+                    entityId   : variantId.ToString(),
+                    entityName : $"Variant#{variantId}",
+                    oldValue   : (newQty - amount).ToString(),
                     newValue   : newQty.ToString(),
                     userId     : userId);
             }
@@ -102,16 +94,14 @@ namespace HDKTech.Services
             return true;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // CheckStockAvailability — Kiểm tra nhanh trước khi checkout
-        // ─────────────────────────────────────────────────────────────────────
+        // ── CheckStockAvailability ──────────────────────────────────
         public async Task<bool> CheckStockAvailabilityAsync(List<CartItem> items)
         {
             foreach (var item in items)
             {
                 var inv = await _context.Inventories
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(i => i.ProductId == item.ProductId);
+                    .FirstOrDefaultAsync(i => i.ProductVariantId == item.ProductVariantId);
 
                 if (inv == null || inv.Quantity < item.Quantity)
                     return false;
@@ -119,25 +109,44 @@ namespace HDKTech.Services
             return true;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // GetLowStockProducts — Dữ liệu cảnh báo cho Dashboard
-        // ─────────────────────────────────────────────────────────────────────
+        // ── LowStock products cho Dashboard ─────────────────────────
         public async Task<List<LowStockProductItem>> GetLowStockProductsAsync(int threshold = 10)
         {
             return await _context.Inventories
                 .AsNoTracking()
                 .Include(i => i.Product)
+                .Include(i => i.Variant)
                 .Where(i => i.Quantity < threshold)
                 .OrderBy(i => i.Quantity)
                 .Take(20)
                 .Select(i => new LowStockProductItem
                 {
                     ProductId    = i.ProductId,
-                    ProductName  = i.Product != null ? i.Product.Name : $"SP#{i.ProductId}",
+                    ProductName  = i.Product != null
+                                        ? i.Product.Name + (i.Variant != null ? $" / {i.Variant.Sku}" : "")
+                                        : $"SP#{i.ProductId}",
                     CurrentStock = i.Quantity,
                     Threshold    = threshold
                 })
                 .ToListAsync();
+        }
+
+        // ────────────────────────────────────────────────────────────
+        /// <summary>
+        /// Tra Inventory theo ProductVariantId, fallback ProductId (tương thích
+        /// dữ liệu cũ chưa gán variant).
+        /// </summary>
+        private async Task<Inventory?> GetInventoryForAsync(int productVariantId, int productId)
+        {
+            if (productVariantId > 0)
+            {
+                var byVariant = await _context.Inventories
+                    .FirstOrDefaultAsync(i => i.ProductVariantId == productVariantId);
+                if (byVariant != null) return byVariant;
+            }
+
+            return await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ProductId == productId);
         }
     }
 }

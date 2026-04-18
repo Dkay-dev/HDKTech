@@ -1,20 +1,17 @@
-﻿using HDKTech.Models;
+using HDKTech.Models;
 using System.Text.Json;
-
-using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Services
 {
     /// <summary>
-    /// Service xử lý giỏ hàng qua Session
-    /// Linh hoạt: có thể extend để dùng Redis, Database,...
+    /// Cart qua Session. Key của 1 item = (ProductId, ProductVariantId).
     /// </summary>
     public interface ICartService
     {
         Task<Cart> GetCartAsync();
         Task AddItemAsync(CartItem item);
-        Task RemoveItemAsync(int productId);
-        Task UpdateQuantityAsync(int productId, int quantity);
+        Task RemoveItemAsync(int productId, int productVariantId);
+        Task UpdateQuantityAsync(int productId, int productVariantId, int quantity);
         Task ClearCartAsync();
     }
 
@@ -25,83 +22,61 @@ namespace HDKTech.Services
 
         public SessionCartService(IHttpContextAccessor httpContextAccessor)
         {
-            _session = httpContextAccessor.HttpContext?.Session 
+            _session = httpContextAccessor.HttpContext?.Session
                 ?? throw new ArgumentNullException(nameof(httpContextAccessor), "Session không khả dụng");
         }
 
-        /// <summary>
-        /// Lấy giỏ hàng từ Session
-        /// </summary>
-        public async Task<Cart> GetCartAsync()
+        public Task<Cart> GetCartAsync()
         {
             var cart = new Cart();
 
-            if (_session.TryGetValue(CART_SESSION_KEY, out byte[]? cartData))
+            if (_session.TryGetValue(CART_SESSION_KEY, out byte[]? cartData) && cartData != null)
             {
                 try
                 {
                     var json = System.Text.Encoding.UTF8.GetString(cartData);
-                    var items = JsonSerializer.Deserialize<List<CartItem>>(json) ?? new List<CartItem>();
-                    cart.Items = items;
+                    cart.Items = JsonSerializer.Deserialize<List<CartItem>>(json) ?? new();
                 }
                 catch
                 {
-                    // Nếu lỗi parse, trả về giỏ trống
-                    cart.Items = new List<CartItem>();
+                    cart.Items = new();
                 }
             }
 
-            return await Task.FromResult(cart);
+            return Task.FromResult(cart);
         }
 
-        /// <summary>
-        /// Thêm item vào giỏ
-        /// </summary>
         public async Task AddItemAsync(CartItem item)
         {
             var cart = await GetCartAsync();
             cart.AddItem(item);
-            await SaveCartAsync(cart);
+            SaveCart(cart);
         }
 
-        /// <summary>
-        /// Xóa item khỏi giỏ
-        /// </summary>
-        public async Task RemoveItemAsync(int productId)
+        public async Task RemoveItemAsync(int productId, int productVariantId)
         {
             var cart = await GetCartAsync();
-            cart.RemoveItem(productId);
-            await SaveCartAsync(cart);
+            cart.RemoveItem(productId, productVariantId);
+            SaveCart(cart);
         }
 
-        /// <summary>
-        /// Cập nhật số lượng item
-        /// </summary>
-        public async Task UpdateQuantityAsync(int productId, int quantity)
+        public async Task UpdateQuantityAsync(int productId, int productVariantId, int quantity)
         {
             var cart = await GetCartAsync();
-            cart.UpdateQuantity(productId, quantity);
-            await SaveCartAsync(cart);
+            cart.UpdateQuantity(productId, productVariantId, quantity);
+            SaveCart(cart);
         }
 
-        /// <summary>
-        /// Xóa toàn bộ giỏ hàng
-        /// </summary>
-        public async Task ClearCartAsync()
+        public Task ClearCartAsync()
         {
             _session.Remove(CART_SESSION_KEY);
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Lưu giỏ hàng vào Session
-        /// </summary>
-        private async Task SaveCartAsync(Cart cart)
+        private void SaveCart(Cart cart)
         {
             var json = JsonSerializer.Serialize(cart.Items);
             _session.SetString(CART_SESSION_KEY, json);
-            await Task.CompletedTask;
         }
     }
 }
-

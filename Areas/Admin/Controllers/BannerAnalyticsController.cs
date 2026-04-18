@@ -7,7 +7,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Authorize(Policy = "Banner.Read")]     // Sprint 3: Policy guard — chỉ ai có Banner.Read claim mới vào được
     [Route("Admin/[controller]")]
     public class BannerAnalyticsController : Controller

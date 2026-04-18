@@ -1,26 +1,37 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace HDKTech.Models
 {
     /// <summary>
-    /// Đại diện cho một item trong giỏ hàng
-    /// Thiết kế linh hoạt: có thể map từ bất kỳ entity nào
+    /// Đại diện cho một item trong giỏ hàng.
+    ///
+    /// Refactor:
+    ///  - Thêm ProductVariantId: mỗi cấu hình chọn sẽ tạo 1 CartItem riêng.
+    ///  - Thêm SkuSnapshot / SpecSnapshot: dùng lại khi ghi OrderItem.
+    ///  - Price ở đây = giá variant tại thời điểm thêm vào giỏ.
     /// </summary>
     public class CartItem
     {
         [Key]
         public int ProductId { get; set; }
 
-        [Required]
-        [StringLength(200)]
+        /// <summary>FK tới ProductVariant (SKU). Bắt buộc kể từ sau refactor.</summary>
+        public int ProductVariantId { get; set; }
+
+        [Required, StringLength(200)]
         public string ProductName { get; set; } = string.Empty;
 
-        [Required]
+        /// <summary>Mã SKU tại thời điểm thêm vào giỏ.</summary>
+        [StringLength(64)]
+        public string? SkuSnapshot { get; set; }
+
+        /// <summary>Mô tả cấu hình, vd "i7/16GB/512GB".</summary>
+        [StringLength(500)]
+        public string? SpecSnapshot { get; set; }
+
         [Range(0, double.MaxValue)]
         public decimal Price { get; set; }
 
-        [Required]
         [Range(1, int.MaxValue)]
         public int Quantity { get; set; }
 
@@ -30,23 +41,29 @@ namespace HDKTech.Models
         [StringLength(100)]
         public string? CategoryName { get; set; }
 
-        /// <summary>
-        /// Tổng tiền của item này (Price * Quantity)
-        /// </summary>
         public decimal TotalPrice => Price * Quantity;
 
-        /// <summary>
-        /// Constructor cho dễ dàng tạo CartItem từ Product hoặc model khác
-        /// </summary>
         public CartItem() { }
 
-        public CartItem(int productId, string productName, decimal price, int quantity, string? ImageUrl = null, string? categoryName = null)
+        public CartItem(
+            int productId,
+            int productVariantId,
+            string productName,
+            decimal price,
+            int quantity,
+            string? skuSnapshot = null,
+            string? specSnapshot = null,
+            string? ImageUrl = null,
+            string? categoryName = null)
         {
             ProductId = productId;
+            ProductVariantId = productVariantId;
             ProductName = productName;
             Price = price;
             Quantity = quantity;
-            ImageUrl = ImageUrl;
+            SkuSnapshot = skuSnapshot;
+            SpecSnapshot = specSnapshot;
+            this.ImageUrl = ImageUrl;
             CategoryName = categoryName;
         }
     }

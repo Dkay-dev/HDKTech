@@ -1,6 +1,6 @@
-﻿using HDKTech.Data;
+﻿using HDKTech.Areas.Admin.Models;
+using HDKTech.Data;
 using HDKTech.Models;
-using HDKTech.Areas.Admin.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Areas.Admin.Repositories
@@ -24,13 +24,15 @@ namespace HDKTech.Areas.Admin.Repositories
         public async Task<IEnumerable<Promotion>> GetActivePromotionsAsync()
         {
             var now = DateTime.Now;
+            // Sử dụng thuộc tính IsActive và so sánh thời gian
             return await _context.Promotions
-                .Where(p => p.IsActive && p.StartDate <= now && p.EndDate >= now)
+                .Where(p => p.IsActive && p.StartDate <= now && p.EndDate >= now && p.Status == PromotionStatus.Running)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Promotion>> GetPromotionsByStatusAsync(string status)
+        // Đổi tham số truyền vào từ string sang Enum để đồng bộ
+        public async Task<IEnumerable<Promotion>> GetPromotionsByStatusAsync(PromotionStatus status)
         {
             return await _context.Promotions
                 .Where(p => p.Status == status)
@@ -38,12 +40,14 @@ namespace HDKTech.Areas.Admin.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Promotion> GetPromotionByIdAsync(int id)
+        public async Task<Promotion?> GetPromotionByIdAsync(int id)
         {
-            return await _context.Promotions.FindAsync(id);
+            return await _context.Promotions
+                .Include(p => p.PromotionProducts)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task<Promotion> GetPromotionByCodeAsync(string code)
+        public async Task<Promotion?> GetPromotionByCodeAsync(string code)
         {
             return await _context.Promotions
                 .Where(p => p.PromoCode == code && p.IsActive)
@@ -52,7 +56,8 @@ namespace HDKTech.Areas.Admin.Repositories
 
         public async Task<int> CreatePromotionAsync(Promotion promotion)
         {
-            promotion.Status = GetStatus(promotion.StartDate, promotion.EndDate);
+            // Cập nhật Status dựa trên Enum thay vì String
+            promotion.Status = CalculateStatus(promotion.StartDate, promotion.EndDate);
             _context.Promotions.Add(promotion);
             await _context.SaveChangesAsync();
             return promotion.Id;
@@ -61,7 +66,7 @@ namespace HDKTech.Areas.Admin.Repositories
         public async Task UpdatePromotionAsync(Promotion promotion)
         {
             promotion.UpdatedAt = DateTime.Now;
-            promotion.Status = GetStatus(promotion.StartDate, promotion.EndDate);
+            promotion.Status = CalculateStatus(promotion.StartDate, promotion.EndDate);
             _context.Promotions.Update(promotion);
             await _context.SaveChangesAsync();
         }
@@ -87,12 +92,13 @@ namespace HDKTech.Areas.Admin.Repositories
             }
         }
 
-        private string GetStatus(DateTime start, DateTime end)
+        // Sửa hàm này để trả về Enum PromotionStatus
+        private PromotionStatus CalculateStatus(DateTime start, DateTime end)
         {
             var now = DateTime.Now;
-            if (now < start) return "Scheduled";
-            if (now > end) return "Ended";
-            return "Running";
+            if (now < start) return PromotionStatus.Scheduled;
+            if (now > end) return PromotionStatus.Ended;
+            return PromotionStatus.Running;
         }
     }
 }

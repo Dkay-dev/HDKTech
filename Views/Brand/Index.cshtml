@@ -110,21 +110,26 @@
                             <h6 class="card-title fw-bold text-dark text-truncate-2 mb-2">@item.Name</h6>
 
                             <div class="mt-auto">
+                                @{
+                                    var itemPrice     = item.DisplayPrice ?? 0m;
+                                    var itemListPrice = item.DisplayListPrice;
+                                    var itemDiscount  = item.DefaultVariant?.DiscountPercent ?? 0;
+                                }
                                 <div class="price-box mb-2">
-                                    @if (item.ListPrice.HasValue && item.ListPrice > item.Price)
+                                    @if (itemListPrice.HasValue && itemListPrice > itemPrice)
                                     {
                                         <span class="text-decoration-line-through text-muted small me-1">
-                                            @item.ListPrice.Value.ToString("#,##0")₫
+                                            @itemListPrice.Value.ToString("#,##0")₫
                                         </span>
                                     }
 
                                     <div class="d-flex align-items-center">
-                                        <span class="fs-5 fw-bold text-danger me-2">@item.Price.ToString("#,##0")₫</span>
-                
-                                        @if (item.DiscountPercent > 0)
+                                        <span class="fs-5 fw-bold text-danger me-2">@itemPrice.ToString("#,##0")₫</span>
+
+                                        @if (itemDiscount > 0)
                                         {
                                             <span class="badge border border-danger text-danger bg-white p-1" style="font-size: 0.75rem;">
-                                                -@item.DiscountPercent%
+                                                -@itemDiscount%
                                             </span>
                                         }
                                     </div>

@@ -22,20 +22,26 @@
                         <div class="col-md-6 text-end">
                             @switch (Model.Status)
                             {
-                                case 0:
+                                case HDKTech.Models.OrderStatus.Pending:
                                     <span class="badge bg-warning text-dark fs-6">Chờ Xác Nhận</span>
                                     break;
-                                case 1:
-                                    <span class="badge bg-info fs-6">Đang Xử Lý</span>
+                                case HDKTech.Models.OrderStatus.Confirmed:
+                                    <span class="badge bg-info fs-6">Đã Xác Nhận</span>
                                     break;
-                                case 2:
+                                case HDKTech.Models.OrderStatus.Packing:
+                                    <span class="badge bg-info fs-6">Đang Đóng Gói</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Shipping:
                                     <span class="badge bg-primary fs-6">Đang Giao</span>
                                     break;
-                                case 3:
+                                case HDKTech.Models.OrderStatus.Delivered:
                                     <span class="badge bg-success fs-6">Đã Giao</span>
                                     break;
-                                case 4:
+                                case HDKTech.Models.OrderStatus.Cancelled:
                                     <span class="badge bg-danger fs-6">Đã Hủy</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Returned:
+                                    <span class="badge bg-dark fs-6">Trả Hàng</span>
                                     break;
                             }
                         </div>
@@ -76,7 +82,7 @@
                                 <strong>Số Điện Thoại:</strong> @Model.RecipientPhone
                             </p>
                             <p class="mb-0">
-                                <strong>Địa Chỉ:</strong> @Model.ShippingAddress
+                                <strong>Địa Chỉ:</strong> @(Model.ShippingAddressFull ?? Model.ShippingAddressLine)
                             </p>
                         </div>
                     </div>

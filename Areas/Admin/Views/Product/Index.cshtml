@@ -107,7 +107,9 @@
                         @foreach (var p in Model)
                         {
                             var thumb   = p.Images?.FirstOrDefault(x => x.IsDefault) ?? p.Images?.FirstOrDefault();
-                            var qty     = p.Inventories?.Sum(x => x.Quantity) ?? 0;
+                            var qty     = p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(x => x.Quantity) ?? 0;
+                            var pPrice      = p.DisplayPrice ?? 0m;
+                            var pListPrice  = p.DisplayListPrice;
                             <tr>
                                 <!-- Ảnh -->
                                 <td class="text-center ps-3">
@@ -140,10 +142,10 @@
                                 </td>
                                 <!-- Giá -->
                                 <td class="text-end">
-                                    <span class="price-vnd">@p.Price.ToString("N0")₫</span>
-                                    @if (p.ListPrice.HasValue && p.ListPrice > p.Price)
+                                    <span class="price-vnd">@pPrice.ToString("N0")₫</span>
+                                    @if (pListPrice.HasValue && pListPrice > pPrice)
                                     {
-                                        <br /><small class="text-muted text-decoration-line-through">@p.ListPrice.Value.ToString("N0")₫</small>
+                                        <br /><small class="text-muted text-decoration-line-through">@pListPrice.Value.ToString("N0")₫</small>
                                     }
                                 </td>
                                 <!-- Kho -->

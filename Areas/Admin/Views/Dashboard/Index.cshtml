@@ -704,13 +704,15 @@ else
                         </thead>
                         <tbody>
                             @{
-                                Func<int, (string css, string label)> GetOrderStyle = status => status switch {
-                                    0 => ("bg-secondary",      "Chờ xác nhận"),
-                                    1 => ("bg-warning text-dark", "Đang xử lý"),
-                                    2 => ("bg-info text-dark", "Đang giao"),
-                                    3 => ("bg-success",        "Đã giao"),
-                                    4 => ("bg-danger",         "Đã huỷ"),
-                                    _ => ("bg-light text-dark","N/A")
+                                Func<OrderStatus, (string css, string label)> GetOrderStyle = status => status switch {
+                                    OrderStatus.Pending    => ("bg-secondary",         "Chờ xác nhận"),
+                                    OrderStatus.Confirmed  => ("bg-warning text-dark", "Đã xác nhận"),
+                                    OrderStatus.Packing    => ("bg-primary",           "Đang đóng gói"),
+                                    OrderStatus.Shipping   => ("bg-info text-dark",    "Đang giao"),
+                                    OrderStatus.Delivered  => ("bg-success",           "Đã giao"),
+                                    OrderStatus.Cancelled  => ("bg-danger",            "Đã huỷ"),
+                                    OrderStatus.Returned   => ("bg-dark",              "Đã hoàn trả"),
+                                    _                      => ("bg-light text-dark",   "N/A")
                                 };
                             }
                             @if (Model.RecentOrders.Any())

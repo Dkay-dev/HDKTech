@@ -8,7 +8,7 @@ using HDKTech.Services;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "RequireAdmin")]
     [Route("admin/banner")]
     public class BannerController : Controller
     {

@@ -1,9 +1,6 @@
-﻿namespace HDKTech.ChucNangPhanQuyen
+// Enum PhanQuyen đã được loại bỏ. Role giờ lưu thành chuỗi trong AspNetRoles
+// ("Admin", "Manager", "Staff", "Customer") — xem AdminConstants + IdentityRoleSeed.
+namespace HDKTech.ChucNangPhanQuyen
 {
-    public enum PhanQuyen
-    {
-      User = 1,
-      Admin,
-      NhanVien,
-    }
+    // Intentionally empty.
 }

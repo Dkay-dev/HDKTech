@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using HDKTech.Models;
 using HDKTech.Data;
-using HDKTech.Models;
 using HDKTech.Models.Momo;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
@@ -15,6 +13,7 @@ using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
 using HDKTech.ChucNangPhanQuyen;
+using HDKTech.Areas.Admin.Constants;
 
 namespace HDKTech
 {
@@ -26,39 +25,48 @@ namespace HDKTech
             var connectionString = builder.Configuration.GetConnectionString("HDKTechContextConnection")
                 ?? throw new InvalidOperationException("Connection string 'HDKTechContextConnection' not found.");
 
-            builder.Services.AddDbContext<HDKTechContext>(options => options.UseSqlServer(connectionString));
+            // ─────────────────────────────────────────────────────────────
+            // DbContext
+            // ─────────────────────────────────────────────────────────────
+            builder.Services.AddDbContext<HDKTechContext>(options =>
+                options.UseSqlServer(connectionString));
 
-            builder.Services
-                 .AddIdentity<AppUser, IdentityRole>(options =>
-                 {
-                     // ── Password Policy ───────────────────────────────────────
-                     options.SignIn.RequireConfirmedAccount = false;
-                     options.Password.RequireDigit           = false;
-                     options.Password.RequiredLength         = 4;
-                     options.Password.RequireNonAlphanumeric = false;
-                     options.Password.RequireUppercase       = false;
-                     options.Password.RequireLowercase       = false;
+            // ─────────────────────────────────────────────────────────────
+            // Identity — Chuyển từ AddIdentityCore sang AddIdentity để hỗ trợ đầy đủ Store
+            // ─────────────────────────────────────────────────────────────
+            builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 4;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
 
-                     // ── Giai đoạn 4: Brute-force Protection — Account Lockout ─
-                     // Khoá tài khoản 15 phút sau 5 lần nhập sai liên tiếp.
-                     // LockoutEnabled mặc định = true cho mọi user mới đăng ký.
-                     options.Lockout.AllowedForNewUsers      = true;
-                     options.Lockout.MaxFailedAccessAttempts = 5;
-                     options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
-                 })
-                 .AddEntityFrameworkStores<HDKTechContext>()
-                 .AddDefaultUI()
-                 .AddDefaultTokenProviders();
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            })
+                .AddEntityFrameworkStores<HDKTechContext>()
+                .AddDefaultTokenProviders();
 
-            // ✅ Sửa cookie Identity để hoạt động với VNPay callback
+            // Sau khi dùng AddIdentity, bạn có thể xóa bớt các dòng AddSignInManager() 
+            // và AddAuthentication(...) lẻ tẻ bên dưới vì AddIdentity đã lo hết rồi.
+            // Đăng ký cookie scheme riêng (vì AddIdentityCore không đi kèm cookie)
+            
+
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SameSite     = SameSiteMode.None;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.Cookie.HttpOnly = true;
+                options.Cookie.HttpOnly     = true;
+                options.LoginPath           = "/Identity/Account/Login";
+                options.AccessDeniedPath    = "/Identity/Account/AccessDenied";
             });
 
-            // Register Repository Pattern
+            // ─────────────────────────────────────────────────────────────
+            // Repositories
+            // ─────────────────────────────────────────────────────────────
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<ProductRepository>();
@@ -68,44 +76,49 @@ namespace HDKTech
             builder.Services.AddScoped<BrandRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-            // Register Review Services
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
 
-            // Register Admin Repositories
-            // ✅ Fix #4: Đăng ký đúng namespace IAdminProductRepository mà Areas/Admin/Controllers/ProductController sử dụng
-            // ProductController inject: HDKTech.Areas.Admin.Repositories.IAdminProductRepository
-            // => Phải đăng ký interface đúng namespace, map tới implementation tương ứng
-            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository, HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
-            // Giữ lại registration cũ cho các nơi khác trong project dùng namespace Repositories.Interfaces
-            builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository, HDKTech.Repositories.AdminProductRepository>();
+            // Admin Repositories — hai namespace cùng interface
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository,
+                                       HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
+            builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository,
+                                       HDKTech.Repositories.AdminProductRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerClickEventRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.PromotionRepository>();
-            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.ISystemLogRepository, HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
+            builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.ISystemLogRepository,
+                                       HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
             builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
-            // Register Admin Services
+            // Admin Services
             builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-            // ── Giai đoạn 1: Inventory Sync ──────────────────────────────────
+            // Inventory / Reports / Cart
             builder.Services.AddScoped<IInventoryService, InventoryService>();
-
-            // ── Giai đoạn 3: Smart Reporting ─────────────────────────────────
             builder.Services.AddScoped<IReportService, ReportService>();
 
-            // ── Sprint 1: Policy-based Authorization — PermissionHandler ────────
-            // Handler mới đọc từ AspNetRoleClaims thay vì bảng custom RolePermissions.
-            // RoleManager<IdentityRole> đã được đăng ký sẵn bởi AddIdentity() ở trên.
+            // ─────────────────────────────────────────────────────────────
+            // Authorization — Policy-based Permission (ASP.NET Identity)
+            //   Handler đọc trực tiếp từ AspNetRoleClaims (Type="permission").
+            //   Roles được seed trong IdentityRoleSeed.
+            // ─────────────────────────────────────────────────────────────
             builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-
-            // ── Sprint 1: Authorization Policies ─────────────────────────────────
-            // Tự động tạo policy cho mọi permission trong AllSystemPermissions.
-            // Format policy name: "Module.Action" (vd: "Inventory.Update")
-            // Dùng trên controller: [Authorize(Policy = "Inventory.Update")]
             builder.Services.AddAuthorization(options =>
             {
-                foreach (var perm in HDKTech.Areas.Admin.Controllers.RoleController.AllSystemPermissions)
+                // ─── Role-based policies (Identity) ─────────────────────────
+                // Dùng CHUỖI role name từ AdminConstants — ánh xạ trực tiếp
+                // sang Identity Roles ("Admin", "Manager") trong AspNetRoles.
+                options.AddPolicy("RequireAdmin", policy =>
+                    policy.RequireRole(AdminConstants.AdminRole));
+
+                options.AddPolicy("RequireManager", policy =>
+                    policy.RequireRole(AdminConstants.AdminRole, AdminConstants.ManagerRole));
+
+                // ─── Permission-based policies ──────────────────────────────
+                // Mỗi permission "Module.Action" được map thành 1 policy đồng tên;
+                // PermissionHandler đọc AspNetRoleClaims để Succeed/Fail.
+                foreach (var perm in HDKTech.Data.IdentityRoleSeed.AllPermissions)
                 {
                     var parts = perm.Split('.');
                     if (parts.Length == 2)
@@ -114,40 +127,45 @@ namespace HDKTech
                 }
             });
 
-            // Register Cart Service (Session) - 7 days
+            // ─────────────────────────────────────────────────────────────
+            // Session / Cart
+            // ─────────────────────────────────────────────────────────────
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromDays(7);
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-                options.Cookie.SameSite = SameSiteMode.None;    // ✅ Đổi từ Lax → None
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // ✅ Thêm dòng này
+                options.IdleTimeout         = TimeSpan.FromDays(7);
+                options.Cookie.HttpOnly     = true;
+                options.Cookie.IsEssential  = true;
+                options.Cookie.SameSite     = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICartService, SessionCartService>();
 
-            // ── Giai đoạn 2: Observability — IMemoryCache cho Dashboard ─────
-            // Cache mặc định dùng bộ nhớ process — phù hợp single-server deployment
+            // ─────────────────────────────────────────────────────────────
+            // Memory cache (Dashboard)
+            // ─────────────────────────────────────────────────────────────
             builder.Services.AddMemoryCache(options =>
             {
-                options.SizeLimit            = null;  // không giới hạn số entry
-                options.CompactionPercentage = 0.25;  // dọn 25% khi đầy
+                options.SizeLimit            = null;
+                options.CompactionPercentage = 0.25;
             });
 
-            // Add services to the container.
+            // MVC + Razor Pages (vẫn cần cho Identity scaffold UI nếu user muốn giữ)
             builder.Services.AddControllersWithViews();
+            builder.Services.AddRazorPages();
 
-            // Connect VNPay API
+            // Payment Services
             builder.Services.AddScoped<IVnPayService, VnPayService>();
-            
-            // Connect Momo API
             builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
             builder.Services.AddHttpClient<IMomoService, MomoService>();
 
+            // Category cache / Product service
+            builder.Services.AddSingleton<ICategoryCacheService, CategoryCacheService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+
             var app = builder.Build();
 
-            // Initialize LoggingHelper
             using (var scope = app.Services.CreateScope())
             {
                 var logService = scope.ServiceProvider.GetRequiredService<ISystemLogService>();
@@ -170,20 +188,16 @@ namespace HDKTech
             app.UseStaticFiles();
             app.UseRouting();
 
-            // ✅ Thêm CookiePolicy trước Authentication
             app.UseCookiePolicy(new CookiePolicyOptions
             {
                 MinimumSameSitePolicy = SameSiteMode.None,
-                Secure = CookieSecurePolicy.Always
+                Secure                = CookieSecurePolicy.Always
             });
 
             app.UseSession();
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // 1. Route cho các Area (Admin,...)
-            // TUYỆT ĐỐI KHÔNG để {controller=Product} ở đây. 
-            // Hãy để trống controller để nó không tự động gán Product vào ImageUrl khi bạn đăng nhập.
             app.MapControllerRoute(
                 name: "MyAreas",
                 pattern: "{area:exists}/{controller}/{action=Index}/{id?}");

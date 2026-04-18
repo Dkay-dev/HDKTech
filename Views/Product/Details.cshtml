@@ -39,16 +39,19 @@
                 <div class="text-muted small mb-2">Thương hiệu: <strong>@Model.Brand?.Name</strong> | SKU: <strong>HDK-@Model.Id</strong></div>
 
                 @{
-                    var discountPercent = Model.ListPrice > 0 
-                        ? (int)((Model.ListPrice - Model.Price) / Model.ListPrice * 100) 
+                    var defaultVariant = Model.DefaultVariant;
+                    var displayPrice   = Model.DisplayPrice ?? 0m;
+                    var listPrice      = Model.DisplayListPrice;
+                    var discountPercent = (listPrice.HasValue && listPrice > 0 && listPrice > displayPrice)
+                        ? (int)((listPrice.Value - displayPrice) / listPrice.Value * 100)
                         : 0;
                 }
 
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <div>
-                        <span class="price-text">@Model.Price.ToString("N0")₫</span>
-                        @if(Model.ListPrice > Model.Price){
-                            <span class="price-old">@Model.ListPrice?.ToString("N0")₫</span>
+                        <span class="price-text">@displayPrice.ToString("N0")₫</span>
+                        @if(listPrice.HasValue && listPrice > displayPrice){
+                            <span class="price-old">@listPrice.Value.ToString("N0")₫</span>
                         }
                     </div>
                     @if(discountPercent > 0){
@@ -138,7 +141,7 @@
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Bảo hành</span>
-                                    <span class="spec-value highlight">@(Model.WarrantyInfo ?? "24 Tháng")</span>
+                                    <span class="spec-value highlight">@(Model.WarrantyPolicy?.Name ?? "24 Tháng")</span>
                                 </div>
                             </div>
                         </div>

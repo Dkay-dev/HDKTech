@@ -8,7 +8,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Route("admin/[controller]")]
     public class BrandController : Controller
     {

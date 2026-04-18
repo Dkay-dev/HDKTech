@@ -1,36 +1,40 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+﻿using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
+using HDKTech.Services; // Thêm để dùng ICategoryCacheService
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
-using HDKTech.Areas.Admin.Repositories;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
     /// <summary>
     /// Controller quản lý Danh Mục sản phẩm trong khu vực Admin.
     /// Sử dụng Repository Pattern qua ICategoryRepository.
+    /// Tích hợp ICategoryCacheService để làm mới bộ nhớ đệm khi dữ liệu thay đổi.
     /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = "RequireManager")]
     [Route("admin/[controller]")]
     public class CategoryController : Controller
     {
         private readonly ICategoryRepository _categoryRepo;
         private readonly ILogger<CategoryController> _logger;
+        private readonly ICategoryCacheService _categoryCache; // Thêm khai báo cache
 
-        public CategoryController(ICategoryRepository categoryRepo, ILogger<CategoryController> logger)
+        public CategoryController(
+            ICategoryRepository categoryRepo,
+            ILogger<CategoryController> logger,
+            ICategoryCacheService categoryCache) // Inject thêm cache service
         {
             _categoryRepo = categoryRepo;
             _logger = logger;
+            _categoryCache = categoryCache;
         }
 
         // ══════════════════════════════════════════════════════════════
         // INDEX - Danh sách danh mục
-        // GET: /admin/category
-        // GET: /admin/category/index
         // ══════════════════════════════════════════════════════════════
         [HttpGet("")]
         [HttpGet("index")]
@@ -38,13 +42,9 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                // Lấy toàn bộ danh mục kèm chi tiết
                 var allCategories = await _categoryRepo.GetAllWithDetailsAsync();
-
-                // Lọc chỉ lấy danh mục gốc (không có cha)
                 var query = allCategories.Where(c => c.ParentCategoryId == null).AsQueryable();
 
-                // Áp dụng tìm kiếm
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -58,15 +58,14 @@ namespace HDKTech.Areas.Admin.Controllers
                 var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
                 var paged = filtered.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
-                // Thống kê
-                ViewBag.Categories           = paged;
-                ViewBag.TotalCount           = totalCount;
-                ViewBag.PageNumber           = pageNumber;
-                ViewBag.PageSize             = pageSize;
-                ViewBag.TotalPages           = totalPages;
-                ViewBag.SearchTerm           = searchTerm;
-                ViewBag.TotalCategories      = await _categoryRepo.CountAsync();
-                ViewBag.TotalProducts        = allCategories.Sum(c => c.Products?.Count ?? 0);
+                ViewBag.Categories = paged;
+                ViewBag.TotalCount = totalCount;
+                ViewBag.PageNumber = pageNumber;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.SearchTerm = searchTerm;
+                ViewBag.TotalCategories = await _categoryRepo.CountAsync();
+                ViewBag.TotalProducts = allCategories.Sum(c => c.Products?.Count ?? 0);
                 ViewBag.CategoriesWithoutProducts = await _categoryRepo.CountEmptyAsync();
 
                 return View();
@@ -81,7 +80,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ══════════════════════════════════════════════════════════════
         // DETAILS - Chi tiết danh mục
-        // GET: /admin/category/details/5
         // ══════════════════════════════════════════════════════════════
         [HttpGet("details/{id:int}")]
         public async Task<IActionResult> Details(int id)
@@ -94,7 +92,6 @@ namespace HDKTech.Areas.Admin.Controllers
                     TempData["Error"] = "Không tìm thấy danh mục.";
                     return RedirectToAction(nameof(Index));
                 }
-
                 return View(category);
             }
             catch (Exception ex)
@@ -107,7 +104,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ══════════════════════════════════════════════════════════════
         // CREATE - Tạo mới danh mục
-        // GET: /admin/category/create
         // ══════════════════════════════════════════════════════════════
         [HttpGet("create")]
         public async Task<IActionResult> Create()
@@ -125,7 +121,6 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // POST: /admin/category/create
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Category category)
@@ -141,6 +136,9 @@ namespace HDKTech.Areas.Admin.Controllers
                 var success = await _categoryRepo.AddAsync(category);
                 if (success)
                 {
+                    // 🔥 Làm mới Cache khi tạo mới thành công
+                    _categoryCache.InvalidateCache();
+
                     TempData["Success"] = $"Tạo danh mục \"{category.Name}\" thành công!";
                     return RedirectToAction(nameof(Details), new { id = category.Id });
                 }
@@ -160,7 +158,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ══════════════════════════════════════════════════════════════
         // EDIT - Chỉnh sửa danh mục
-        // GET: /admin/category/edit/5
         // ══════════════════════════════════════════════════════════════
         [HttpGet("edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
@@ -185,15 +182,13 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // POST: /admin/category/edit/5
         [HttpPost("edit/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Category category)
         {
             try
             {
-                if (id != category.Id)
-                    return NotFound();
+                if (id != category.Id) return NotFound();
 
                 if (!ModelState.IsValid)
                 {
@@ -201,7 +196,6 @@ namespace HDKTech.Areas.Admin.Controllers
                     return View(category);
                 }
 
-                // Ngăn vòng lặp: danh mục không được là cha của chính nó
                 if (category.ParentCategoryId == category.Id)
                 {
                     ModelState.AddModelError("ParentCategoryId", "Danh mục không thể là cha của chính nó.");
@@ -212,6 +206,9 @@ namespace HDKTech.Areas.Admin.Controllers
                 var success = await _categoryRepo.UpdateAsync(category);
                 if (success)
                 {
+                    // 🔥 Làm mới Cache khi cập nhật thành công
+                    _categoryCache.InvalidateCache();
+
                     TempData["Success"] = $"Cập nhật danh mục \"{category.Name}\" thành công!";
                     return RedirectToAction(nameof(Details), new { id = category.Id });
                 }
@@ -231,8 +228,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ══════════════════════════════════════════════════════════════
         // DELETE - Xóa danh mục (AJAX)
-        // POST: /admin/category/delete
-        // Quy tắc: Không cho xóa nếu có Sản Phẩm hoặc Danh Mục Con liên kết
         // ══════════════════════════════════════════════════════════════
         [HttpPost("delete")]
         [ValidateAntiForgeryToken]
@@ -244,29 +239,24 @@ namespace HDKTech.Areas.Admin.Controllers
                 if (category == null)
                     return Json(new { success = false, message = "Không tìm thấy danh mục." });
 
-                // Kiểm tra sản phẩm liên kết (fix bug: dùng CategoryId thay vì Id)
                 if (await _categoryRepo.HasProductsAsync(categoryId))
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Không thể xóa danh mục \"{category.Name}\" vì đang có sản phẩm liên kết. Vui lòng chuyển sản phẩm sang danh mục khác trước."
-                    });
+                    return Json(new { success = false, message = $"Không thể xóa danh mục \"{category.Name}\" vì đang có sản phẩm liên kết." });
                 }
 
-                // Kiểm tra danh mục con
                 if (await _categoryRepo.HasSubCategoriesAsync(categoryId))
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Không thể xóa danh mục \"{category.Name}\" vì đang có danh mục con. Vui lòng xóa các danh mục con trước."
-                    });
+                    return Json(new { success = false, message = $"Không thể xóa danh mục \"{category.Name}\" vì đang có danh mục con." });
                 }
 
                 var success = await _categoryRepo.DeleteAsync(categoryId);
                 if (success)
+                {
+                    // 🔥 Làm mới Cache khi xóa thành công
+                    _categoryCache.InvalidateCache();
+
                     return Json(new { success = true, message = $"Đã xóa danh mục \"{category.Name}\" thành công." });
+                }
 
                 return Json(new { success = false, message = "Không thể xóa danh mục. Vui lòng thử lại." });
             }
@@ -279,7 +269,6 @@ namespace HDKTech.Areas.Admin.Controllers
 
         // ══════════════════════════════════════════════════════════════
         // EXPORT - Xuất CSV
-        // GET: /admin/category/export
         // ══════════════════════════════════════════════════════════════
         [HttpGet("export")]
         public async Task<IActionResult> Export(string searchTerm = "")
@@ -313,4 +302,3 @@ namespace HDKTech.Areas.Admin.Controllers
         }
     }
 }
-
