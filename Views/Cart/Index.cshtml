@@ -3,7 +3,83 @@
     ViewData["Title"] = "Giỏ Hàng - HDKTech";
 }
 
+@*
+    ───────────────────────────────────────────────────────────────
+    Cart/Index.cshtml — MERGED từ commit Huy 3f92de9 vào schema mới
+    của Khoa (CartItem có ProductVariantId, SkuSnapshot, SpecSnapshot).
+
+    Tính năng merged từ Huy:
+      - Checkbox chọn từng dòng + Chọn tất cả
+      - Summary cập nhật theo item đang chọn
+      - Truyền danh sách (productId + productVariantId) sang Checkout
+    Tính năng vẫn giữ từ Khoa:
+      - Key mỗi dòng = (ProductId, ProductVariantId)
+      - Nút xoá gọi AJAX /Cart/Remove với cả 2 id
+      - Cập nhật số lượng gọi /Cart/UpdateQuantity với cả 2 id
+      - Hiển thị spec snapshot (CPU/RAM/SSD) dưới tên sản phẩm
+    ───────────────────────────────────────────────────────────────
+*@
+
 <link rel="stylesheet" href="~/css/pages/cart.css" />
+
+<style>
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .select-all-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .select-all-wrapper input {
+        width: 18px;
+        height: 18px;
+        accent-color: #d32f2f;
+    }
+
+    .select-all-wrapper label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+        cursor: pointer;
+    }
+
+    .cart-item-checkbox {
+        width: 18px;
+        height: 18px;
+        accent-color: #d32f2f;
+        cursor: pointer;
+    }
+
+    .cart-item-row      { transition: background-color 0.2s; }
+    .cart-item-row:hover                 { background-color: rgba(211, 47, 47, 0.03); }
+    .cart-item-row.selected              { background-color: rgba(211, 47, 47, 0.08); }
+
+    .item-price-normal  { font-size: 1rem;   font-weight: 600; }
+    .item-price-selected {
+        display: none;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #d32f2f;
+    }
+
+    .cart-item-row.selected .item-price-normal   { display: none; }
+    .cart-item-row.selected .item-price-selected { display: block; }
+
+    .summary-total {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #d32f2f;
+    }
+</style>
 
 <div class="cart-container">
     <div class="container">
@@ -18,65 +94,132 @@
             <div class="col-lg-8">
                 <div class="cart-card">
                     <div class="cart-header">
-                        <h4 class="fw-bold mb-0">Giỏ hàng <span class="badge bg-danger ms-2" id="cart-count">@Model.TotalItems</span></h4>
-                        @if (!Model.IsEmpty) {
-                            <form asp-action="Clear" method="post">
-                                <button type="submit" class="btn btn-sm btn-link text-muted text-decoration-none" onclick="return confirm('Xoá toàn bộ giỏ hàng?')">
-                                    <i class="bi bi-trash3 me-1"></i>Xoá tất cả
-                                </button>
-                            </form>
+                        <h4 class="fw-bold mb-0">
+                            Giỏ hàng
+                            <span class="badge bg-danger ms-2" id="cart-count">@Model.TotalItems</span>
+                        </h4>
+                        @if (!Model.IsEmpty)
+                        {
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="select-all-wrapper">
+                                    <input type="checkbox" id="selectAll" checked onchange="toggleSelectAll()" />
+                                    <label for="selectAll">Chọn tất cả</label>
+                                </div>
+                                <form asp-action="Clear" method="post" class="m-0">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-link text-muted text-decoration-none"
+                                            onclick="return confirm('Xoá toàn bộ giỏ hàng?')">
+                                        <i class="bi bi-trash3 me-1"></i>Xoá tất cả
+                                    </button>
+                                </form>
+                            </div>
                         }
                     </div>
 
                     <div class="p-0">
-                        @if (Model.IsEmpty) {
+                        @if (Model.IsEmpty)
+                        {
                             <div class="text-center py-5">
                                 <i class="bi bi-cart-x display-1 text-light mb-3"></i>
                                 <h5 class="text-muted">Giỏ hàng của bạn đang trống</h5>
-                                <a asp-controller="Category" asp-action="Index" class="btn btn-outline-danger mt-3 rounded-pill px-4">Mua sắm ngay</a>
+                                <a asp-controller="Category" asp-action="Index"
+                                   class="btn btn-outline-danger mt-3 rounded-pill px-4">Mua sắm ngay</a>
                             </div>
-                        } else {
+                        }
+                        else
+                        {
                             <div class="table-responsive">
                                 <table class="table align-middle mb-0">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th class="ps-4 py-3 border-0">Sản phẩm</th>
+                                            <th class="ps-4 py-3 border-0" style="width: 40px;"></th>
+                                            <th class="py-3 border-0">Sản phẩm</th>
                                             <th class="text-center py-3 border-0">Số lượng</th>
                                             <th class="text-end py-3 border-0">Thành tiền</th>
                                             <th class="pe-4 py-3 border-0"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var item in Model.Items) {
-                                            <tr id="row-@item.ProductId">
+                                        @foreach (var item in Model.Items)
+                                        {
+                                            // Khóa duy nhất = (ProductId + ProductVariantId)
+                                            var rowKey   = $"{item.ProductId}-{item.ProductVariantId}";
+                                            var rowId    = $"row-{rowKey}";
+                                            var qtyId    = $"qty-{rowKey}";
+                                            var totalId  = $"total-{rowKey}";
+                                            var selTotId = $"selected-total-{rowKey}";
+
+                                            <tr id="@rowId"
+                                                class="cart-item-row selected"
+                                                data-product-id="@item.ProductId"
+                                                data-variant-id="@item.ProductVariantId"
+                                                data-price="@item.Price"
+                                                data-qty="@item.Quantity">
                                                 <td class="ps-4 py-4">
+                                                    <input type="checkbox"
+                                                           class="cart-item-checkbox"
+                                                           data-product-id="@item.ProductId"
+                                                           data-variant-id="@item.ProductVariantId"
+                                                           data-price="@item.Price"
+                                                           data-quantity="@item.Quantity"
+                                                           data-row-key="@rowKey"
+                                                           checked
+                                                           onchange="updateSelection()" />
+                                                </td>
+                                                <td class="py-4">
                                                     <div class="d-flex align-items-center gap-3">
-                                                        @* ImageUrl từ CartController đã là full path *@
-                                                        <img src="@item.ImageUrl" 
-                                                             class="product-img" 
+                                                        <img src="@item.ImageUrl"
+                                                             class="product-img"
+                                                             style="width: 60px; height: 60px; object-fit: contain;"
                                                              data-category="@item.CategoryName"
-                                                             onerror="handleCartImageError(this)"
-                                                             data-product-id="@item.ProductId">
+                                                             data-product-id="@item.ProductId"
+                                                             onerror="handleCartImageError(this)">
                                                         <div>
                                                             <h6 class="fw-bold mb-1">@item.ProductName</h6>
-                                                            <span class="text-danger small fw-bold">@item.Price.ToString("#,##0")₫</span>
-                                                            <br />
-                                                            <small class="text-muted d-none">[DEBUG: Cat=@item.CategoryName | Img=@item.ImageUrl | ID=@item.ProductId]</small>
+                                                            @if (!string.IsNullOrWhiteSpace(item.SpecSnapshot))
+                                                            {
+                                                                <div class="text-muted small">
+                                                                    <i class="bi bi-cpu"></i> @item.SpecSnapshot
+                                                                </div>
+                                                            }
+                                                            @if (!string.IsNullOrWhiteSpace(item.SkuSnapshot))
+                                                            {
+                                                                <div class="text-muted small">SKU: @item.SkuSnapshot</div>
+                                                            }
+                                                            <span class="text-danger small fw-bold">
+                                                                @item.Price.ToString("#,##0")₫
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div class="qty-group">
-                                                        <button class="btn-qty" onclick="changeQty(@item.ProductId, -1)"><i class="bi bi-dash"></i></button>
-                                                        <input type="number" id="qty-@item.ProductId" value="@item.Quantity" class="qty-input" readonly>
-                                                        <button class="btn-qty" onclick="changeQty(@item.ProductId, 1)"><i class="bi bi-plus"></i></button>
+                                                        <button class="btn-qty"
+                                                                onclick="changeQty(@item.ProductId, @item.ProductVariantId, -1)">
+                                                            <i class="bi bi-dash"></i>
+                                                        </button>
+                                                        <input type="number"
+                                                               id="@qtyId"
+                                                               value="@item.Quantity"
+                                                               class="qty-input"
+                                                               readonly>
+                                                        <button class="btn-qty"
+                                                                onclick="changeQty(@item.ProductId, @item.ProductVariantId, 1)">
+                                                            <i class="bi bi-plus"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                                 <td class="text-end fw-bold text-dark">
-                                                    <span id="total-@item.ProductId">@item.TotalPrice.ToString("#,##0")₫</span>
+                                                    <span class="item-price-selected" id="@selTotId">
+                                                        @item.TotalPrice.ToString("#,##0")₫
+                                                    </span>
+                                                    <span class="item-price-normal" id="@totalId">
+                                                        @item.TotalPrice.ToString("#,##0")₫
+                                                    </span>
                                                 </td>
                                                 <td class="text-center pe-4">
-                                                    <i class="bi bi-x-lg remove-btn" onclick="removeItem(@item.ProductId)"></i>
+                                                    <i class="bi bi-x-lg remove-btn"
+                                                       onclick="removeItem(@item.ProductId, @item.ProductVariantId)"></i>
                                                 </td>
                                             </tr>
                                         }
@@ -93,28 +236,35 @@
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-4">Chi tiết đơn hàng</h5>
                         <div class="d-flex justify-content-between mb-3">
-                            <span class="text-muted">Tạm tính</span>
-                            <span class="fw-bold" id="summary-subtotal">@Model.TotalPrice.ToString("#,##0")₫</span>
+                            <span class="text-muted">Tạm tính <small>(đã chọn)</small></span>
+                            <span class="fw-bold" id="summary-selected">@Model.TotalPrice.ToString("#,##0")₫</span>
                         </div>
                         <div class="d-flex justify-content-between mb-3">
                             <span class="text-muted">Giao hàng</span>
-                            <span class="text-success fw-bold">Miễn phí</span>
+                            <span class="text-success fw-bold">Tính ở trang Checkout</span>
                         </div>
                         <hr>
                         <div class="mb-4">
-                            <span class="text-muted d-block mb-1">Tổng cộng (Đã có VAT)</span>
-                            <div class="summary-total-value" id="summary-total">@Model.TotalPrice.ToString("#,##0")₫</div>
+                            <span class="text-muted d-block mb-1">Tổng cộng (tạm tính)</span>
+                            <div class="summary-total" id="summary-total">@Model.TotalPrice.ToString("#,##0")₫</div>
                         </div>
-                       
-                        @if (!Model.IsEmpty) {
-                            <a asp-controller="Checkout" asp-action="Index" class="btn-checkout text-white text-decoration-none">
+
+                        @if (!Model.IsEmpty)
+                        {
+                            <button type="button"
+                                    id="btn-checkout"
+                                    class="btn-checkout text-white text-decoration-none w-100 py-3"
+                                    onclick="goToCheckout()">
                                 <i class="bi bi-shield-check me-2"></i>TIẾN HÀNH ĐẶT HÀNG
-                            </a>
-                        } else {
-                            <button class="btn btn-secondary w-100 py-3 disabled" disabled>GIỎ HÀNG TRỐNG</button>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary w-100 py-3 disabled" disabled>
+                                GIỎ HÀNG TRỐNG
+                            </button>
                         }
                     </div>
-                    
                 </div>
             </div>
         </div>
@@ -123,5 +273,91 @@
 
 @section Scripts {
     <script src="~/js/pages/cart-logic.js"></script>
-}
+    <script>
+        // ============================================================
+        //  SELECTION LOGIC — giữ nguyên UX Huy, hỗ trợ (Pid, VariantId)
+        // ============================================================
+        function updateSelection() {
+            const checkboxes    = document.querySelectorAll('.cart-item-checkbox');
+            const checkedBoxes  = document.querySelectorAll('.cart-item-checkbox:checked');
+            let   selectedTotal = 0;
 
+            checkedBoxes.forEach(cb => {
+                const price = parseFloat(cb.dataset.price) || 0;
+                const qty   = parseInt(cb.dataset.quantity) || 1;
+                selectedTotal += price * qty;
+            });
+
+            // Highlight rows
+            document.querySelectorAll('.cart-item-row').forEach(row => {
+                const cb      = row.querySelector('.cart-item-checkbox');
+                const rowKey  = cb.dataset.rowKey;
+                const price   = parseFloat(cb.dataset.price)    || 0;
+                const qty     = parseInt(cb.dataset.quantity)   || 1;
+                const selTot  = document.getElementById(`selected-total-${rowKey}`);
+
+                if (cb.checked) {
+                    row.classList.add('selected');
+                    if (selTot) selTot.textContent = (price * qty).toLocaleString('vi-VN') + '₫';
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+
+            // Select-all tri-state
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) {
+                if (checkedBoxes.length === checkboxes.length && checkboxes.length > 0) {
+                    selectAll.checked       = true;
+                    selectAll.indeterminate = false;
+                } else if (checkedBoxes.length > 0) {
+                    selectAll.checked       = false;
+                    selectAll.indeterminate = true;
+                } else {
+                    selectAll.checked       = false;
+                    selectAll.indeterminate = false;
+                }
+            }
+
+            const fmt = selectedTotal.toLocaleString('vi-VN') + '₫';
+            const selSum = document.getElementById('summary-selected');
+            const totSum = document.getElementById('summary-total');
+            if (selSum) selSum.textContent = fmt;
+            if (totSum) totSum.textContent = fmt;
+
+            // Enable/disable checkout button
+            const btn = document.getElementById('btn-checkout');
+            if (btn) btn.disabled = checkedBoxes.length === 0;
+        }
+
+        function toggleSelectAll() {
+            const selectAll  = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.cart-item-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateSelection();
+        }
+
+        // ============================================================
+        //  Đi tới Checkout, truyền danh sách cặp (ProductId, VariantId)
+        //  đã chọn (JSON) — CheckoutController đọc query "selectedItems"
+        // ============================================================
+        function goToCheckout() {
+            const picked = Array.from(document.querySelectorAll('.cart-item-checkbox:checked'))
+                .map(cb => ({
+                    productId:        parseInt(cb.dataset.productId),
+                    productVariantId: parseInt(cb.dataset.variantId)
+                }));
+
+            if (picked.length === 0) {
+                alert('Vui lòng chọn ít nhất một sản phẩm để đặt hàng.');
+                return;
+            }
+
+            const url = '/Checkout/Index?selectedItems=' +
+                        encodeURIComponent(JSON.stringify(picked));
+            window.location.href = url;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateSelection);
+    </script>
+}

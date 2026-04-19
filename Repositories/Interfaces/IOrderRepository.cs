@@ -21,10 +21,10 @@ namespace HDKTech.Repositories.Interfaces
         Task<(bool Success, string? Error, Order? Order)> CreateFromPendingCheckoutAsync(
             PendingCheckout pending);
 
-        /// <summary>Lấy đơn hàng theo mã đơn hàng.</summary>
+        /// <summary>Lấy đơn hàng theo mã đơn hàng (kèm Items → Product → Images/Category).</summary>
         Task<Order> GetOrderByMaDonHangAsync(string OrderCode);
 
-        /// <summary>Lấy tất cả đơn hàng của một user.</summary>
+        /// <summary>Lấy tất cả đơn hàng của một user (kèm Items → Product → Images/Category).</summary>
         Task<IEnumerable<Order>> GetUserOrdersAsync(string userId);
 
         /// <summary>Cập nhật trạng thái đơn hàng.</summary>
@@ -32,7 +32,16 @@ namespace HDKTech.Repositories.Interfaces
 
         /// <summary>Xóa đơn hàng.</summary>
         Task<bool> DeleteOrderAsync(int maOrder);
+
+        /// <summary>
+        /// Huỷ đơn hàng (dành cho khách hàng).
+        ///  - Chỉ huỷ được đơn ở trạng thái Pending / Confirmed.
+        ///  - Release stock đã reserve (nếu có) — tạm thời để simple:
+        ///    chỉ đổi Status + ghi CancelReason + CancelledAt.
+        ///    Việc hoàn kho thực sự sẽ do Admin xử lý (để tránh race condition
+        ///    với InventoryService trong môi trường production).
+        ///  - Returns (false, "lý do thất bại") nếu không huỷ được.
+        /// </summary>
+        Task<(bool Ok, string? Error)> CancelOrderAsync(int orderId, string userId, string? cancelReason);
     }
 }
-
-
