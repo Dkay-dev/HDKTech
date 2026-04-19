@@ -23,9 +23,9 @@ namespace HDKTech.Areas.Admin.Repositories
         Task<bool> UpdateVariantStockAsync(int productVariantId, int quantity);
         Task<bool> UpdateVariantPriceAsync(int productVariantId, decimal price);
 
-        // Delete
-        Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(int id);
-        Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(IEnumerable<int> ids);
+        // Delete (Module C: soft delete — deletedBy optional for audit)
+        Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(int id, string? deletedBy = null);
+        Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(IEnumerable<int> ids, string? deletedBy = null);
 
         // Search & Filter
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);

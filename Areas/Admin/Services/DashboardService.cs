@@ -8,28 +8,29 @@ using Microsoft.Extensions.Caching.Memory;
 namespace HDKTech.Areas.Admin.Services
 {
     /// <summary>
-    /// Giai đoạn 2 — Observability Engine.
-    /// Tổng hợp dữ liệu từ Order, Product, Banner, SystemLog.
-    /// Kết quả được cache 5 phút qua IMemoryCache để tránh query SQL nặng.
+    /// Module D — Performance: Dashboard queries chạy song song qua Task.WhenAll.
+    /// Mỗi nhóm query nhận DbContext riêng từ IDbContextFactory để tránh
+    /// shared-context race condition. Daily revenue dùng 1 GROUP BY query
+    /// thay vì 7 queries riêng lẻ.
     /// </summary>
     public class DashboardService : IDashboardService
     {
-        private readonly HDKTechContext          _context;
-        private readonly IMemoryCache            _cache;
-        private readonly ILogger<DashboardService> _logger;
+        private readonly IDbContextFactory<HDKTechContext> _contextFactory;
+        private readonly IMemoryCache                      _cache;
+        private readonly ILogger<DashboardService>         _logger;
 
         // ── Cache keys ──────────────────────────────────────────────────────
-        private const string MainCacheKey   = "dashboard_v2_main";
+        private const string MainCacheKey = "dashboard_v2_main";
         private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
 
         public DashboardService(
-            HDKTechContext context,
-            IMemoryCache cache,
-            ILogger<DashboardService> logger)
+            IDbContextFactory<HDKTechContext> contextFactory,
+            IMemoryCache                      cache,
+            ILogger<DashboardService>         logger)
         {
-            _context = context;
-            _cache   = cache;
-            _logger  = logger;
+            _contextFactory = contextFactory;
+            _cache          = cache;
+            _logger         = logger;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ namespace HDKTech.Areas.Admin.Services
                 return cached;
             }
 
-            _logger.LogInformation("[Dashboard] Cache miss — đang build từ DB...");
+            _logger.LogInformation("[Dashboard] Cache miss — đang build từ DB song song...");
             var vm = await BuildAsync();
             vm.ViewerRole = viewerRole;
 
@@ -74,7 +75,17 @@ namespace HDKTech.Areas.Admin.Services
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // PRIVATE: BuildWarehouseAsync — chỉ trả về dữ liệu kho + đơn chờ
+        // PUBLIC: InvalidateCacheAsync
+        // ─────────────────────────────────────────────────────────────────────
+        public Task InvalidateCacheAsync()
+        {
+            _cache.Remove(MainCacheKey);
+            _logger.LogInformation("[Dashboard] Cache đã bị xóa thủ công.");
+            return Task.CompletedTask;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // PRIVATE: BuildWarehouseAsync — Staff-only (lightweight)
         // ─────────────────────────────────────────────────────────────────────
         private async Task<DashboardViewModel> BuildWarehouseAsync(string role)
         {
@@ -88,24 +99,24 @@ namespace HDKTech.Areas.Admin.Services
 
             try
             {
-                // Đơn hàng cần xử lý (Status 0 = Chờ xác nhận, 1 = Đang xử lý)
-                vm.PendingOrders = await _context.Orders.AsNoTracking()
-                    .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
+                await using var ctx = await _contextFactory.CreateDbContextAsync();
 
-                vm.TotalOrders = await _context.Orders.AsNoTracking().CountAsync();
-
-                // Số đơn hàng đặt hôm nay
                 var today    = DateTime.Now.Date;
                 var tomorrow = today.AddDays(1);
-                vm.TodayOrderCount = await _context.Orders.AsNoTracking()
+
+                vm.PendingOrders = await ctx.Orders.AsNoTracking()
+                    .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
+
+                vm.TotalOrders = await ctx.Orders.AsNoTracking().CountAsync();
+
+                vm.TodayOrderCount = await ctx.Orders.AsNoTracking()
                     .CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
 
-                // Tồn kho thấp
-                vm.LowStockCount = await _context.Inventories.AsNoTracking()
+                vm.LowStockCount = await ctx.Inventories.AsNoTracking()
                     .Where(i => i.Quantity < lowStockThreshold)
                     .CountAsync();
 
-                vm.LowStockProducts = await _context.Inventories
+                vm.LowStockProducts = await ctx.Inventories
                     .AsNoTracking()
                     .Include(i => i.Product)
                     .Where(i => i.Quantity < lowStockThreshold)
@@ -120,8 +131,7 @@ namespace HDKTech.Areas.Admin.Services
                     })
                     .ToListAsync();
 
-                // 5 đơn hàng chờ xử lý gần nhất
-                vm.RecentOrders = await _context.Orders.AsNoTracking()
+                vm.RecentOrders = await ctx.Orders.AsNoTracking()
                     .Include(o => o.User)
                     .Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed)
                     .OrderByDescending(o => o.OrderDate)
@@ -137,17 +147,7 @@ namespace HDKTech.Areas.Admin.Services
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // PUBLIC: InvalidateCacheAsync — gọi sau tạo/hủy đơn
-        // ─────────────────────────────────────────────────────────────────────
-        public Task InvalidateCacheAsync()
-        {
-            _cache.Remove(MainCacheKey);
-            _logger.LogInformation("[Dashboard] Cache đã bị xóa thủ công.");
-            return Task.CompletedTask;
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // PRIVATE: BuildAsync — logic tổng hợp dữ liệu thực
+        // PRIVATE: BuildAsync — 4 nhóm query chạy song song
         // ─────────────────────────────────────────────────────────────────────
         private async Task<DashboardViewModel> BuildAsync()
         {
@@ -157,127 +157,16 @@ namespace HDKTech.Areas.Admin.Services
 
             try
             {
-                // ── [1] Doanh thu tổng (chỉ đơn Đã giao = Status 3) ─────────
-                vm.TotalRevenue = await _context.Orders
-                    .AsNoTracking()
-                    .Where(o => o.Status == OrderStatus.Delivered)
-                    .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+                // Chạy 4 nhóm độc lập song song — mỗi nhóm dùng DbContext riêng
+                await Task.WhenAll(
+                    LoadOrderStatsAsync(vm, today, now),
+                    LoadInventoryStatsAsync(vm),
+                    LoadUserAndPromoStatsAsync(vm, now),
+                    LoadRecentAndBannerDataAsync(vm, today, now)
+                );
 
-                // ── [2] Tổng đơn hàng ────────────────────────────────────────
-                vm.TotalOrders = await _context.Orders.AsNoTracking().CountAsync();
-
-                // ── [3] Đơn chờ xử lý (Status 0 = Chờ xác nhận, 1 = Đang xử lý)
-                vm.PendingOrders = await _context.Orders.AsNoTracking()
-                    .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
-
-                // ── [4a] Tồn kho thấp — count ────────────────────────────────
-                const int lowStockThreshold = 10;
-                vm.LowStockCount = await _context.Inventories.AsNoTracking()
-                    .Where(i => i.Quantity < lowStockThreshold)
-                    .CountAsync();
-
-                // ── [4b] Giai đoạn 1 data: danh sách chi tiết cảnh báo đỏ ───
-                vm.LowStockProducts = await _context.Inventories
-                    .AsNoTracking()
-                    .Include(i => i.Product)
-                    .Where(i => i.Quantity < lowStockThreshold)
-                    .OrderBy(i => i.Quantity)
-                    .Take(10)
-                    .Select(i => new LowStockProductItem
-                    {
-                        ProductId    = i.ProductId,
-                        ProductName  = i.Product != null ? i.Product.Name : $"SP#{i.ProductId}",
-                        CurrentStock = i.Quantity,
-                        Threshold    = lowStockThreshold
-                    })
-                    .ToListAsync();
-
-                // ── [5] Khách hàng mới (30 ngày) ─────────────────────────────
-                var thirtyDaysAgo = now.AddDays(-30);
-                vm.NewCustomers = await _context.Users.AsNoTracking()
-                    .OfType<AppUser>()
-                    .Where(u => u.CreatedAt >= thirtyDaysAgo)
-                    .CountAsync();
-
-                // ── [6] Khuyến mãi đang chạy ─────────────────────────────────
-                vm.ActivePromotions = await _context.Promotions.AsNoTracking()
-                    .CountAsync(p => p.IsActive && p.StartDate <= now && p.EndDate >= now);
-
-                // ── [7] Banner stats ──────────────────────────────────────────
-                vm.TotalBanners  = await _context.Banners.AsNoTracking().CountAsync();
-                vm.ActiveBanners = await _context.Banners.AsNoTracking()
-                    .CountAsync(b => b.IsActive);
-
-                // ── [8] 5 đơn hàng gần nhất ──────────────────────────────────
-                vm.RecentOrders = await _context.Orders.AsNoTracking()
-                    .Include(o => o.User)
-                    .OrderByDescending(o => o.OrderDate)
-                    .Take(5)
-                    .ToListAsync();
-
-                // ── [9] 5 audit log gần nhất ─────────────────────────────────
-                var recentLogs = await _context.SystemLogs.AsNoTracking()
-                    .OrderByDescending(l => l.CreatedAt)
-                    .Take(5)
-                    .ToListAsync();
-
-                vm.RecentAuditLogs = recentLogs.Select(l => new RecentAuditLogItem
-                {
-                    Id          = l.Id,
-                    Timestamp   = l.CreatedAt,
-                    Username    = l.Username ?? l.UserId ?? "Hệ thống",
-                    Action      = l.Action   ?? "N/A",
-                    Module      = l.LogLevel ?? "N/A",
-                    Description = l.Description ?? "",
-                    Status      = l.Status   ?? "Success"
-                }).ToList();
-
-                // ── [10] Doanh thu 7 ngày (cho Line Chart) ───────────────────
-                var dailyRevenue = new List<DailyRevenueData>();
-                for (int i = 6; i >= 0; i--)
-                {
-                    var date    = now.AddDays(-i);
-                    var dateOnly = date.Date;
-                    var nextDay  = dateOnly.AddDays(1);
-                    var rev = await _context.Orders.AsNoTracking()
-                        .Where(o => o.Status == OrderStatus.Delivered
-                            && o.OrderDate >= dateOnly
-                            && o.OrderDate < nextDay)
-                        .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
-
-                    dailyRevenue.Add(new DailyRevenueData
-                    {
-                        Date    = dateOnly,
-                        DayName = date.ToString("ddd dd/MM",
-                                    new System.Globalization.CultureInfo("vi-VN")),
-                        Revenue = rev
-                    });
-                }
-                vm.DailyRevenue = dailyRevenue;
-
-                // ── [11] Giai đoạn 2: Metrics hôm nay ───────────────────────
-                var tomorrow = today.AddDays(1);
-
-                vm.TodayOrderCount = await _context.Orders.AsNoTracking()
-                    .CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
-
-                vm.TodayRevenue = await _context.Orders.AsNoTracking()
-                    .Where(o => o.Status == OrderStatus.Delivered
-                        && o.OrderDate >= today
-                        && o.OrderDate < tomorrow)
-                    .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
-
-                // ── [12] Giá trị đơn hàng trung bình (AOV) ──────────────────
-                vm.AverageOrderValue = await _context.Orders.AsNoTracking()
-                    .Where(o => o.Status == OrderStatus.Delivered)
-                    .AverageAsync(o => (decimal?)o.TotalAmount) ?? 0;
-
-                // ── [13] Giai đoạn 2: Banner ROI — Top 3 ────────────────────
-                await BuildBannerRoiAsync(vm, today, tomorrow);
-
-                // ── [14] Tổng clicks banner hôm nay ──────────────────────────
-                vm.TotalClicksToday = await _context.BannerClickEvents.AsNoTracking()
-                    .CountAsync(e => e.ClickedAt >= today && e.ClickedAt < tomorrow);
+                // Banner ROI cần AverageOrderValue đã load ở bước trên → chạy sau
+                await BuildBannerRoiAsync(vm, today, today.AddDays(1));
             }
             catch (Exception ex)
             {
@@ -287,8 +176,145 @@ namespace HDKTech.Areas.Admin.Services
             return vm;
         }
 
+        // ── Nhóm 1: Order & Revenue stats ─────────────────────────────────
+        private async Task LoadOrderStatsAsync(DashboardViewModel vm, DateTime today, DateTime now)
+        {
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+
+            var tomorrow = today.AddDays(1);
+
+            vm.TotalRevenue = await ctx.Orders
+                .AsNoTracking()
+                .Where(o => o.Status == OrderStatus.Delivered)
+                .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+
+            vm.TotalOrders = await ctx.Orders.AsNoTracking().CountAsync();
+
+            vm.PendingOrders = await ctx.Orders.AsNoTracking()
+                .CountAsync(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed);
+
+            vm.TodayOrderCount = await ctx.Orders.AsNoTracking()
+                .CountAsync(o => o.OrderDate >= today && o.OrderDate < tomorrow);
+
+            vm.TodayRevenue = await ctx.Orders.AsNoTracking()
+                .Where(o => o.Status == OrderStatus.Delivered
+                    && o.OrderDate >= today
+                    && o.OrderDate < tomorrow)
+                .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+
+            vm.AverageOrderValue = await ctx.Orders.AsNoTracking()
+                .Where(o => o.Status == OrderStatus.Delivered)
+                .AverageAsync(o => (decimal?)o.TotalAmount) ?? 0;
+
+            // Module D: thay 7 queries riêng lẻ bằng 1 GROUP BY duy nhất
+            var sevenDaysAgo = today.AddDays(-6);
+            var rawDaily = await ctx.Orders.AsNoTracking()
+                .Where(o => o.Status == OrderStatus.Delivered
+                         && o.OrderDate >= sevenDaysAgo
+                         && o.OrderDate < tomorrow)
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new { Date = g.Key, Revenue = g.Sum(o => o.TotalAmount) })
+                .ToListAsync();
+
+            var dailyRevenue = new List<DailyRevenueData>();
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = today.AddDays(-i);
+                var rev  = rawDaily.FirstOrDefault(r => r.Date == date)?.Revenue ?? 0;
+                dailyRevenue.Add(new DailyRevenueData
+                {
+                    Date    = date,
+                    DayName = date.ToString("ddd dd/MM",
+                                new System.Globalization.CultureInfo("vi-VN")),
+                    Revenue = rev
+                });
+            }
+            vm.DailyRevenue = dailyRevenue;
+        }
+
+        // ── Nhóm 2: Inventory / Low-stock stats ───────────────────────────
+        private async Task LoadInventoryStatsAsync(DashboardViewModel vm)
+        {
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+
+            const int lowStockThreshold = 10;
+
+            vm.LowStockCount = await ctx.Inventories.AsNoTracking()
+                .Where(i => i.Quantity < lowStockThreshold)
+                .CountAsync();
+
+            vm.LowStockProducts = await ctx.Inventories
+                .AsNoTracking()
+                .Include(i => i.Product)
+                .Where(i => i.Quantity < lowStockThreshold)
+                .OrderBy(i => i.Quantity)
+                .Take(10)
+                .Select(i => new LowStockProductItem
+                {
+                    ProductId    = i.ProductId,
+                    ProductName  = i.Product != null ? i.Product.Name : $"SP#{i.ProductId}",
+                    CurrentStock = i.Quantity,
+                    Threshold    = lowStockThreshold
+                })
+                .ToListAsync();
+        }
+
+        // ── Nhóm 3: Users + Promotions + Banner counts ────────────────────
+        private async Task LoadUserAndPromoStatsAsync(DashboardViewModel vm, DateTime now)
+        {
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+
+            var thirtyDaysAgo = now.AddDays(-30);
+
+            vm.NewCustomers = await ctx.Users.AsNoTracking()
+                .OfType<AppUser>()
+                .Where(u => u.CreatedAt >= thirtyDaysAgo)
+                .CountAsync();
+
+            vm.ActivePromotions = await ctx.Promotions.AsNoTracking()
+                .CountAsync(p => p.IsActive && p.StartDate <= now && p.EndDate >= now);
+
+            vm.TotalBanners  = await ctx.Banners.AsNoTracking().CountAsync();
+            vm.ActiveBanners = await ctx.Banners.AsNoTracking()
+                .CountAsync(b => b.IsActive);
+        }
+
+        // ── Nhóm 4: Recent orders + Audit logs + Banner click totals ─────
+        private async Task LoadRecentAndBannerDataAsync(
+            DashboardViewModel vm, DateTime today, DateTime now)
+        {
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+
+            var tomorrow = today.AddDays(1);
+
+            vm.RecentOrders = await ctx.Orders.AsNoTracking()
+                .Include(o => o.User)
+                .OrderByDescending(o => o.OrderDate)
+                .Take(5)
+                .ToListAsync();
+
+            var recentLogs = await ctx.SystemLogs.AsNoTracking()
+                .OrderByDescending(l => l.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+
+            vm.RecentAuditLogs = recentLogs.Select(l => new RecentAuditLogItem
+            {
+                Id          = l.Id,
+                Timestamp   = l.CreatedAt,
+                Username    = l.Username ?? l.UserId ?? "Hệ thống",
+                Action      = l.Action   ?? "N/A",
+                Module      = l.LogLevel ?? "N/A",
+                Description = l.Description ?? "",
+                Status      = l.Status   ?? "Success"
+            }).ToList();
+
+            vm.TotalClicksToday = await ctx.BannerClickEvents.AsNoTracking()
+                .CountAsync(e => e.ClickedAt >= today && e.ClickedAt < tomorrow);
+        }
+
         // ─────────────────────────────────────────────────────────────────────
-        // PRIVATE: Banner ROI — tính hiệu quả và ước tính doanh thu
+        // PRIVATE: Banner ROI — chạy sau khi AverageOrderValue đã có
         // ─────────────────────────────────────────────────────────────────────
         private async Task BuildBannerRoiAsync(
             DashboardViewModel vm,
@@ -297,38 +323,36 @@ namespace HDKTech.Areas.Admin.Services
         {
             try
             {
+                await using var ctx = await _contextFactory.CreateDbContextAsync();
+
                 var sevenDaysAgo = today.AddDays(-7);
 
-                // [13a] Lấy thống kê click theo BannerId (1 query tổng hợp)
-                var clickStats = await _context.BannerClickEvents
+                // Lấy thống kê click theo BannerId (1 query tổng hợp)
+                var clickStats = await ctx.BannerClickEvents
                     .AsNoTracking()
                     .GroupBy(e => e.BannerId)
                     .Select(g => new
                     {
-                        BannerId       = g.Key,
-                        Total          = g.Count(),
-                        Last7Days      = g.Count(e => e.ClickedAt >= sevenDaysAgo),
-                        Today          = g.Count(e => e.ClickedAt >= today && e.ClickedAt < tomorrow),
-                        UniqueReach    = g.Select(e => e.UserIpAddress).Distinct().Count()
+                        BannerId    = g.Key,
+                        Total       = g.Count(),
+                        Last7Days   = g.Count(e => e.ClickedAt >= sevenDaysAgo),
+                        Today       = g.Count(e => e.ClickedAt >= today && e.ClickedAt < tomorrow),
+                        UniqueReach = g.Select(e => e.UserIpAddress).Distinct().Count()
                     })
                     .ToListAsync();
 
-                // [13b] Lấy active banners
-                var activeBanners = await _context.Banners
+                var activeBanners = await ctx.Banners
                     .AsNoTracking()
                     .Where(b => b.IsActive)
                     .ToListAsync();
 
-                // [13c] Join in-memory + tính EstimatedRevenue
-                // Công thức: Clicks7D × Conv.Rate(5%) × AOV
-                // Note: chính xác 100% cần session-level tracking
                 var conversionRate = 0.05m;
                 var aov            = vm.AverageOrderValue;
 
                 vm.TopBanners = activeBanners
                     .Select(b =>
                     {
-                        var stats = clickStats.FirstOrDefault(s => s.BannerId == b.Id);
+                        var stats    = clickStats.FirstOrDefault(s => s.BannerId == b.Id);
                         var clicks7d = stats?.Last7Days ?? 0;
                         return new BannerRoiItem
                         {

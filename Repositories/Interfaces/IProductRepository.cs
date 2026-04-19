@@ -7,6 +7,11 @@ namespace HDKTech.Repositories.Interfaces
         // Flash Sale
         Task<List<Product>> GetFlashSaleProductsAsync(int limit = 5);
 
+        // Module D: Paginated listing — thay thế GetAllWithImagesAsync() không giới hạn
+        // pageSize mặc định 12, tối đa 48 (enforced ở caller)
+        Task<(List<Product> Items, int TotalCount)> GetPagedAsync(
+            int page, int pageSize, ProductFilterModel? filter = null);
+
         // Listing
         Task<List<Product>> GetAllWithImagesAsync();
 

@@ -41,16 +41,22 @@ namespace HDKTech.Repositories
             catch (Exception ex) { _logger.LogError(ex, "Lỗi UpdateBrand Id: {Id}", brand.Id); return false; }
         }
 
+        /// <remarks>
+        /// Module C — Soft Delete: đánh dấu IsDeleted = true thay vì xóa hẳn khỏi DB.
+        /// Global Query Filter trong HDKTechContext sẽ tự ẩn record này khỏi mọi query.
+        /// </remarks>
         public new async Task<bool> DeleteAsync(int id)
         {
             try
             {
                 var brand = await _dbSet.FindAsync(id);
                 if (brand == null) return false;
-                _dbSet.Remove(brand);
+                // Soft delete
+                brand.IsDeleted = true;
+                _dbSet.Update(brand);
                 return await _context.SaveChangesAsync() > 0;
             }
-            catch (Exception ex) { _logger.LogError(ex, "Lỗi DeleteBrand Id: {Id}", id); return false; }
+            catch (Exception ex) { _logger.LogError(ex, "Lỗi DeleteBrand (soft) Id: {Id}", id); return false; }
         }
 
         public async Task<bool> HasProductsAsync(int brandId)

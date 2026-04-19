@@ -1,12 +1,18 @@
+using HDKTech.Areas.Admin.Repositories; // ProductFilterCriteria
 using HDKTech.Models;
 
 namespace HDKTech.Repositories.Interfaces
 {
     /// <summary>
-    /// Alias interface cũ (namespace Repositories.Interfaces). Được giữ để
-    /// tương thích với các controller / service import kiểu này.
-    /// API hoàn toàn đồng bộ với HDKTech.Areas.Admin.Repositories.IAdminProductRepository.
+    /// [DEPRECATED — Module C cleanup]
+    /// Stub giữ namespace để không phá build. Toàn bộ logic đã chuyển về
+    /// HDKTech.Areas.Admin.Repositories.IAdminProductRepository (tuple-based Delete).
+    /// Các file còn inject interface này (BrandController, CategoryController, v.v.)
+    /// dùng HDKTech.Repositories.Interfaces cho IBrand/ICategory — không dùng
+    /// IAdminProductRepository từ namespace này nữa.
+    /// DI registration cho interface này đã bị xoá khỏi Program.cs.
     /// </summary>
+    [Obsolete("Use HDKTech.Areas.Admin.Repositories.IAdminProductRepository")]
     public interface IAdminProductRepository
     {
         Task<IEnumerable<Product>> GetAllProductsAsync();
@@ -21,26 +27,14 @@ namespace HDKTech.Repositories.Interfaces
         Task<bool> UpdateVariantStockAsync(int productVariantId, int quantity);
         Task<bool> UpdateVariantPriceAsync(int productVariantId, decimal price);
 
-        Task<bool> DeleteProductAsync(int id);
-        Task<bool> DeleteProductsAsync(IEnumerable<int> ids);
+        // Tuple-based Delete — đồng bộ với Areas.Admin version (Module C: soft delete)
+        Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(int id, string? deletedBy = null);
+        Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(IEnumerable<int> ids, string? deletedBy = null);
 
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);
         Task<IEnumerable<Product>> FilterProductsAsync(ProductFilterCriteria criteria);
 
         Task<bool> ProductExistsAsync(int id);
         Task<bool> CheckSkuExistsAsync(string sku, int? excludeVariantId = null);
-    }
-
-    public class ProductFilterCriteria
-    {
-        public string? SearchTerm { get; set; }
-        public int? CategoryId { get; set; }
-        public int? BrandId { get; set; }
-        public decimal? MinPrice { get; set; }
-        public decimal? MaxPrice { get; set; }
-        public bool? InStock { get; set; }
-        public bool? IsActive { get; set; }
-        public string? SortBy { get; set; } = "Name";
-        public bool SortDescending { get; set; } = false;
     }
 }

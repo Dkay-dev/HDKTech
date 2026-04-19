@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 using HDKTech.Models;
 using HDKTech.Data;
 using HDKTech.Models.Momo;
@@ -30,6 +32,12 @@ namespace HDKTech
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddDbContext<HDKTechContext>(options =>
                 options.UseSqlServer(connectionString));
+
+            // Module D: IDbContextFactory — dùng trong DashboardService để tạo
+            // context riêng biệt cho từng Task.WhenAll group (tránh shared-context race)
+            builder.Services.AddDbContextFactory<HDKTechContext>(options =>
+                options.UseSqlServer(connectionString),
+                ServiceLifetime.Scoped);
 
             // ─────────────────────────────────────────────────────────────
             // Identity — Chuyển từ AddIdentityCore sang AddIdentity để hỗ trợ đầy đủ Store
@@ -79,11 +87,10 @@ namespace HDKTech
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
 
-            // Admin Repositories — hai namespace cùng interface
+            // Admin Repositories — canonical registration (Areas.Admin namespace)
+            // HDKTech.Repositories.AdminProductRepository là deprecated stub, không register nữa
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository,
                                        HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
-            builder.Services.AddScoped<HDKTech.Repositories.Interfaces.IAdminProductRepository,
-                                       HDKTech.Repositories.AdminProductRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerClickEventRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.PromotionRepository>();
@@ -97,6 +104,10 @@ namespace HDKTech
             // Inventory / Reports / Cart
             builder.Services.AddScoped<IInventoryService, InventoryService>();
             builder.Services.AddScoped<IReportService, ReportService>();
+            builder.Services.AddScoped<IPromotionService, PromotionService>();
+
+            // Module D: Email xác nhận đơn hàng (SMTP)
+            builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
             // ─────────────────────────────────────────────────────────────
             // Authorization — Policy-based Permission (ASP.NET Identity)
@@ -140,7 +151,16 @@ namespace HDKTech
             });
 
             builder.Services.AddHttpContextAccessor();
-            builder.Services.AddScoped<ICartService, SessionCartService>();
+
+            // ── Cart: Session → Database (Module A Refactor) ──────────
+            // Đổi từ SessionCartService sang DbCartService để:
+            //   - Cart persist qua server restart / scale-out
+            //   - Hỗ trợ merge guest cart khi login
+            //   - Validate tồn kho real-time khi thêm/sửa giỏ
+            builder.Services.AddScoped<ICartService, DbCartService>();
+
+            // Background job expire PendingCheckout quá 30 phút
+            builder.Services.AddHostedService<ExpireCheckoutJob>();
 
             // ─────────────────────────────────────────────────────────────
             // Memory cache (Dashboard)
@@ -164,13 +184,60 @@ namespace HDKTech
             builder.Services.AddSingleton<ICategoryCacheService, CategoryCacheService>();
             builder.Services.AddScoped<IProductService, ProductService>();
 
+            // ─────────────────────────────────────────────────────────────
+            // Rate Limiting — ASP.NET Core built-in (.NET 7+)
+            //   "checkout"   : 5 request / phút / user  → POST /Checkout
+            //   "add-to-cart": 20 request / phút / user → POST /Cart/AddToCart
+            // Key theo ClaimTypes.NameIdentifier (userId); nếu chưa đăng nhập dùng IP.
+            // ─────────────────────────────────────────────────────────────
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                // ── Checkout: 5 req / 60s / user ─────────────────────────
+                options.AddPolicy("checkout", httpContext =>
+                {
+                    var userId = httpContext.User.FindFirst(
+                        System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var key = string.IsNullOrEmpty(userId)
+                        ? $"ip:{httpContext.Connection.RemoteIpAddress}"
+                        : $"user:{userId}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit          = 5,
+                            Window               = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit           = 0   // Không queue, reject ngay
+                        });
+                });
+
+                // ── AddToCart: 20 req / 60s / user ───────────────────────
+                options.AddPolicy("add-to-cart", httpContext =>
+                {
+                    var userId = httpContext.User.FindFirst(
+                        System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var key = string.IsNullOrEmpty(userId)
+                        ? $"ip:{httpContext.Connection.RemoteIpAddress}"
+                        : $"user:{userId}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit          = 20,
+                            Window               = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit           = 0
+                        });
+                });
+            });
+
             var app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
-            {
-                var logService = scope.ServiceProvider.GetRequiredService<ISystemLogService>();
-                LoggingHelper.Initialize(logService);
-            }
+            // Initialize LoggingHelper với IServiceScopeFactory (singleton) — không dùng scoped instance
+            // để tránh disposed-scope bug. Mỗi lần log sẽ tạo scope mới qua factory.
+            LoggingHelper.Initialize(app.Services.GetRequiredService<IServiceScopeFactory>());
 
             using (var scope = app.Services.CreateScope())
             {
@@ -195,6 +262,7 @@ namespace HDKTech
             });
 
             app.UseSession();
+            app.UseRateLimiter();
             app.UseAuthentication();
             app.UseAuthorization();
 

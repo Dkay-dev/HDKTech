@@ -254,7 +254,13 @@ namespace HDKTech.Areas.Admin.Repositories
 
         #region Delete
 
-        public async Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(int id)
+        /// <summary>
+        /// Module C — Soft Delete: đánh dấu IsDeleted=true + ghi DeletedAt/DeletedBy.
+        /// Image files vẫn được trả về để controller xóa file vật lý nếu muốn.
+        /// Record không bị xóa khỏi DB → lịch sử OrderItem được bảo toàn.
+        /// </summary>
+        public async Task<(bool success, string? error, IList<string> imageUrls)> DeleteProductAsync(
+            int id, string? deletedBy = null)
         {
             try
             {
@@ -281,27 +287,36 @@ namespace HDKTech.Areas.Admin.Repositories
                     .Select(u => u!)
                     .ToList() ?? new List<string>();
 
-                _context.Products.Remove(product);
+                // Soft delete — giữ record để bảo toàn FK từ OrderItem
+                product.IsDeleted = true;
+                product.DeletedAt = DateTime.Now;
+                product.DeletedBy = deletedBy;
+                product.UpdatedAt = DateTime.Now;
+
+                _context.Products.Update(product);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Product {ProductId} deleted. {Count} images to clean up.", id, imageUrls.Count);
+                _logger.LogInformation(
+                    "Product {ProductId} soft-deleted by {User}. {Count} images to clean up.",
+                    id, deletedBy ?? "unknown", imageUrls.Count);
                 return (true, null, imageUrls);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting product: {ProductId}", id);
+                _logger.LogError(ex, "Error soft-deleting product: {ProductId}", id);
                 return (false, "System error while deleting product.", new List<string>());
             }
         }
 
-        public async Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(IEnumerable<int> ids)
+        public async Task<(int deleted, int skipped, IList<string> imageUrls)> DeleteProductsAsync(
+            IEnumerable<int> ids, string? deletedBy = null)
         {
             var allImageUrls = new List<string>();
             int deleted = 0, skipped = 0;
 
             foreach (var id in ids.ToList())
             {
-                var (success, _, imageUrls) = await DeleteProductAsync(id);
+                var (success, _, imageUrls) = await DeleteProductAsync(id, deletedBy);
                 if (success) { deleted++; allImageUrls.AddRange(imageUrls); }
                 else skipped++;
             }

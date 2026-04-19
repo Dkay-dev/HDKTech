@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
 using HDKTech.Data;
+using HDKTech.Services;
+using HDKTech.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 using HDKTech.Areas.Admin.Repositories;
@@ -13,23 +15,26 @@ namespace HDKTech.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class ProductController : Controller
     {
-        private readonly IAdminProductRepository _productRepo;
+        private readonly IAdminProductRepository  _productRepo;
         private readonly ILogger<ProductController> _logger;
-        private readonly HDKTechContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly HDKTechContext            _context;
+        private readonly IWebHostEnvironment       _env;
+        private readonly ISystemLogService         _logService;
 
         private const string ImgFolder = "images/products";
 
         public ProductController(
-            IAdminProductRepository productRepo,
+            IAdminProductRepository    productRepo,
             ILogger<ProductController> logger,
-            HDKTechContext context,
-            IWebHostEnvironment env)
+            HDKTechContext             context,
+            IWebHostEnvironment        env,
+            ISystemLogService          logService)
         {
             _productRepo = productRepo;
             _logger      = logger;
             _context     = context;
             _env         = env;
+            _logService  = logService;
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -186,6 +191,14 @@ namespace HDKTech.Areas.Admin.Controllers
                     }
                 }
 
+                // ── Audit Log ────────────────────────────────────────────
+                await LoggingHelper.LogCreateAsync(
+                    username   : User.Identity?.Name ?? "Admin",
+                    module     : "Product",
+                    entityName : created.Name,
+                    entityId   : created.Id.ToString(),
+                    newValue   : new { created.Name, created.CategoryId, created.BrandId, created.Status });
+
                 TempData["Success"] = $"Tạo sản phẩm \"{created.Name}\" thành công!";
                 return RedirectToAction(nameof(Details), new { id = created.Id });
             }
@@ -285,6 +298,15 @@ namespace HDKTech.Areas.Admin.Controllers
                     await SaveProductImages(product.Id, images, cat?.Name);
                 }
 
+                // ── Audit Log ────────────────────────────────────────────
+                await LoggingHelper.LogUpdateAsync(
+                    username   : User.Identity?.Name ?? "Admin",
+                    module     : "Product",
+                    entityName : existing.Name,
+                    entityId   : id.ToString(),
+                    oldValue   : new { existing.Name, existing.CategoryId, existing.BrandId, existing.Status },
+                    newValue   : new { product.Name, product.CategoryId, product.BrandId, product.Status });
+
                 TempData["Success"] = "Cập nhật sản phẩm thành công!";
                 return RedirectToAction(nameof(Details), new { id });
             }
@@ -361,10 +383,22 @@ namespace HDKTech.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var (success, error, imageUrls) = await _productRepo.DeleteProductAsync(id);
+                var currentUser = User.Identity?.Name ?? "Admin";
+                var (success, error, imageUrls) = await _productRepo.DeleteProductAsync(id, currentUser);
 
                 if (imageUrls != null)
                     foreach (var imgUrl in imageUrls) DeletePhysicalFile(imgUrl);
+
+                if (success)
+                {
+                    // ── Audit Log ─────────────────────────────────────────
+                    await LoggingHelper.LogDeleteAsync(
+                        username   : User.Identity?.Name ?? "Admin",
+                        module     : "Product",
+                        entityName : product.Name,
+                        entityId   : id.ToString(),
+                        oldValue   : new { product.Name, product.CategoryId, product.BrandId });
+                }
 
                 TempData[success ? "Success" : "Error"] = success
                     ? $"Đã xóa sản phẩm \"{product.Name}\"."
