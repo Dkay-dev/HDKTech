@@ -1,4 +1,4 @@
-﻿using HDKTech.Data;
+using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Models.Momo;
 using HDKTech.Models.Vnpay;
@@ -43,7 +43,7 @@ namespace HDKTech.Controllers
 
         // GET: /Checkout
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? selectedItems = null)
         {
             var cart = await _cartService.GetCartAsync();
 
@@ -57,17 +57,46 @@ namespace HDKTech.Controllers
             if (user == null)
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Index", "Checkout") });
 
+            List<CartItem> selectedCartItems = cart.Items.ToList();
+            List<int> selectedProductIds = new List<int>();
+
+            // Nếu có selectedItems, lọc chỉ lấy các sản phẩm đã chọn
+            if (!string.IsNullOrEmpty(selectedItems))
+            {
+                try
+                {
+                    selectedProductIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(selectedItems) ?? new List<int>();
+                    selectedCartItems = cart.Items.Where(x => selectedProductIds.Contains(x.ProductId)).ToList();
+                }
+                catch
+                {
+                    selectedCartItems = cart.Items.ToList();
+                }
+            }
+
+            if (!selectedCartItems.Any())
+            {
+                TempData["Error"] = "Vui lòng chọn ít nhất một sản phẩm để mua.";
+                return RedirectToAction("Index", "Cart");
+            }
+
             var viewModel = new CheckoutViewModel
             {
                 RecipientName = user.FullName ?? "",
                 Email = user.Email ?? "",
                 SoDienThoai = user.PhoneNumber ?? "",
                 ShippingAddress = "",
-                Items = cart.Items,
-                TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity),
-                SoProduct = cart.Items.Count,
+                Items = selectedCartItems,
+                TotalAmount = (decimal)selectedCartItems.Sum(x => x.Price * x.Quantity),
+                SoProduct = selectedCartItems.Count,
                 ShippingFee = 0
             };
+
+            // Lưu danh sách sản phẩm đã chọn vào TempData để dùng khi POST
+            if (selectedProductIds.Any())
+            {
+                TempData["SelectedProductIds"] = System.Text.Json.JsonSerializer.Serialize(selectedProductIds);
+            }
 
             return View(viewModel);
         }
@@ -91,11 +120,35 @@ namespace HDKTech.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            // Lấy danh sách sản phẩm đã chọn từ TempData
+            List<CartItem> itemsToOrder = cart.Items.ToList();
+            List<int> selectedProductIds = new List<int>();
+
+            var selectedItemsJson = TempData["SelectedProductIds"]?.ToString();
+            if (!string.IsNullOrEmpty(selectedItemsJson))
+            {
+                try
+                {
+                    selectedProductIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(selectedItemsJson) ?? new List<int>();
+                    itemsToOrder = cart.Items.Where(x => selectedProductIds.Contains(x.ProductId)).ToList();
+                }
+                catch
+                {
+                    itemsToOrder = cart.Items.ToList();
+                }
+            }
+
+            if (!itemsToOrder.Any())
+            {
+                TempData["Error"] = "Vui lòng chọn ít nhất một sản phẩm để mua.";
+                return RedirectToAction("Index", "Cart");
+            }
+
             if (!ModelState.IsValid)
             {
-                model.Items = cart.Items;
-                model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                model.SoProduct = cart.Items.Count;
+                model.Items = itemsToOrder;
+                model.TotalAmount = (decimal)itemsToOrder.Sum(x => x.Price * x.Quantity);
+                model.SoProduct = itemsToOrder.Count;
                 return View(model);
             }
 
@@ -107,6 +160,7 @@ namespace HDKTech.Controllers
             TempData["ShippingAddress"] = model.ShippingAddress;
             TempData["GhiChu"] = model.GhiChu;
             TempData["ShippingFee"] = model.ShippingFee.ToString();
+            TempData["SelectedProductIds"] = System.Text.Json.JsonSerializer.Serialize(selectedProductIds);
 
             // ✅ VNPay
             if (model.PaymentMethod == "VNPAY")
@@ -130,9 +184,9 @@ namespace HDKTech.Controllers
                 {
                     _logger.LogError($"Lỗi tạo URL VNPay: {ex.Message}");
                     TempData["Error"] = "Không thể kết nối VNPay. Vui lòng thử lại.";
-                    model.Items = cart.Items;
-                    model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                    model.SoProduct = cart.Items.Count;
+                    model.Items = itemsToOrder;
+                    model.TotalAmount = (decimal)itemsToOrder.Sum(x => x.Price * x.Quantity);
+                    model.SoProduct = itemsToOrder.Count;
                     return View(model);
                 }
             }
@@ -155,9 +209,9 @@ namespace HDKTech.Controllers
                     {
                         _logger.LogError($"MoMo trả về lỗi: {momoResponse?.Message}");
                         TempData["Error"] = $"Không thể kết nối MoMo: {momoResponse?.Message ?? "Lỗi không xác định"}";
-                        model.Items = cart.Items;
-                        model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                        model.SoProduct = cart.Items.Count;
+                        model.Items = itemsToOrder;
+                        model.TotalAmount = (decimal)itemsToOrder.Sum(x => x.Price * x.Quantity);
+                        model.SoProduct = itemsToOrder.Count;
                         return View(model);
                     }
 
@@ -171,9 +225,9 @@ namespace HDKTech.Controllers
                 {
                     _logger.LogError($"Lỗi tạo URL MoMo: {ex.Message}");
                     TempData["Error"] = "Không thể kết nối MoMo. Vui lòng thử lại.";
-                    model.Items = cart.Items;
-                    model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                    model.SoProduct = cart.Items.Count;
+                    model.Items = itemsToOrder;
+                    model.TotalAmount = (decimal)itemsToOrder.Sum(x => x.Price * x.Quantity);
+                    model.SoProduct = itemsToOrder.Count;
                     return View(model);
                 }
             }
@@ -186,7 +240,7 @@ namespace HDKTech.Controllers
                     RecipientName: model.RecipientName,
                     soDienThoai: model.SoDienThoai,
                     ShippingAddress: model.ShippingAddress,
-                    items: cart.Items,
+                    items: itemsToOrder,
                     ShippingFee: model.ShippingFee,
                     paymentMethod: "COD",
                     paymentStatus: "Unpaid"
@@ -195,7 +249,12 @@ namespace HDKTech.Controllers
                 user.FullName = model.RecipientName;
                 user.PhoneNumber = model.SoDienThoai;
                 await _userManager.UpdateAsync(user);
-                await _cartService.ClearCartAsync();
+
+                // Xóa các sản phẩm đã đặt khỏi giỏ hàng
+                foreach (var item in itemsToOrder)
+                {
+                    await _cartService.RemoveItemAsync(item.ProductId);
+                }
 
                 _logger.LogInformation($"Đơn hàng COD #{order.OrderCode} tạo thành công");
                 return RedirectToAction("Success", new { maOrder = order.OrderCode });
@@ -204,9 +263,9 @@ namespace HDKTech.Controllers
             {
                 _logger.LogError($"Lỗi khi tạo đơn hàng: {ex.Message}");
                 TempData["Error"] = "Lỗi khi đặt hàng. Vui lòng thử lại.";
-                model.Items = cart.Items;
-                model.TotalAmount = (decimal)cart.Items.Sum(x => x.Price * x.Quantity);
-                model.SoProduct = cart.Items.Count;
+                model.Items = itemsToOrder;
+                model.TotalAmount = (decimal)itemsToOrder.Sum(x => x.Price * x.Quantity);
+                model.SoProduct = itemsToOrder.Count;
                 return View(model);
             }
         }

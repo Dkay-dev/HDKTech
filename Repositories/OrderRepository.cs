@@ -1,4 +1,4 @@
-﻿using HDKTech.Data;
+using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
@@ -78,6 +78,11 @@ namespace HDKTech.Repositories
         {
             return await _context.Set<Order>()
                 .Include(x => x.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .Include(x => x.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Category)
                 .Include(x => x.User)
                 .FirstOrDefaultAsync(x => x.OrderCode == OrderCode);
         }
@@ -86,6 +91,11 @@ namespace HDKTech.Repositories
         {
             return await _context.Set<Order>()
                 .Include(x => x.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .Include(x => x.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Category)
                 .Where(x => x.UserId == userId)
                 .OrderByDescending(x => x.OrderDate)
                 .ToListAsync();

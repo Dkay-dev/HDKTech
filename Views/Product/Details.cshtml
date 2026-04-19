@@ -16,8 +16,12 @@
         <div class="row g-4">
             <div class="col-lg-7">
                 <div class="main-img-container">
-                    <a href="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="glightbox">
-                        <img id="mainImg" src="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="main-img" onerror="handleImageError(this)">
+                    @{
+                        var mainImgPath = ImageHelper.GetImagePath(defaultImg, Model.Category?.Name);
+                    }
+                    <a href="@mainImgPath" class="glightbox" id="mainImgLink">
+                        <img id="mainImg" src="@mainImgPath" class="main-img" 
+                             onerror="handleImageError(this)" data-original-src="@mainImgPath">
                     </a>
                 </div>
                 <p class="text-center text-muted small mt-2"><i class="bi bi-search"></i> Click vào ảnh để phóng to</p>
@@ -26,8 +30,11 @@
                     <div class="thumb-container">
                         @foreach (var img in Model.Images)
                         {
-                            <img src="@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)" class="thumb-item @(img.IsDefault ? "active" : "")" 
-                                 onclick="updateMainImage('@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)', this)" onerror="handleImageError(this)">
+                            var thumbPath = ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name);
+                            <img src="@thumbPath" class="thumb-item @(img.IsDefault ? "active" : "")" 
+                                 onclick="updateMainImage('@thumbPath', this)" 
+                                 data-original-src="@thumbPath"
+                                 onerror="handleImageError(this)">
                         }
                     </div>
                 }
@@ -347,13 +354,13 @@
                         var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
                                        ?? item.Images?.FirstOrDefault()?.ImageUrl
                                        ?? "no-image.png";
-                        var relatedImagePath = "/images/products/" + fileName;
+                        var relatedImagePath = ImageHelper.GetImagePath(fileName, item.Category?.Name);
 
                         <div class="related-card-wrapper">
                             <div class="related-card">
                                 <div class="related-image-container">
                                     <a href="/Product/Details/@item.Id" class="related-image-link">
-                                        <img src="@relatedImagePath" class="related-img" alt="@item.Name" onerror="this.onerror=null; this.src='/images/products/no-image.png';">
+                                        <img src="@relatedImagePath" class="related-img" alt="@item.Name" onerror="handleImageError(this, event)">
                                     </a>
                                 </div>
                                 <div class="related-card-body">
@@ -372,7 +379,16 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.2.0/js/glightbox.min.js"></script>
 <script>
-    const lightbox = GLightbox({ selector: '.glightbox' });
+    // Initialize GLightbox với cấu hình an toàn
+    var lightboxInstance = GLightbox({
+        selector: '.glightbox',
+        touchNavigation: true,
+        loop: true,
+        autoplayVideos: false
+    });
+    
+    // Lưu reference để dùng sau
+    window.lightbox = lightboxInstance;
 
     let selectedRating = 0;
     const ratingLabels = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Tuyệt vời'];

@@ -1,4 +1,4 @@
-﻿@model HDKTech.Models.Order
+@model HDKTech.Models.Order
 
 @{
     ViewData["Title"] = $"Chi Tiết Đơn Hàng {Model?.OrderCode}";
@@ -54,7 +54,7 @@
                             </p>
                             <p class="mb-2">
                                 <strong>Tổng Tiền:</strong>
-                                <span class="text-danger fs-5">@Model.TotalAmount.ToString("C0").Replace("₫", "").Trim()₫</span>
+                                <span class="text-danger fs-5">@Model.TotalAmount.ToString("N0")₫</span>
                             </p>
                             @if (Model.ShippingFee > 0)
                             {
@@ -115,9 +115,9 @@
                                                 }
                                             </td>
                                             <td class="text-center">@item.Quantity</td>
-                                            <td class="text-end">@item.UnitPrice.ToString("C0").Replace("₫", "").Trim()₫</td>
+                                            <td class="text-end">@item.UnitPrice.ToString("N0")₫</td>
                                             <td class="text-end">
-                                                <strong>@(item.Quantity * item.UnitPrice).ToString("C0").Replace("₫", "").Trim()₫</strong>
+                                                <strong>@((item.Quantity * item.UnitPrice).ToString("N0"))₫</strong>
                                             </td>
                                         </tr>
                                     }

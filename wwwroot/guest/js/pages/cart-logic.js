@@ -80,10 +80,37 @@ function updateQuantityAjax(productId, quantity) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
+                // Cập nhật số lượng trong input
                 document.getElementById(`qty-${productId}`).value = quantity;
-                document.getElementById(`total-${productId}`).innerText = 
-                    data.itemTotal.toLocaleString('vi-VN') + '₫';
+                
+                // Cập nhật thành tiền của sản phẩm
+                var itemTotal = data.itemTotal.toLocaleString('vi-VN') + '₫';
+                document.getElementById(`total-${productId}`).innerText = itemTotal;
+                
+                var selectedTotalEl = document.getElementById(`selected-total-${productId}`);
+                if (selectedTotalEl) {
+                    selectedTotalEl.innerText = itemTotal;
+                }
+                
+                // Cập nhật data-quantity của checkbox
+                var checkbox = document.querySelector(`.cart-item-checkbox[data-product-id="${productId}"]`);
+                if (checkbox) {
+                    checkbox.dataset.quantity = quantity;
+                }
+                
+                // Cập nhật row price dataset
+                var row = document.getElementById(`row-${productId}`);
+                if (row) {
+                    row.dataset.qty = quantity;
+                    row.dataset.price = data.unitPrice;
+                }
+                
                 updateGlobalCartUI(data);
+                
+                // Cập nhật lại tổng tiền đã chọn
+                if (typeof updateSelection === 'function') {
+                    updateSelection();
+                }
             }
         })
         .catch(err => console.error('❌ Update quantity error:', err));
@@ -110,6 +137,9 @@ function removeItem(productId) {
                 setTimeout(() => {
                     row.remove();
                     updateGlobalCartUI(data);
+                    if (typeof updateCartSelection === 'function') {
+                        updateCartSelection();
+                    }
                     if (data.totalItems === 0) location.reload();
                 }, 300);
             }
@@ -124,7 +154,6 @@ function removeItem(productId) {
 function updateGlobalCartUI(data) {
     const formattedPrice = data.totalPrice.toLocaleString('vi-VN') + '₫';
     document.getElementById('summary-subtotal').innerText = formattedPrice;
-    document.getElementById('summary-total').innerText = formattedPrice;
     document.getElementById('cart-count').innerText = data.totalItems;
     
     const badge = document.getElementById('cartBadge');

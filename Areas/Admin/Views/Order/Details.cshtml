@@ -1,4 +1,5 @@
-﻿@using HDKTech.Models
+@using HDKTech.Models
+@using HDKTech.Utils
 @model Order
 
 @{
@@ -131,11 +132,12 @@
                                 {
                                     var thumb = item.Product?.Images?.FirstOrDefault(x => x.IsDefault)
                                              ?? item.Product?.Images?.FirstOrDefault();
+                                    var imgPath = ImageHelper.GetImagePath(thumb?.ImageUrl, item.Product?.Category?.Name);
                                     <tr>
                                         <td class="text-center ps-3">
                                             @if (thumb != null)
                                             {
-                                                <img src="@thumb.ImageUrl" alt="@item.Product?.Name" class="product-thumb" />
+                                                <img src="@imgPath" alt="@item.Product?.Name" class="product-thumb" onerror="this.onerror=null; this.src='/images/products/no-image.png';" />
                                             }
                                             else
                                             {

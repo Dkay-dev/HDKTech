@@ -1,4 +1,4 @@
-﻿using HDKTech.Models;
+using HDKTech.Models;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
@@ -176,13 +176,15 @@ namespace HDKTech.Controllers
             {
                 await _cartService.UpdateQuantityAsync(request.ProductId, request.Quantity);
                 var cart = await _cartService.GetCartAsync();
+                var item = cart.Items.FirstOrDefault(x => x.ProductId == request.ProductId);
 
                 return Ok(new
                 {
                     success = true,
                     totalItems = cart.TotalItems,
                     totalPrice = cart.TotalPrice,
-                    itemTotal = cart.Items.FirstOrDefault(x => x.ProductId == request.ProductId)?.TotalPrice ?? 0
+                    itemTotal = item?.TotalPrice ?? 0,
+                    unitPrice = item?.Price ?? 0
                 });
             }
             catch (Exception ex)

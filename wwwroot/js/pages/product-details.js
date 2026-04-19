@@ -8,73 +8,122 @@ const folderTryOrder = ['laptops', 'laptops-gaming', 'components', 'peripherals'
     'accessories', 'audio', 'furniture', 'handheld', 'monitor',
     'pc-builds', 'services', 'storage'];
 
-const foundImages = new Set();
+const foundImages = new Map();
 
 /**
  * Handle image loading errors with smart fallback across folders
  * @param {HTMLImageElement} img - The image element that failed to load
- * @param {Event} event - The error event
  */
-function handleImageError(img, event) {
+function handleImageError(img) {
     // Nếu đã là no-image, dừng lại
     if (img.src.includes('no-image.png')) {
         return;
     }
 
-    // Lấy tên file
+    // Lấy tên file gốc (không có path)
     const fileName = img.src.split('/').pop();
-    const currentPath = img.src;
-
-    // Lấy folder hiện tại từ path
-    const pathParts = currentPath.split('/');
-    const currentFolder = pathParts[4];
-
-    console.log(`Image error - fileName: ${fileName}, currentFolder: ${currentFolder}`);
-
-    // Tìm index folder hiện tại
-    let currentIndex = folderTryOrder.indexOf(currentFolder);
-    let foundAny = false;
-
-    // Thử các folder tiếp theo
-    for (let i = currentIndex + 1; i < folderTryOrder.length; i++) {
-        const nextFolder = folderTryOrder[i];
-        const newPath = `/images/products/${nextFolder}/${fileName}`;
-
-        // Tạo hình ảnh test để kiểm tra xem file có tồn tại không
-        const testImg = new Image();
-        testImg.onload = function() {
-            img.src = newPath;
-            foundImages.add(fileName);
-            foundAny = true;
-            if (img.id === 'mainImg' && img.parentElement && img.parentElement.classList.contains('glightbox')) {
-                img.parentElement.href = newPath;
-                if (typeof lightbox !== 'undefined') {
-                    lightbox.reload();
-                }
-            }
-            console.log(`✓ Found at: ${newPath}`);
-        };
-        testImg.onerror = function() {
-            // File không tồn tại, tiếp tục thử folder tiếp theo
-        };
-        testImg.src = newPath;
+    
+    // Nếu đã thử tất cả các folder rồi
+    if (foundImages.has(fileName) && foundImages.get(fileName) === 'failed') {
+        img.src = '/images/products/no-image.png';
+        img.onerror = null;
+        return;
     }
 
-    // Nếu không tìm thấy ở đâu, chỉ lúc đó mới ẩn ảnh (sau 200ms để chắc chắn)
-    setTimeout(() => {
-        if (!foundImages.has(fileName) && !img.src.includes('no-image.png')) {
-            img.style.display = 'none';
-            // Ẩn card wrapper nếu là related products
-            if (img.classList.contains('related-img')) {
-                const cardWrapper = img.closest('.related-card');
-                if (cardWrapper) {
-                    cardWrapper.style.opacity = '0.5';
-                    cardWrapper.style.pointerEvents = 'none';
-                }
-            }
-            console.log(`✗ All folders failed, hiding image`);
+    // Nếu đã tìm thấy ở folder nào đó
+    if (foundImages.has(fileName)) {
+        return;
+    }
+
+    // Tìm folder hiện tại từ path
+    const pathParts = img.src.split('/');
+    let currentFolder = '';
+    for (let i = 0; i < pathParts.length; i++) {
+        if (pathParts[i] === 'products' && pathParts[i + 1]) {
+            currentFolder = pathParts[i + 1];
+            break;
         }
-    }, 200);
+    }
+
+    let found = false;
+    
+    // Thử các folder theo thứ tự
+    const foldersToTry = currentFolder 
+        ? [...folderTryOrder.slice(folderTryOrder.indexOf(currentFolder) + 1), ...folderTryOrder]
+        : folderTryOrder;
+
+    const uniqueFolders = [...new Set(foldersToTry)];
+
+    for (const folder of uniqueFolders) {
+        if (found) break;
+        
+        // Thử .jpg
+        const testJpg = new Image();
+        testJpg.onload = function() {
+            if (!found) {
+                found = true;
+                foundImages.set(fileName, `/images/products/${folder}/${fileName}`);
+                img.src = `/images/products/${folder}/${fileName}`;
+                updateLightboxLink(img, `/images/products/${folder}/${fileName}`);
+                console.log(`✓ Found image: /images/products/${folder}/${fileName}`);
+            }
+        };
+        testJpg.onerror = function() {
+            // Thử .png
+            const testPng = new Image();
+            testPng.onload = function() {
+                if (!found) {
+                    found = true;
+                    foundImages.set(fileName, `/images/products/${folder}/${fileName}`);
+                    img.src = `/images/products/${folder}/${fileName}`;
+                    updateLightboxLink(img, `/images/products/${folder}/${fileName}`);
+                    console.log(`✓ Found image: /images/products/${folder}/${fileName}`);
+                }
+            };
+            testPng.onerror = function() {
+                // Thử .webp
+                const testWebp = new Image();
+                testWebp.onload = function() {
+                    if (!found) {
+                        found = true;
+                        foundImages.set(fileName, `/images/products/${folder}/${fileName}`);
+                        img.src = `/images/products/${folder}/${fileName}`;
+                        updateLightboxLink(img, `/images/products/${folder}/${fileName}`);
+                        console.log(`✓ Found image: /images/products/${folder}/${fileName}`);
+                    }
+                };
+                testWebp.onerror = function() {
+                    // Không tìm thấy, tiếp tục folder tiếp theo
+                };
+                testWebp.src = `/images/products/${folder}/${fileName.replace(/\.[^.]+$/, '.webp')}`;
+            };
+            testPng.src = `/images/products/${folder}/${fileName.replace(/\.[^.]+$/, '.png')}`;
+        };
+        testJpg.src = `/images/products/${folder}/${fileName}`;
+    }
+
+    // Đánh dấu là failed sau 3 giây nếu không tìm thấy
+    setTimeout(() => {
+        if (!foundImages.has(fileName)) {
+            foundImages.set(fileName, 'failed');
+            img.src = '/images/products/no-image.png';
+            img.onerror = null;
+            updateLightboxLink(img, '/images/products/no-image.png');
+        }
+    }, 3000);
+}
+
+/**
+ * Update GLightbox link when image changes
+ */
+function updateLightboxLink(img, newSrc) {
+    const glightboxLink = img.closest('a.glightbox');
+    if (glightboxLink) {
+        glightboxLink.href = newSrc;
+        if (typeof lightbox !== 'undefined' && lightbox.reload) {
+            lightbox.reload();
+        }
+    }
 }
 
 /**
@@ -85,10 +134,10 @@ function handleImageError(img, event) {
 function updateMainImage(url, el) {
     var mainImg = document.getElementById('mainImg');
     var glightboxLink = mainImg.parentElement;
-    console.log('Updating image to:', url);
-
+    
     // Restore image display nếu nó bị ẩn trước đó
     mainImg.style.display = 'block';
+    mainImg.style.opacity = '1';
 
     // Cập nhật src
     mainImg.src = url;
@@ -99,7 +148,7 @@ function updateMainImage(url, el) {
     el.classList.add('active');
 
     // Reinitialize lightbox
-    if (typeof lightbox !== 'undefined') {
+    if (typeof lightbox !== 'undefined' && lightbox.reload) {
         lightbox.reload();
     }
 }
@@ -115,11 +164,12 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Áp dụng error handler cho tất cả ảnh
-    document.querySelectorAll('img').forEach(img => {
-        if (img.className.includes('main-img') || img.className.includes('thumb-item') || img.className.includes('related-img')) {
-            img.addEventListener('error', function(e) {
-                handleImageError(this, e);
+    // Áp dụng error handler cho tất cả ảnh sản phẩm
+    document.querySelectorAll('.main-img, .thumb-item, .related-img').forEach(img => {
+        if (!img.hasAttribute('data-error-bound')) {
+            img.setAttribute('data-error-bound', 'true');
+            img.addEventListener('error', function() {
+                handleImageError(this);
             });
         }
     });
@@ -141,15 +191,12 @@ function updateQty(v) {
 
 /**
  * Add product to cart and navigate to checkout
- * Retrieves maSanPham from the page and quantity from input
  */
 function buyNow() {
-    // Lấy mã sản phẩm từ model
     const maSanPham = document.querySelector('input[name="maSanPham"]')?.value ||
         window.productId || parseInt(window.location.pathname.split('/').pop());
     const qty = parseInt(document.getElementById('qtyInput').value) || 1;
 
-    // Gửi AJAX để thêm vào giỏ hàng
     fetch('/Cart/AddToCart', {
         method: 'POST',
         headers: {
@@ -163,7 +210,6 @@ function buyNow() {
     })
         .then(response => {
             if (response.ok) {
-                // Nếu thành công, chuyển sang Checkout
                 window.location.href = '/Checkout';
             } else {
                 return response.json().then(data => {
@@ -179,9 +225,6 @@ function buyNow() {
 
 /**
  * Add product to cart via AJAX
- * @param {number} productId - Product ID
- * @param {string} productName - Product name (for display)
- * @param {number} quantity - Quantity to add
  */
 function addToCartAjax(productId, productName, quantity) {
     quantity = parseInt(quantity) || 1;
@@ -201,7 +244,6 @@ function addToCartAjax(productId, productName, quantity) {
         .then(data => {
             if (data.success) {
                 alert(`${productName} đã được thêm vào giỏ hàng!`);
-                // Update cart badge if exists
                 const cartBadge = document.querySelector('[id*="cart-count"], [id*="cartBadge"]');
                 if (cartBadge && data.cartCount) {
                     cartBadge.textContent = data.cartCount;
@@ -218,10 +260,6 @@ function addToCartAjax(productId, productName, quantity) {
 
 // ===== REVIEW INTERACTIONS =====
 
-/**
- * Toggle like/unlike on review
- * @param {HTMLElement} btn - The like button element
- */
 function toggleLike(btn) {
     btn.classList.toggle('liked');
     const countSpan = btn.querySelector('span');
@@ -229,10 +267,6 @@ function toggleLike(btn) {
     countSpan.textContent = btn.classList.contains('liked') ? count + 1 : Math.max(0, count - 1);
 }
 
-/**
- * Toggle dislike/undislike on review
- * @param {HTMLElement} btn - The dislike button element
- */
 function toggleDislike(btn) {
     btn.classList.toggle('liked');
     const countSpan = btn.querySelector('span');
@@ -240,11 +274,6 @@ function toggleDislike(btn) {
     countSpan.textContent = btn.classList.contains('liked') ? count + 1 : Math.max(0, count - 1);
 }
 
-/**
- * Load more reviews via AJAX
- * TODO: Implement full AJAX loading with pagination
- */
 function loadMoreReviews() {
-    // TODO: Implement load more reviews via AJAX
     alert('Chức năng tải thêm nhận xét sẽ được implement sớm');
 }

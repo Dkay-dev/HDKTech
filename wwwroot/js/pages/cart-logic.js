@@ -48,6 +48,12 @@ function handleCartImageError(img) {
         img.dataset.status = 'trying-folder';
         img.src = `/images/products/${folder}/${cleanName}.jpg`;
     } else if (img.dataset.status === 'trying-folder') {
+        img.dataset.status = 'trying-png';
+        img.src = `/images/products/${folder}/${cleanName}.png`;
+    } else if (img.dataset.status === 'trying-png') {
+        img.dataset.status = 'trying-webp';
+        img.src = `/images/products/${folder}/${cleanName}.webp`;
+    } else if (img.dataset.status === 'trying-webp') {
         img.dataset.status = 'final';
         img.src = '/images/products/no-image.png';
         img.onerror = null;

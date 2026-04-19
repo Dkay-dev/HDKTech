@@ -1,4 +1,4 @@
-﻿using HDKTech.Data;
+using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +14,8 @@ namespace HDKTech.Repositories
             return await _dbSet
                 .Include(p => p.Images)
                 .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .Include(p => p.Inventories)
                 .ToListAsync();
         }
 
