@@ -119,7 +119,7 @@ namespace HDKTech.Services
             }
 
             if (filter.BrandIds?.Any() == true)
-                query = query.Where(p => filter.BrandIds.Contains(p.BrandId));
+                query = query.Where(p => p.BrandId.HasValue && filter.BrandIds.Contains(p.BrandId.Value));
 
             // Price range ⇒ qua Variant
             if (filter.MinPrice.HasValue)

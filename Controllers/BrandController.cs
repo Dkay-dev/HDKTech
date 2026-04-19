@@ -25,14 +25,14 @@ namespace HDKTech.Controllers
 
             if (category == null) return RedirectToAction("Index", "Home");
 
-            // Lấy sản phẩm
+            // Lấy sản phẩm theo đúng BrandId
             var products = await _DbContext.Products
-                                            .Where(p => p.Id == category.Id)
+                                            .Where(p => p.BrandId == category.Id)
                                             .Include(p => p.Images)
                                             .OrderByDescending(p => p.Id)
                                             .ToListAsync();
 
-            ViewBag.CategoryName = category.Id;
+            ViewBag.CategoryName = category.Name;
 
             return View(products);
         }

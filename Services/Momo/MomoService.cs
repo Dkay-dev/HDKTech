@@ -19,14 +19,21 @@ namespace HDKTech.Services.Momo
 
         public async Task<MomoCreatePaymentResponseModel> CreatePaymentAsync(OrderInfoModel model)
         {
-            model.OrderId = DateTime.UtcNow.Ticks.ToString();
+            // Dùng PendingCheckout.Id (ExtraData) làm orderId để MoMo trả về khi callback
+            // Nếu ExtraData có giá trị (pendingCheckoutId), dùng làm orderId để dễ đối soát
+            model.OrderId   = string.IsNullOrEmpty(model.ExtraData)
+                ? DateTime.UtcNow.Ticks.ToString()
+                : model.ExtraData;  // PendingCheckout.Id.ToString()
             model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
+
+            // extraData = PendingCheckout.Id để callback/IPN biết đang xử lý checkout nào
+            var extraData = model.ExtraData ?? string.Empty;
 
             // ✅ Dùng chữ ký theo chuẩn MoMo v2 (accessKey trước, alphabet sort)
             var rawData =
                 $"accessKey={_options.Value.AccessKey}" +
                 $"&amount={model.Amount}" +
-                $"&extraData=" +
+                $"&extraData={extraData}" +
                 $"&ipnUrl={_options.Value.NotifyUrl}" +
                 $"&orderId={model.OrderId}" +
                 $"&orderInfo={model.OrderInfo}" +
@@ -40,17 +47,17 @@ namespace HDKTech.Services.Momo
             var requestData = new
             {
                 partnerCode = _options.Value.PartnerCode,
-                accessKey = _options.Value.AccessKey,
-                requestId = model.OrderId,
-                amount = model.Amount.ToString(),
-                orderId = model.OrderId,
-                orderInfo = model.OrderInfo,
+                accessKey   = _options.Value.AccessKey,
+                requestId   = model.OrderId,
+                amount      = model.Amount.ToString(),
+                orderId     = model.OrderId,
+                orderInfo   = model.OrderInfo,
                 redirectUrl = _options.Value.ReturnUrl,
-                ipnUrl = _options.Value.NotifyUrl,
-                extraData = "",
+                ipnUrl      = _options.Value.NotifyUrl,
+                extraData   = extraData,  // PendingCheckout.Id
                 requestType = _options.Value.RequestType,
-                signature = signature,
-                lang = "vi"
+                signature   = signature,
+                lang        = "vi"
             };
 
             var jsonContent = new StringContent(

@@ -3,6 +3,7 @@ using HDKTech.Repositories;
 using HDKTech.Services;
 using HDKTech.Utils;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HDKTech.Controllers
 {
@@ -63,8 +64,16 @@ namespace HDKTech.Controllers
                 ImageUrl:         fullImageUrl,
                 categoryName:     product.Category?.Name);
 
-            await _cartService.AddItemAsync(cartItem);
-            _logger.LogInformation("Thêm {Sku} vào giỏ", variant.Sku);
+            try
+            {
+                await _cartService.AddItemAsync(cartItem);
+                _logger.LogInformation("Thêm {Sku} vào giỏ", variant.Sku);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // DbCartService throw khi không đủ tồn kho
+                TempData["Error"] = ex.Message;
+            }
 
             return RedirectToAction("Index");
         }
@@ -73,6 +82,7 @@ namespace HDKTech.Controllers
         // ADD (POST / AJAX)
         // ─────────────────────────────────────────────────────────────
         [HttpPost]
+        [EnableRateLimiting("add-to-cart")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
         {
             if (request == null || request.ProductId <= 0 || request.Quantity <= 0)
@@ -113,6 +123,11 @@ namespace HDKTech.Controllers
                     totalItems  = cart.TotalItems,
                     totalPrice  = cart.TotalPrice.ToString("C")
                 });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // DbCartService throw khi không đủ tồn kho
+                return BadRequest(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -184,6 +199,11 @@ namespace HDKTech.Controllers
                                     x.ProductId == request.ProductId &&
                                     x.ProductVariantId == request.ProductVariantId)?.TotalPrice ?? 0
                 });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // DbCartService throw khi không đủ tồn kho
+                return BadRequest(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {

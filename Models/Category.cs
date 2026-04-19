@@ -27,6 +27,13 @@ namespace HDKTech.Models
         [DisplayName("Danh mục cha")]
         public int? ParentCategoryId { get; set; }
 
+        // ── Soft Delete (Module C) ────────────────────────────────
+        /// <summary>
+        /// Khi true, danh mục được coi là đã xóa (ẩn khỏi mọi query thông thường).
+        /// Global Query Filter trong HDKTechContext tự lọc bỏ.
+        /// </summary>
+        public bool IsDeleted { get; set; } = false;
+
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
         [ForeignKey("ParentCategoryId")]

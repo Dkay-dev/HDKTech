@@ -58,9 +58,23 @@ public class HDKTechContext : IdentityDbContext<AppUser, IdentityRole, string>
     public DbSet<WarrantyPolicy> WarrantyPolicies { get; set; }
     public DbSet<WarrantyClaim> WarrantyClaims { get; set; }
 
+    // ── Module A Refactor: Checkout Infrastructure ───────────────
+    public DbSet<DbCartItem> CartItems { get; set; }
+    public DbSet<PendingCheckout> PendingCheckouts { get; set; }
+    public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // ============================================================
+        //  MODULE C: SOFT DELETE — Global Query Filters
+        //  Mọi query thông thường sẽ TỰ ĐỘNG bỏ qua record đã xóa mềm.
+        //  Để query bao gồm cả record đã xóa: dùng .IgnoreQueryFilters()
+        // ============================================================
+        builder.Entity<Product>().HasQueryFilter(p => !p.IsDeleted);
+        builder.Entity<Category>().HasQueryFilter(c => !c.IsDeleted);
+        builder.Entity<Brand>().HasQueryFilter(b => !b.IsDeleted);
 
         // ============================================================
         //  MODULE 1: PRODUCT & VARIANT
@@ -327,6 +341,62 @@ public class HDKTechContext : IdentityDbContext<AppUser, IdentityRole, string>
             .HasOne(c => c.Staff).WithMany()
             .HasForeignKey(c => c.StaffId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ============================================================
+        //  MODULE A REFACTOR: CHECKOUT INFRASTRUCTURE
+        // ============================================================
+
+        // DbCartItem — cart item lưu DB thay Session
+        builder.Entity<DbCartItem>()
+            .HasOne(c => c.Product).WithMany()
+            .HasForeignKey(c => c.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<DbCartItem>()
+            .HasOne(c => c.Variant).WithMany()
+            .HasForeignKey(c => c.ProductVariantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Index để query cart nhanh theo user hoặc guest
+        builder.Entity<DbCartItem>()
+            .HasIndex(c => c.UserId);
+        builder.Entity<DbCartItem>()
+            .HasIndex(c => c.GuestId);
+        // Unique: mỗi user/guest chỉ có 1 dòng per (ProductId, ProductVariantId)
+        builder.Entity<DbCartItem>()
+            .HasIndex(c => new { c.UserId, c.ProductId, c.ProductVariantId })
+            .HasFilter("[UserId] IS NOT NULL")
+            .IsUnique();
+        builder.Entity<DbCartItem>()
+            .HasIndex(c => new { c.GuestId, c.ProductId, c.ProductVariantId })
+            .HasFilter("[GuestId] IS NOT NULL")
+            .IsUnique();
+
+        // PendingCheckout — thay TempData trong luồng checkout
+        builder.Entity<PendingCheckout>()
+            .HasOne(p => p.User).WithMany()
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<PendingCheckout>()
+            .HasIndex(p => p.UserId);
+        builder.Entity<PendingCheckout>()
+            .HasIndex(p => new { p.Status, p.ExpiresAt });
+
+        // PaymentTransaction — idempotency key
+        builder.Entity<PaymentTransaction>()
+            .HasOne(t => t.PendingCheckout).WithMany()
+            .HasForeignKey(t => t.PendingCheckoutId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // UNIQUE constraint — đây là chìa khoá idempotency
+        // Cùng GatewayTransactionId + Gateway chỉ được xử lý 1 lần
+        builder.Entity<PaymentTransaction>()
+            .HasIndex(t => new { t.GatewayTransactionId, t.Gateway })
+            .IsUnique();
+
+        builder.Entity<PaymentTransaction>()
+            .HasIndex(t => t.PendingCheckoutId);
 
         // ============================================================
         //  Global: decimal(18,2)

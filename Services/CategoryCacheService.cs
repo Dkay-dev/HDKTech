@@ -1,8 +1,7 @@
-﻿// Services/CategoryCacheService.cs
+// Services/CategoryCacheService.cs — Module D: Thread-safe cache với SemaphoreSlim
 using HDKTech.Data;
 using HDKTech.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace HDKTech.Services
 {
@@ -18,69 +17,94 @@ namespace HDKTech.Services
         Task LoadCacheAsync();
     }
 
-    public class CategoryCacheService : ICategoryCacheService
+    /// <summary>
+    /// Module D — Thread-safe category cache.
+    ///
+    /// Vấn đề cũ: IMemoryCache.GetOrCreate() có thể cho nhiều thread cùng lúc
+    /// bypass check và tất cả cùng query DB (thundering herd).
+    ///
+    /// Fix: SemaphoreSlim(1,1) + double-check pattern đảm bảo chỉ 1 thread
+    /// được query DB. Cache tự hết hạn sau 10 phút qua Timer.
+    /// </summary>
+    public class CategoryCacheService : ICategoryCacheService, IDisposable
     {
-        private const string CacheKey = "category_tree";
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
-        private readonly IMemoryCache _cache;
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<CategoryCacheService> _logger;
+        private readonly IServiceScopeFactory             _scopeFactory;
+        private readonly ILogger<CategoryCacheService>    _logger;
+
+        // ── Internal cache state (không dùng IMemoryCache để kiểm soát tốt hơn) ──
+        private Dictionary<int, List<int>>? _tree;
+        private readonly SemaphoreSlim       _semaphore = new SemaphoreSlim(1, 1);
+        private Timer?                       _expiryTimer;
+        private readonly object              _timerLock = new object();
 
         public CategoryCacheService(
-            IMemoryCache cache,
-            IServiceScopeFactory scopeFactory,
+            IServiceScopeFactory          scopeFactory,
             ILogger<CategoryCacheService> logger)
         {
-            _cache = cache;
             _scopeFactory = scopeFactory;
-            _logger = logger;
+            _logger       = logger;
         }
+
+        // ── Public API ────────────────────────────────────────────────────────
 
         public List<int> GetDescendantCategoryIds(int categoryId)
         {
-            var tree = GetOrBuildTree();
-            var result = new List<int> { categoryId };
+            // Fast path: nếu cache đã có thì trả về ngay (không await)
+            var tree = _tree;
+            if (tree == null)
+            {
+                // Cache chưa có — trigger load đồng bộ (blocking) lần đầu
+                // Vì method là sync, ta dùng GetAwaiter().GetResult() đặc biệt ở đây.
+                // Trong production, nên preload tại startup để tránh trường hợp này.
+                tree = GetOrBuildTreeAsync().GetAwaiter().GetResult();
+            }
 
-            // DFS in-memory — không đụng database
+            var result = new List<int> { categoryId };
             CollectDescendants(tree, categoryId, result);
             return result;
         }
 
         public void InvalidateCache()
         {
-            _cache.Remove(CacheKey);
-            _logger.LogInformation("Category cache invalidated.");
+            _tree = null;
+            StopExpiryTimer();
+            _logger.LogInformation("[CategoryCache] Cache đã bị xóa (invalidated).");
         }
 
         public async Task LoadCacheAsync()
         {
-            _cache.Remove(CacheKey); // xóa cũ nếu có
-            await Task.Run(() => GetOrBuildTree()); // build mới
-            _logger.LogInformation("Category cache preloaded.");
+            _tree = null;
+            StopExpiryTimer();
+            await GetOrBuildTreeAsync();
+            _logger.LogInformation("[CategoryCache] Cache đã được preload.");
         }
 
-        // ── Private helpers ──────────────────────────────────────────────
+        // ── Private: Build tree với SemaphoreSlim double-check ───────────────
 
-        /// <summary>
-        /// Dictionary: parentId → List of child IDs.
-        /// Build 1 lần từ DB, cache lại.
-        /// </summary>
-        private Dictionary<int, List<int>> GetOrBuildTree()
+        private async Task<Dictionary<int, List<int>>> GetOrBuildTreeAsync()
         {
-            return _cache.GetOrCreate(CacheKey, entry =>
+            // Lần 1 check — không cần lock (volatile read)
+            if (_tree != null) return _tree;
+
+            await _semaphore.WaitAsync();
+            try
             {
-                entry.AbsoluteExpirationRelativeToNow = CacheDuration;
-                entry.Priority = CacheItemPriority.High;
+                // Lần 2 check SAU khi có lock (double-check pattern)
+                // Tránh trường hợp nhiều thread đều đợi lock, cái đầu build xong,
+                // các cái sau vào lại build lần nữa.
+                if (_tree != null) return _tree;
 
-                using var scope = _scopeFactory.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<HDKTechContext>();
+                _logger.LogInformation("[CategoryCache] Building category tree từ DB...");
 
-                // 1 query duy nhất — lấy toàn bộ categories
-                var allCategories = context.Categories
+                using var scope   = _scopeFactory.CreateScope();
+                var context       = scope.ServiceProvider.GetRequiredService<HDKTechContext>();
+
+                var allCategories = await context.Categories
                     .AsNoTracking()
                     .Select(c => new { c.Id, c.ParentCategoryId })
-                    .ToList();
+                    .ToListAsync();
 
                 var tree = new Dictionary<int, List<int>>();
                 foreach (var cat in allCategories)
@@ -91,13 +115,47 @@ namespace HDKTech.Services
                     tree[parentId].Add(cat.Id);
                 }
 
-                _logger.LogInformation(
-                    "Category tree built: {Count} categories loaded into cache.",
-                    allCategories.Count);
+                _tree = tree;
+                ScheduleExpiry();
 
-                return tree;
-            })!;
+                _logger.LogInformation(
+                    "[CategoryCache] Tree built: {Count} categories. Hết hạn sau {Min} phút.",
+                    allCategories.Count, CacheDuration.TotalMinutes);
+
+                return _tree;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
+
+        // ── Timer-based expiry ────────────────────────────────────────────────
+
+        private void ScheduleExpiry()
+        {
+            lock (_timerLock)
+            {
+                _expiryTimer?.Dispose();
+                _expiryTimer = new Timer(_ =>
+                {
+                    _tree = null;
+                    _logger.LogDebug("[CategoryCache] Cache hết hạn sau {Min} phút, sẽ rebuild lần sau.",
+                        CacheDuration.TotalMinutes);
+                }, null, CacheDuration, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        private void StopExpiryTimer()
+        {
+            lock (_timerLock)
+            {
+                _expiryTimer?.Dispose();
+                _expiryTimer = null;
+            }
+        }
+
+        // ── DFS helper ────────────────────────────────────────────────────────
 
         private static void CollectDescendants(
             Dictionary<int, List<int>> tree,
@@ -110,6 +168,14 @@ namespace HDKTech.Services
                 result.Add(childId);
                 CollectDescendants(tree, childId, result); // DFS đệ quy
             }
+        }
+
+        // ── IDisposable ───────────────────────────────────────────────────────
+
+        public void Dispose()
+        {
+            StopExpiryTimer();
+            _semaphore.Dispose();
         }
     }
 }

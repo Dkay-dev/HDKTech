@@ -52,7 +52,7 @@ namespace HDKTech.Repositories
 
             // Brand (multi)
             if (filter.BrandIds != null && filter.BrandIds.Any())
-                query = query.Where(p => filter.BrandIds.Contains(p.BrandId));
+                query = query.Where(p => p.BrandId.HasValue && filter.BrandIds.Contains(p.BrandId.Value));
             else if (filter.BrandNames != null && filter.BrandNames.Any())
                 query = query.Where(p => p.Brand != null && filter.BrandNames.Contains(p.Brand.Name));
 
@@ -230,6 +230,63 @@ namespace HDKTech.Repositories
                 .Include(p => p.Variants)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(limit)
+                .AsNoTracking()
                 .ToListAsync();
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Module D: GetPagedAsync — phân trang chuẩn, thay thế GetAllWithImagesAsync
+        // pageSize mặc định 12, tối đa 48 (tránh load toàn bộ catalog vào memory)
+        // ─────────────────────────────────────────────────────────────────────
+        public async Task<(List<Product> Items, int TotalCount)> GetPagedAsync(
+            int page, int pageSize, ProductFilterModel? filter = null)
+        {
+            // Giới hạn pageSize để tránh memory abuse
+            pageSize = Math.Clamp(pageSize, 1, 48);
+            page     = Math.Max(1, page);
+
+            var query = _dbSet
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .Include(p => p.Variants)
+                .AsNoTracking()
+                .AsQueryable();
+
+            // Áp filter nếu có
+            if (filter != null)
+            {
+                if (filter.CategoryId.HasValue && filter.CategoryId.Value > 0)
+                    query = query.Where(p => p.CategoryId == filter.CategoryId.Value);
+
+                if (filter.BrandIds?.Any() == true)
+                    query = query.Where(p => p.BrandId.HasValue && filter.BrandIds.Contains(p.BrandId.Value));
+
+                if (filter.MinPrice.HasValue)
+                    query = query.Where(p => p.Variants.Any(v => v.IsActive && v.Price >= filter.MinPrice.Value));
+
+                if (filter.MaxPrice.HasValue)
+                    query = query.Where(p => p.Variants.Any(v => v.IsActive && v.Price <= filter.MaxPrice.Value));
+
+                if (filter.Status.HasValue)
+                    query = query.Where(p => p.Status == filter.Status.Value);
+
+                if (!string.IsNullOrWhiteSpace(filter.SearchKeyword))
+                {
+                    var kw = filter.SearchKeyword.ToLower();
+                    query = query.Where(p =>
+                        p.Name.ToLower().Contains(kw) ||
+                        (p.Description != null && p.Description.ToLower().Contains(kw)));
+                }
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
     }
 }

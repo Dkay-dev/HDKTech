@@ -115,19 +115,28 @@ namespace HDKTech.Repositories
         }
 
         /// <inheritdoc/>
+        /// <remarks>
+        /// Module C — Soft Delete: đánh dấu IsDeleted = true thay vì xóa hẳn khỏi DB.
+        /// Global Query Filter trong HDKTechContext sẽ tự ẩn record này khỏi mọi query.
+        /// </remarks>
         public new async Task<bool> DeleteAsync(int id)
         {
             try
             {
+                // FindAsync bỏ qua Global Query Filter nên sẽ tìm được cả record đã xóa.
+                // Tuy nhiên với Category ta dùng _dbSet (áp dụng filter) — nếu đã xóa thì FindAsync
+                // sẽ không tìm thấy, tránh double-delete.
                 var category = await _dbSet.FindAsync(id);
                 if (category == null) return false;
 
-                _dbSet.Remove(category);
+                // Soft delete — giữ nguyên data cho OrderItem history
+                category.IsDeleted = true;
+                _dbSet.Update(category);
                 return await _context.SaveChangesAsync() > 0;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa danh mục Id: {Id}", id);
+                _logger.LogError(ex, "Lỗi khi xóa (soft) danh mục Id: {Id}", id);
                 return false;
             }
         }

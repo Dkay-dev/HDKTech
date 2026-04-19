@@ -38,7 +38,7 @@ namespace HDKTech.Models
         public string? Specifications { get; set; }
 
         public int CategoryId { get; set; }
-        public int BrandId { get; set; }
+        public int? BrandId { get; set; }
 
         /// <summary>Chính sách bảo hành mặc định cho cả dòng sản phẩm (nullable).</summary>
         public int? WarrantyPolicyId { get; set; }
@@ -48,6 +48,17 @@ namespace HDKTech.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
+
+        // ── Soft Delete (Module C) ────────────────────────────────
+        /// <summary>
+        /// Khi true, record được coi là đã xóa nhưng vẫn còn trong DB.
+        /// Global Query Filter trong HDKTechContext sẽ tự lọc bỏ các record này.
+        /// </summary>
+        public bool IsDeleted { get; set; } = false;
+        /// <summary>Thời điểm thực hiện soft delete.</summary>
+        public DateTime? DeletedAt { get; set; }
+        /// <summary>Username của người thực hiện xóa.</summary>
+        public string? DeletedBy { get; set; }
 
         // ── Navigation ────────────────────────────────────────────
         [ForeignKey(nameof(CategoryId))]
