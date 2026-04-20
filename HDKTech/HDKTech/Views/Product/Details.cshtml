@@ -1,0 +1,616 @@
+@model HDKTech.Models.Product
+@using HDKTech.Utils
+@{
+    ViewData["Title"] = Model.Name + " - HDKTech";
+
+    var defaultImg = Model.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl 
+                     ?? Model.Images?.FirstOrDefault()?.ImageUrl 
+                     ?? "no-image.png";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.2.0/css/glightbox.min.css">
+<link rel="stylesheet" href="~/css/pages/product-details.css" />
+
+<div class="container py-4">
+    <div class="details-body">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="main-img-container">
+                    <a href="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="glightbox">
+                        <img id="mainImg" src="@ImageHelper.GetImagePath(defaultImg, Model.Category?.Name)" class="main-img" onerror="handleImageError(this)">
+                    </a>
+                </div>
+                <p class="text-center text-muted small mt-2"><i class="bi bi-search"></i> Click vào ảnh để phóng to</p>
+                @if (Model.Images != null && Model.Images.Any())
+                {
+                    <div class="thumb-container">
+                        @foreach (var img in Model.Images)
+                        {
+                            <img src="@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)" class="thumb-item @(img.IsDefault ? "active" : "")" 
+                                 onclick="updateMainImage('@ImageHelper.GetImagePath(img.ImageUrl, Model.Category?.Name)', this)" onerror="handleImageError(this)">
+                        }
+                    </div>
+                }
+
+            </div>
+
+            <div class="col-lg-5">
+                <h2 class="h4 fw-bold mb-1">@Model.Name</h2>
+                <div class="text-muted small mb-2">Thương hiệu: <strong>@Model.Brand?.Name</strong> | SKU: <strong>HDK-@Model.Id</strong></div>
+
+                @{
+                    var defaultVariant = Model.DefaultVariant;
+                    var displayPrice   = Model.DisplayPrice ?? 0m;
+                    var listPrice      = Model.DisplayListPrice;
+                    var discountPercent = (listPrice.HasValue && listPrice > 0 && listPrice > displayPrice)
+                        ? (int)((listPrice.Value - displayPrice) / listPrice.Value * 100)
+                        : 0;
+                }
+
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div>
+                        <span class="price-text">@displayPrice.ToString("N0")₫</span>
+                        @if(listPrice.HasValue && listPrice > displayPrice){
+                            <span class="price-old">@listPrice.Value.ToString("N0")₫</span>
+                        }
+                    </div>
+                    @if(discountPercent > 0){
+                        <span style="background: #fbbf24; color: #000; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; white-space: nowrap;">
+                            <i class="bi bi-percent"></i> GIẢM @discountPercent%
+                        </span>
+                    }
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                    <div class="input-group" style="width: 110px;">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="updateQty(-1)">-</button>
+                        <input type="text" id="qtyInput" class="form-control text-center fw-bold" value="1" readonly style="font-size: 0.9rem;">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="updateQty(1)">+</button>
+                    </div>
+                    <button class="btn btn-danger flex-grow-1 fw-bold" style="padding: 0.5rem;" onclick="buyNow()">MUA NGAY</button>
+                    <button class="btn btn-dark" style="padding: 0.5rem 1rem;" onclick="addToCartAjax(@Model.Id, '@Model.Name', document.getElementById('qtyInput').value)">
+                        <i class="bi bi-cart-plus"></i>
+                    </button>
+                </div>
+
+                <div class="promo-red-box">
+                    <div class="promo-header"><i class="bi bi-gift"></i> QUÀ TẶNG</div>
+                    <div class="promo-content">
+                        <div class="promo-item"><i class="bi bi-check-circle"></i> Tặng túi chống sốc HDK Gaming</div>
+                        <div class="promo-item"><i class="bi bi-check-circle"></i> Giảm 200k cho sinh viên Bách Khoa</div>
+                        <div class="promo-item"><i class="bi bi-check-circle"></i> Trả góp 0% qua thẻ tín dụng</div>
+                    </div>
+                </div>
+
+                <div class="info-dark-card">
+                    <div class="info-dark-item"><i class="bi bi-cpu"></i> <span><strong>Hãng:</strong> @Model.Brand?.Name</span></div>
+                    <div class="info-dark-item"><i class="bi bi-box"></i> <span><strong>Loại:</strong> @Model.Category?.Name</span></div>
+                    <div class="info-dark-item"><i class="bi bi-shield-check"></i> <span><strong>Bảo hành:</strong> 24 tháng</span></div>
+                    <div class="info-dark-item"><i class="bi bi-truck"></i> <span><strong>Vận chuyển:</strong> Toàn quốc</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABS SECTION - CẤU HÌNH, NHẬN XÉT, MÔ TẢ -->
+        <div class="mt-5">
+            <ul class="nav nav-tabs nav-tabs-premium" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button" role="tab">
+                        <i class="bi bi-diagram-3"></i> CẤU HÌNH
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                        <i class="bi bi-star"></i> NHẬN XÉT (@(Model.Reviews?.Count() ?? 0))
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button" role="tab">
+                        <i class="bi bi-file-text"></i> MÔ TẢ
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content border border-top-0 rounded-bottom">
+                <!-- TAB 1: CẤU HÌNH -->
+                <div class="tab-pane fade show active" id="specs" role="tabpanel">
+                    <div class="specs-section" style="padding: 30px; background: #f8f9fa;">
+                        @{
+                            var specs = Model?.Specifications?.Trim();
+                            var hasSpecs = !string.IsNullOrWhiteSpace(specs);
+                            var specsArray = hasSpecs ? specs.Split(new[] { '|', ',' }, StringSplitOptions.RemoveEmptyEntries) : new string[] { };
+                        }
+
+                        <!-- THÔNG TIN CHUNG -->
+                        <div class="specs-category">
+                            <div class="specs-category-header">
+                                <i class="bi bi-box"></i> THÔNG TIN CHUNG
+                            </div>
+                            <div class="specs-grid">
+                                <div class="spec-item">
+                                    <span class="spec-label">Hãng sản xuất</span>
+                                    <span class="spec-value">@(Model.Brand?.Name ?? "N/A")</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Model</span>
+                                    <span class="spec-value">@Model.Name</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Danh mục</span>
+                                    <span class="spec-value">@(Model.Category?.Name ?? "N/A")</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Bảo hành</span>
+                                    <span class="spec-value highlight">@(Model.WarrantyPolicy?.Name ?? "24 Tháng")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- THÔNG SỐ KỸ THUẬT CHI TIẾT -->
+                        @if (hasSpecs && specsArray.Length > 0)
+                        {
+                            <div class="specs-category">
+                                <div class="specs-category-header">
+                                    <i class="bi bi-diagram-3"></i> THÔNG SỐ KỸ THUẬT CHI TIẾT
+                                </div>
+                                <div class="specs-grid">
+                                    @{
+                                        var displayCount = 0;
+                                        foreach (var s in specsArray)
+                                        {
+                                            if (displayCount >= 8) break;
+                                            var value = s.Trim();
+                                            if (!string.IsNullOrEmpty(value))
+                                            {
+                                                var parts = value.Split(':');
+                                                var label = parts.Length > 0 ? parts[0].Trim() : "Spec";
+                                                var specValue = parts.Length > 1 ? parts[1].Trim() : "N/A";
+
+                                                <div class="spec-item">
+                                                    <span class="spec-label">@label</span>
+                                                    <span class="spec-value">@specValue</span>
+                                                </div>
+                                                displayCount++;
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="specs-category">
+                                <div class="specs-category-header">
+                                    <i class="bi bi-diagram-3"></i> THÔNG SỐ KỸ THUẬT CHI TIẾT
+                                </div>
+                                <div style="text-align: center; padding: 40px 0; color: #aaa;">
+                                    <i class="bi bi-info-circle" style="font-size: 2.5rem; display: block; margin-bottom: 15px;"></i>
+                                    <p>Thông tin cấu hình sản phẩm sẽ được cập nhật sớm</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- TAB 2: NHẬN XÉT -->
+                <div class="tab-pane fade" id="reviews" role="tabpanel">
+                    <div class="reviews-section" style="padding: 30px; background: #f8f9fa;">
+                        <!-- RATING SUMMARY -->
+                        <div class="rating-summary">
+                            <div class="rating-avg">
+                                <div class="rating-avg-number">
+                                    @{
+                                        var avgRating = Model.Reviews?.Any() == true ? Model.Reviews.Average(x => x.Rating) : 0;
+                                    }
+                                    @avgRating.ToString("0.0")
+                                </div>
+                                <div class="rating-stars">
+                                    @{
+                                        var fullStars = (int)avgRating;
+                                        for (int i = 0; i < fullStars; i++) { <span>⭐</span> }
+                                        for (int i = fullStars; i < 5; i++) { <span>☆</span> }
+                                    }
+                                </div>
+                                <div class="rating-count">Dựa trên @(Model.Reviews?.Count() ?? 0) đánh giá</div>
+                            </div>
+
+                            <div class="rating-breakdown">
+                                @for (int i = 5; i >= 1; i--)
+                                {
+                                    var count = Model.Reviews?.Count(x => x.Rating == i) ?? 0;
+                                    var percent = (Model.Reviews?.Count() ?? 0) > 0 ?
+                                        (int)((count * 100.0) / (Model.Reviews?.Count() ?? 1)) : 0;
+
+                                    <div class="rating-row">
+                                        <div class="rating-row-label">
+                                            @(new string('★', i))@(new string('☆', 5-i))
+                                        </div>
+                                        <div class="rating-row-bar">
+                                            <div class="rating-row-fill" style="width: @percent%"></div>
+                                        </div>
+                                        <div class="rating-row-percent">@percent%</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- REVIEW FORM -->
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <div id="reviewFormContainer" class="review-form-container">
+                                <h5 class="mb-3"><i class="bi bi-pencil-square"></i> Viết đánh giá của bạn</h5>
+                                <form id="reviewForm">
+                                    <input type="hidden" id="productId" value="@Model.Id" />
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Đánh giá của bạn:</label>
+                                        <div class="star-rating-input" id="starRating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <span class="star" data-value="@i" onclick="setRating(@i)">☆</span>
+                                            }
+                                            <input type="hidden" id="ratingValue" name="rating" value="0" />
+                                        </div>
+                                        <span id="ratingText" class="ms-2 text-muted"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="reviewContent" class="form-label fw-bold">Nội dung đánh giá:</label>
+                                        <textarea id="reviewContent" name="content" class="form-control" rows="4" 
+                                                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này (ít nhất 10 ký tự)..." 
+                                                  minlength="10" maxlength="500"></textarea>
+                                        <div class="form-text">Tối thiểu 10 ký tự, tối đa 500 ký tự</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" id="submitReviewBtn">
+                                        <i class="bi bi-send"></i> Gửi đánh giá
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="review-login-prompt">
+                                <i class="bi bi-lock"></i>
+                                <p>Vui lòng <a href="/Identity/Account/Login?returnUrl=/Product/Details/@Model.Id">đăng nhập</a> để đánh giá sản phẩm này.</p>
+                            </div>
+                        }
+
+                        <!-- REVIEWS LIST -->
+                        @if (Model.Reviews?.Any() == true)
+                        {
+                            <div class="reviews-list mt-4" id="reviewsList">
+                                @foreach (var review in Model.Reviews.OrderByDescending(x => x.ReviewDate).Take(5))
+                                {
+                                    <div class="review-item" data-review-id="@review.Id">
+                                        <div class="review-header">
+                                            <div>
+                                                <div class="review-author">@(review.User?.FullName ?? "Ẩn danh")</div>
+                                                <div class="review-meta">
+                                                    <span class="review-verified">✓ Xác thực mua hàng</span>
+                                                    <span>@review.ReviewDate.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</span>
+                                                </div>
+                                            </div>
+                                            <div class="review-rating">
+                                                @(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))
+                                            </div>
+                                        </div>
+
+                                        <div class="review-content">@review.Content</div>
+
+                                        @if (User.Identity?.IsAuthenticated == true && review.UserId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                                        {
+                                            <div class="review-actions">
+                                                <button class="review-action-btn btn-edit" onclick="editReview(@review.Id, @review.Rating, '@Html.Raw(review.Content?.Replace("'", "\\'").Replace("\n", " ").Replace("\r", ""))')">
+                                                    <i class="bi bi-pencil"></i> Sửa
+                                                </button>
+                                                <button class="review-action-btn btn-delete" onclick="deleteReview(@review.Id)">
+                                                    <i class="bi bi-trash"></i> Xóa
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            @if ((Model.Reviews?.Count() ?? 0) > 5)
+                            {
+                                <button class="load-more-btn" onclick="loadMoreReviews()">TẢI THÊM NHẬN XÉT</button>
+                            }
+                        }
+                        else
+                        {
+                            <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;" id="noReviewsMessage">
+                                <i class="bi bi-chat-left" style="font-size: 2.5rem; color: #ccc; display: block; margin-bottom: 15px;"></i>
+                                <p style="color: #999; margin: 0;">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- TAB 3: MÔ TẢ -->
+                <div class="tab-pane fade" id="desc" role="tabpanel">
+                    <div class="description-section" style="padding: 30px; background: white;">
+                        <h2 class="section-title" style="font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #ef4444;">
+                            <i class="bi bi-file-text"></i> Mô tả sản phẩm
+                        </h2>
+
+                        <div class="description-content" style="color: #6b7280; line-height: 1.8; font-size: 15px;">
+                            @Html.Raw(Model.Description ?? "<p style='color: #aaa;'>Chưa có mô tả sản phẩm</p>")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="related-products-section mt-5">
+            <div class="fs-section-header mb-4">
+                <div class="fs-section-title">
+                    <i class="bi bi-fire text-danger"></i>
+                    <span>SẢN PHẨM LIÊN QUAN</span>
+                </div>
+            </div>
+
+            @{
+                // Ép kiểu và lấy đúng 4 sản phẩm đầu tiên
+                var relatedItems = (ViewBag.RelatedProducts as List<HDKTech.Models.Product>)?.Take(4).ToList();
+            }
+
+            @if (relatedItems != null && relatedItems.Any())
+            {
+                <div class="pc-grid">
+                    @foreach (var item in relatedItems)
+                    {
+                        @await Html.PartialAsync("_ProductCard", item)
+                    }
+                </div>
+            }
+            else
+            {
+                @* Thông báo nếu không tìm thấy máy nào cùng danh mục *@
+                <div class="alert alert-light border rounded-3 py-4 text-center">
+                    <i class="bi bi-info-circle fs-2 d-block mb-2 text-muted"></i>
+                    <p class="text-muted mb-0">HDKTech đang cập nhật thêm các sản phẩm cùng loại.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.2.0/js/glightbox.min.js"></script>
+<script>
+    const lightbox = GLightbox({ selector: '.glightbox' });
+
+    let selectedRating = 0;
+    const ratingLabels = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Tuyệt vời'];
+
+    function setRating(rating) {
+        selectedRating = rating;
+        document.getElementById('ratingValue').value = rating;
+        document.getElementById('ratingText').textContent = ratingLabels[rating];
+
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+            star.textContent = index < rating ? '★' : '☆';
+            star.style.color = index < rating ? '#f59e0b' : '#ccc';
+        });
+    }
+
+    document.getElementById('reviewForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const productId = document.getElementById('productId').value;
+        const rating = parseInt(document.getElementById('ratingValue').value);
+        const content = document.getElementById('reviewContent').value;
+        const submitBtn = document.getElementById('submitReviewBtn');
+
+        if (rating === 0) {
+            alert('Vui lòng chọn số sao đánh giá!');
+            return;
+        }
+
+        if (content.length < 10) {
+            alert('Nội dung đánh giá phải có ít nhất 10 ký tự!');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi...';
+
+        try {
+            const response = await fetch('/Review/Add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `productId=${productId}&rating=${rating}&content=${encodeURIComponent(content)}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('reviewContent').value = '';
+                document.getElementById('ratingValue').value = '0';
+                document.getElementById('ratingText').textContent = '';
+                setRating(0);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> Gửi đánh giá';
+        }
+    });
+
+    async function deleteReview(reviewId) {
+        if (!confirm('Bạn có chắc muốn xóa đánh giá này?')) return;
+
+        try {
+            const response = await fetch('/Review/Delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `reviewId=${reviewId}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+        }
+    }
+
+    function editReview(reviewId, rating, content) {
+        selectedRating = rating;
+        document.getElementById('ratingValue').value = rating;
+        document.getElementById('ratingText').textContent = ratingLabels[rating];
+
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+            star.textContent = index < rating ? '★' : '☆';
+            star.style.color = index < rating ? '#f59e0b' : '#ccc';
+        });
+
+        document.getElementById('reviewContent').value = content;
+        document.getElementById('reviewForm').dataset.editMode = 'true';
+        document.getElementById('reviewForm').dataset.editReviewId = reviewId;
+        document.getElementById('submitReviewBtn').innerHTML = '<i class="bi bi-check"></i> Cập nhật đánh giá';
+
+        document.getElementById('reviewForm').onsubmit = async function(e) {
+            e.preventDefault();
+
+            const productId = document.getElementById('productId').value;
+            const newRating = parseInt(document.getElementById('ratingValue').value);
+            const newContent = document.getElementById('reviewContent').value;
+            const submitBtn = document.getElementById('submitReviewBtn');
+
+            if (newRating === 0) {
+                alert('Vui lòng chọn số sao đánh giá!');
+                return;
+            }
+
+            if (newContent.length < 10) {
+                alert('Nội dung đánh giá phải có ít nhất 10 ký tự!');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang cập nhật...';
+
+            try {
+                const response = await fetch('/Review/Update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reviewId=${reviewId}&rating=${newRating}&content=${encodeURIComponent(newContent)}`
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra. Vui lòng thử lại!');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        };
+
+        document.getElementById('reviewFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+<style>
+    .review-form-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .star-rating-input {
+        font-size: 2rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .star-rating-input .star {
+        transition: color 0.2s, transform 0.1s;
+        display: inline-block;
+        color: #ccc;
+    }
+
+    .star-rating-input .star:hover {
+        transform: scale(1.2);
+    }
+
+    .review-login-prompt {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .review-login-prompt i {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+
+    .review-login-prompt p {
+        margin: 0;
+        color: #666;
+    }
+
+    .review-login-prompt a {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    .review-item .review-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .review-action-btn.btn-edit,
+    .review-action-btn.btn-delete {
+        font-size: 0.85rem;
+        padding: 4px 12px;
+        border: 1px solid #ddd;
+        background: #f8f9fa;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .review-action-btn.btn-edit:hover {
+        background: #e7f3ff;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .review-action-btn.btn-delete:hover {
+        background: #fff5f5;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+</style>
+<script src="~/js/pages/product-details.js"></script>
+
+

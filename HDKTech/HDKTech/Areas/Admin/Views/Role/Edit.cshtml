@@ -1,0 +1,6 @@
+@{
+    // View này đã bị loại bỏ trong lần refactor sang ASP.NET Identity
+    // (Role.Edit không còn tồn tại trong RoleController). Để tương thích
+    // ngược, bất kỳ request nào rơi vào đây đều redirect về trang danh sách.
+    Context.Response.Redirect(Url.Action("Index", "Role", new { area = "Admin" }) ?? "/admin/role");
+}

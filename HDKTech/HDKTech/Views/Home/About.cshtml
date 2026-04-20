@@ -1,0 +1,218 @@
+﻿@{
+    ViewData["Title"] = "Về Chúng Tôi - HDKTech";
+}
+
+<style>
+    :root { --hdk-red: #ef4444; --hdk-dark: #212529; --hdk-gray: #f8f9fa; }
+
+    /* --- Hero Section & Stats Combined --- */
+    .about-hero-combined {
+        background: linear-gradient(135deg, rgba(30, 60, 114, 0.95) 0%, rgba(42, 82, 152, 0.9) 100%), url('/images/banners/about-hero-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 120px 0 250px 0 !important; /* Tạo không gian cho stats ở đáy */
+        position: relative;
+        overflow: hidden;
+        border-bottom: 4px solid var(--hdk-red);
+    }
+
+    .banner-main-content { position: relative; z-index: 2; text-align: center; }
+    
+    .stats-in-banner {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
+        width: 100%;
+        max-width: 1140px;
+    }
+
+    .stats-orange-box {
+        background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        padding: 40px 20px;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 40px rgba(239, 68, 68, 0.3);
+    }
+
+    /* --- Story Section (Hàng ngang) --- */
+    .story-horizontal {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        margin: 60px 0;
+        border-left: 5px solid var(--hdk-red);
+    }
+
+    /* --- Value Cards --- */
+    .value-icon-box {
+        width: 60px; height: 60px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 20px; font-size: 1.5rem; color: #fff;
+    }
+    .bg-pink { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+    .bg-blue { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
+    .bg-purple { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
+    .bg-green { background: linear-gradient(135deg, #00b09b, #96c93d); }
+
+    /* --- Team & General --- */
+    .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 25px;
+    }
+
+    .team-member {
+        background: white; border-radius: 12px; overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s;
+    }
+    .team-member:hover { transform: translateY(-10px); }
+
+    .team-member-image {
+        height: 200px; background: #f8f9fa;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3rem; color: var(--hdk-red);
+    }
+
+    .quote-section {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white; padding: 50px; border-radius: 20px; text-align: center;
+    }
+
+    @@media (max-width: 992px) {
+        .story-horizontal { flex-direction: column; }
+        .about-hero-combined { padding-bottom: 350px !important; }
+    }
+</style>
+
+<div class="about-hero-combined">
+    <div class="container banner-main-content">
+        <h1 class="display-4 fw-bold text-white mb-3">Hành Trình Công Nghệ <span style="color: #fef3c7;">HDKTech</span></h1>
+        <p class="lead text-white-50 mx-auto" style="max-width: 700px;">Đối tác tin cậy trong lĩnh vực công nghệ và máy tính</p>
+    </div>
+
+    <div class="stats-in-banner container">
+        <div class="stats-orange-box">
+            <div class="row g-4 text-center text-white">
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold display-6">10+</div>
+                    <div class="small text-uppercase opacity-75">Năm kinh nghiệm</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold display-6">50K+</div>
+                    <div class="small text-uppercase opacity-75">Khách hàng tin dùng</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold display-6">100K+</div>
+                    <div class="small text-uppercase opacity-75">Sản phẩm bán ra</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fw-bold display-6">99%</div>
+                    <div class="small text-uppercase opacity-75">Hài lòng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="story-horizontal">
+        <div style="flex: 1;">
+            <h2 class="fw-bold mb-3">Câu Chuyện Của <span class="text-danger">HDKTech</span></h2>
+            <p class="text-muted">Chúng tôi khởi đầu từ đam mê mang công nghệ đến gần hơn với mọi người. HDKTech không chỉ bán linh kiện, mà cung cấp giải pháp tối ưu cho hành trình số hóa của bạn.</p>
+            <p class="text-muted mb-0">Với quy trình kiểm định nghiêm ngặt, mỗi sản phẩm rời kho đều mang theo cam kết về chất lượng và sự tận tâm tuyệt đối.</p>
+        </div>
+        <div style="flex: 1; background: #f8f9fa; padding: 30px; border-radius: 15px;">
+            <h5 class="fw-bold mb-3">Tại Sao Chọn Chúng Tôi?</h5>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-danger me-2"></i> 100% Sản phẩm chính hãng</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-danger me-2"></i> Giá cả cạnh tranh nhất</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-danger me-2"></i> Tư vấn kỹ thuật chuyên sâu</li>
+                <li><i class="bi bi-check-circle-fill text-danger me-2"></i> Hỗ trợ hậu mãi 24/7</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="text-center mb-5">
+        <h2 class="fw-bold mb-4 uppercase">Giá Trị Cốt Lõi</h2>
+        <div class="row g-4 text-start">
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm p-4">
+                    <div class="value-icon-box bg-pink"><i class="bi bi-heart"></i></div>
+                    <h5 class="fw-bold">Tận tâm</h5>
+                    <p class="small text-muted">Đặt lợi ích khách hàng làm trọng tâm hành động.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm p-4">
+                    <div class="value-icon-box bg-blue"><i class="bi bi-shield-check"></i></div>
+                    <h5 class="fw-bold">Uy tín</h5>
+                    <p class="small text-muted">Minh bạch và giữ vững mọi cam kết dịch vụ.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm p-4">
+                    <div class="value-icon-box bg-purple"><i class="bi bi-bullseye"></i></div>
+                    <h5 class="fw-bold">Chất lượng</h5>
+                    <p class="small text-muted">Chỉ cung cấp sản phẩm đạt chuẩn cao nhất.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm p-4">
+                    <div class="value-icon-box bg-green"><i class="bi bi-lightning-charge"></i></div>
+                    <h5 class="fw-bold">Đổi mới</h5>
+                    <p class="small text-muted">Liên tục cập nhật xu hướng công nghệ mới.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="quote-section my-5">
+        <i class="bi bi-quote display-4 opacity-50"></i>
+        <h3 class="fst-italic fw-light mb-4">"Công nghệ là công cụ, nhưng sự tận tâm mới tạo nên khác biệt. Tại HDKTech, chúng tôi bán sự an tâm."</h3>
+        <div class="fw-bold">Khoa Bug</div>
+        <div class="small opacity-75">Founder & CEO - HDKTech</div>
+    </div>
+
+    <div class="mb-5">
+        <h2 class="fw-bold text-center mb-5 border-bottom pb-3">Đội Ngũ Lãnh Đạo</h2>
+        <div class="team-grid">
+            <div class="team-member">
+                <div class="team-member-image"><i class="bi bi-person-workspace"></i></div>
+                <div class="p-4 text-center">
+                    <h5 class="fw-bold mb-1">Khoa Bug</h5>
+                    <p class="text-danger small fw-bold">Founder & CEO</p>
+                    <p class="text-muted small">12 năm kinh nghiệm quản trị công nghệ.</p>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="team-member-image"><i class="bi bi-person-badge"></i></div>
+                <div class="p-4 text-center">
+                    <h5 class="fw-bold mb-1">Lê Thị Kim</h5>
+                    <p class="text-danger small fw-bold">Phó Giám Đốc</p>
+                    <p class="text-muted small">Chuyên Price phát triển thị trường.</p>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="team-member-image"><i class="bi bi-cpu"></i></div>
+                <div class="p-4 text-center">
+                    <h5 class="fw-bold mb-1">Nguyễn Văn Hùng</h5>
+                    <p class="text-danger small fw-bold">Trưởng Phòng Kỹ Thuật</p>
+                    <p class="text-muted small">Phù thủy lắp ráp và tối ưu hệ thống.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-light p-5 rounded-4 text-center border-start border-5 border-danger shadow-sm mb-5">
+        <h3 class="fw-bold">Bạn cần giải pháp công nghệ tối ưu?</h3>
+        <p class="text-muted">Đội ngũ kỹ sư của HDKTech luôn sẵn sàng hỗ trợ bạn.</p>
+        <a href="/Home/Hotline" class="btn btn-danger btn-lg px-5 rounded-pill shadow">📞 Liên Hệ Tư Vấn Ngay</a>
+    </div>
+</div>
+

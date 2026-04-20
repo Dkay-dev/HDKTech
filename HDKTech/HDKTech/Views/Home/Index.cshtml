@@ -1,0 +1,292 @@
+@model HDKTech.Models.HomeIndexViewModel
+@using HDKTech.Utils
+@{
+    ViewData["Title"] = "HDKTech - Laptop, Linh kiện máy tính chính hãng";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
+
+<div class="rog-page-wrapper">
+
+@* ═══════════════════════════════════════════════════════════════════
+   1. HERO SECTION — Full-width Carousel ROG Style
+   ═══════════════════════════════════════════════════════════════════ *@
+<div class="rog-hero-section">
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+        <div class="carousel-indicators">
+            @for (int i = 0; i < 5; i++)
+            {
+                <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")"></button>
+            }
+        </div>
+        <div class="carousel-inner">
+            @for (int s = 0; s < 5; s++)
+            {
+                <div class="carousel-item @(s == 0 ? "active" : "")">
+                    <a href="/product">
+                        <img src="/images/banners/b1.png"
+                             alt="HDKTech - Chuyên Cung Cấp Máy Tính & Phụ Kiện Công Nghệ Cao"
+                             class="rog-hero-img"
+                             loading="@(s == 0 ? "eager" : "lazy")" />
+                    </a>
+                </div>
+            }
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+    </div>
+</div>
+
+@* ═══════════════════════════════════════════════════════════════════
+    2. CATEGORY STRIP — ROG Style
+    ═══════════════════════════════════════════════════════════════════ *@
+@if (Model.Categories.Any())
+{
+    <div class="rog-section category-section-white">
+        <div class="rog-section-title-wrapper">
+            <h2 class="rog-section-title">KHÁM PHÁ SẢN PHẨM CỦA CHÚNG TÔI</h2>
+        </div>
+        <div class="category-strip">
+            <div class="category-strip-inner">
+                @foreach (var cat in Model.Categories.Take(8))
+                {
+                    <a asp-controller="Category" asp-action="Index" asp-route-id="@cat.Id" class="category-chip">
+                        <div class="category-chip-icon">
+                            @{
+                                var catImageMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                                {
+                                    { "Laptop",                  "/images/categories/Laptop.jpg" },
+                                    { "Laptop Gaming",           "/images/categories/LaptopGaming.jpg" },
+                                    { "PC GVN",                  "/images/categories/PC_GVN.png" },
+                                    { "Main, CPU, VGA",          "/images/categories/main.jpg" },
+                                    { "Case, Nguồn, Tản",        "/images/categories/case.jpg" },
+                                    { "Ổ cứng, RAM, Thẻ nhớ",   "/images/categories/RAM.jpg" },
+                                    { "Loa, Micro, Webcam",      "/images/categories/Loa.jpg" },
+                                    { "Màn hình",                "/images/categories/Manhinh.jpg" }
+                                };
+                                var catImgSrc = catImageMap.TryGetValue(cat.Name, out var imgPath) 
+                                                ? imgPath 
+                                                : null;
+                            }
+                            @if (!string.IsNullOrEmpty(cat.BannerImageUrl))
+                            {
+                                <img src="@cat.BannerImageUrl" alt="@cat.Name" />
+                            }
+                            else if (catImgSrc != null)
+                            {
+                                <img src="@catImgSrc" alt="@cat.Name" />
+                            }
+                            else
+                            {
+                                <i class="bi @GetCategoryIcon(cat.Id)"></i>
+                            }
+                        </div>
+                        <span class="category-chip-name">@cat.Name</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ═══════════════════════════════════════════════════════════════════
+   3. FLASH SALE SECTION — ROG Style
+   ═══════════════════════════════════════════════════════════════════ *@
+@if (Model.FlashSaleProducts.Any())
+{
+    <div class="flash-sale-section">
+        <div class="flash-sale-header">
+            <div class="flash-sale-title">
+                <div class="flash-title-text">
+                    <i class="bi bi-lightning-fill flash-icon-bolt"></i>
+                    FLASH SALE
+                </div>
+                <div class="countdown-block" id="flashCountdown">
+                    <div class="countdown-unit" id="cd-h">00</div>
+                    <span class="countdown-sep">:</span>
+                    <div class="countdown-unit" id="cd-m">00</div>
+                    <span class="countdown-sep">:</span>
+                    <div class="countdown-unit" id="cd-s">00</div>
+                </div>
+            </div>
+            <a asp-controller="Product" asp-action="FlashSale" class="rog-btn-view-all">
+                Xem tất cả <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="pc-grid">
+            @foreach (var p in Model.FlashSaleProducts.Take(5))
+            {
+                @await Html.PartialAsync("_ProductCard", p)
+            }
+        </div>
+    </div>
+}
+
+@* Duyệt qua 12 danh mục chính để tạo các khối sản phẩm đồng bộ *@
+@{
+    var mainCategories = Model.Categories.Take(12).ToList();
+}
+
+@foreach (var cat in mainCategories)
+{
+    var catProducts = Model.AllProducts.Where(p => p.CategoryId == cat.Id).Take(12).ToList();
+    
+    @if (catProducts.Any())
+    {
+        <div class="rog-section">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="rog-section-title">
+                        <i class="bi @GetCategoryIcon(cat.Id)"></i> @cat.Name
+                    </div>
+                </div>
+                <a asp-controller="Category" asp-action="Index" asp-route-id="@cat.Id" class="rog-btn-view-all">
+                    Xem tất cả <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="category-module-main">
+                <div class="module-side-banners-stack">
+                    @{
+                        var currentSideBanners = Model.SideBanners
+                                    .Where(b => b.Title.Contains(cat.Name, StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
+
+                        if (cat.Name == "Laptop")
+                        {
+                            currentSideBanners = currentSideBanners.Where(b => !b.Title.Contains("Gaming")).ToList();
+                        }
+
+                        var finalBanners = currentSideBanners.OrderBy(b => b.Title).Take(2).ToList();
+
+                        if (currentSideBanners.Count < 2)
+                        {
+                            currentSideBanners = Model.SideBanners.OrderBy(b => b.Id).Take(2).ToList();
+                        }
+                    }
+        
+                    @foreach (var sb in currentSideBanners)
+                    {
+                        <a href="@(sb.LinkUrl ?? "#")" class="side-banner-item">
+                            <img src="@sb.ImageUrl" alt="@sb.Title" loading="lazy" />
+                        </a>
+                    }
+                </div>
+
+                <div class="products-grid">
+                    @foreach (var p in catProducts)
+                    {
+                        @await Html.PartialAsync("_ProductCard", p)
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="rog-page-end"></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // ═══ Banner click tracking ═══
+            window.trackBannerClick = function (bannerId) {
+                if (!bannerId) return;
+                fetch('/api/banneranalytics/track-click/' + bannerId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(function () {});
+            };
+
+            // ═══ Flash Sale Countdown ═══
+            function initCountdown() {
+                var cdH = document.getElementById('cd-h');
+                var cdM = document.getElementById('cd-m');
+                var cdS = document.getElementById('cd-s');
+                if (!cdH) return;
+
+                var endTimeStr = '@ViewBag.FlashSaleEndTime';
+                var endTime    = endTimeStr ? new Date(endTimeStr) : null;
+
+                if (!endTime || isNaN(endTime.getTime())) {
+                    endTime = new Date();
+                    endTime.setHours(23, 59, 59, 999);
+                }
+
+                function pad(n) { return n < 10 ? '0' + n : n; }
+
+                function tick() {
+                    var now  = new Date();
+                    var diff = Math.max(0, Math.floor((endTime - now) / 1000));
+
+                    if (diff === 0) {
+                        setTimeout(function () { location.reload(); }, 1500);
+                    }
+
+                    cdH.textContent = pad(Math.floor(diff / 3600));
+                    cdM.textContent = pad(Math.floor((diff % 3600) / 60));
+                    cdS.textContent = pad(diff % 60);
+                }
+
+                tick();
+                setInterval(tick, 1000);
+            }
+
+            initCountdown();
+
+            // ═══ Tab Filter ═══
+            var filterData = {};
+
+            window.filterProducts = function (gridKey, filterValue, btn) {
+                var tabContainer = btn.closest('.section-tabs');
+                if (tabContainer) {
+                    tabContainer.querySelectorAll('.section-tab').forEach(function (t) {
+                        t.classList.remove('active');
+                    });
+                }
+                btn.classList.add('active');
+
+                var grid = document.getElementById('grid' + gridKey.charAt(0).toUpperCase() + gridKey.slice(1));
+                if (!grid) return;
+
+                var cards = grid.querySelectorAll('[data-brand], [data-category]');
+                cards.forEach(function (card) {
+                    if (filterValue === 'all') {
+                        card.style.display = '';
+                    } else {
+                        var brandMatch    = card.dataset.brand    && card.dataset.brand.toLowerCase()    === filterValue.toLowerCase();
+                        var categoryMatch = card.dataset.category && card.dataset.category.toLowerCase() === filterValue.toLowerCase();
+                        card.style.display = (brandMatch || categoryMatch) ? '' : 'none';
+                    }
+                });
+            };
+        })();
+    </script>
+}
+
+@functions {
+    string GetCategoryIcon(int id) => id switch
+    {
+        1 => "bi-laptop",
+        2 => "bi-pc-display-horizontal",
+        3 => "bi-keyboard",
+        4 => "bi-mouse3",
+        5 => "bi-cpu",
+        6 => "bi-memory",
+        7 => "bi-device-ssd",
+        8 => "bi-display",
+        9 => "bi-headphones",
+        10 => "bi-webcam",
+        11 => "bi-controller",
+        12 => "bi-phone",
+        _ => "bi-box-seam"
+    };
+}

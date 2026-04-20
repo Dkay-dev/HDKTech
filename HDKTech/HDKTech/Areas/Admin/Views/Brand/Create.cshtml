@@ -1,0 +1,105 @@
+﻿@model HDKTech.Models.Brand
+
+@{
+    ViewData["Title"] = "Tạo Thương Hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-building text-danger me-2"></i>Tạo Thương Hiệu Mới</h1>
+        <p>Thêm một thương hiệu mới vào hệ thống</p>
+    </div>
+    <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ========== MAIN FORM ========== -->
+<div class="row g-4">
+
+    <!-- CỘT TRÁI: Form chính (8/12) -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-2"></i>Thông tin Thương Hiệu
+            </div>
+            <div class="card-body p-4">
+
+                <form asp-action="Create" asp-controller="Brand" asp-area="Admin" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Tên Thương Hiệu -->
+                    <div class="mb-4">
+                        <label asp-for="Name" class="form-label">
+                            Tên Thương Hiệu <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Name"
+                               class="form-control"
+                               placeholder="VD: Apple, Samsung, Dell, HP..." />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Mô Tả -->
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label">Mô Tả</label>
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Mô tả chi tiết về thương hiệu, lịch sử, nổi tiếng về điều gì..."></textarea>
+                        <div class="form-text">Tùy chọn. Giúp khách hàng hiểu rõ về thương hiệu.</div>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Nút action -->
+                    <div class="d-flex gap-2 align-items-center pt-3 border-top">
+                        <button type="submit" class="btn btn-save px-4">
+                            <i class="bi bi-check-circle me-2"></i>Tạo Thương Hiệu
+                        </button>
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x me-1"></i>Hủy
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: Hướng dẫn (4/12) -->
+    <div class="col-lg-4">
+        <div class="hdk-preview-container">
+            <div class="info-panel">
+                <h3>
+                    <i class="bi bi-lightbulb text-gold"></i>Hướng dẫn
+                </h3>
+
+                <div class="mb-3">
+                    <strong>🏭 Tên Thương Hiệu</strong>
+                    <p>Nhập tên thương hiệu sản phẩm như "Apple", "Samsung", "Dell", v.v.</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>📄 Mô Tả</strong>
+                    <p>Cung cấp mô tả chi tiết về thương hiệu, lịch sử, hoặc những điểm nổi bật.</p>
+                </div>
+
+                <div class="pt-3 border-top mt-3">
+                    <p class="small mb-0">
+                        <strong>💡 Tip:</strong> Tên thương hiệu rõ ràng giúp khách hàng dễ dàng tìm kiếm sản phẩm và xây dựng niềm tin.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

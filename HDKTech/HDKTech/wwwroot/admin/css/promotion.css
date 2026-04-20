@@ -1,0 +1,36 @@
+/**
+ * promotion.css — CSS dành riêng cho trang Quản lý Khuyến mãi (Admin)
+ * Tách ra file riêng theo yêu cầu kỹ thuật chung
+ * Gọi vào View qua @section Styles
+ */
+
+/* ── Bảng danh sách chiến dịch ── */
+.table-hover tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.04);
+}
+
+/* ── Badge trạng thái ── */
+.badge.bg-success.rounded-pill,
+.badge.bg-warning.rounded-pill,
+.badge.bg-secondary.rounded-pill {
+    font-size: 0.75rem;
+    padding: 0.4em 0.75em;
+}
+
+/* ── Icon chiến dịch ── */
+.bg-danger.bg-opacity-10 { background-color: rgba(220, 53, 69, 0.1) !important; }
+.bg-success.bg-opacity-10 { background-color: rgba(25, 135, 84, 0.1) !important; }
+.bg-warning.bg-opacity-10 { background-color: rgba(255, 193, 7, 0.1) !important; }
+
+/* ── Empty state ── */
+.fa-tag.fa-3x.opacity-50 {
+    opacity: 0.35 !important;
+}
+
+/* ── Responsive: ẩn cột trên mobile ── */
+@media (max-width: 768px) {
+    .table thead th:nth-child(2),
+    .table tbody td:nth-child(2) {
+        display: none;
+    }
+}

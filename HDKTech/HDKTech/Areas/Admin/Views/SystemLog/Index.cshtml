@@ -1,0 +1,254 @@
+﻿@model HDKTech.Areas.Admin.ViewModels.SystemLogViewModel
+@{
+    ViewData["Title"] = "Audit Log - Nhật ký hệ thống";
+}
+
+@section Styles {
+<style>
+    .action-badge { font-size:.75rem; padding:.3em .65em; border-radius:.4rem; }
+    .log-row td { vertical-align: middle; }
+    .filter-form .form-control, .filter-form .form-select { font-size:.85rem; }
+</style>
+}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>Audit Log</h4>
+        <small class="text-muted">Toàn bộ hành động thay đổi dữ liệu trong hệ thống</small>
+    </div>
+    <a asp-area="Admin" asp-controller="SystemLog" asp-action="Export"
+       asp-route-search="@Model.SearchText" asp-route-actionType="@Model.SelectedActionType"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-download me-1"></i> Xuất CSV
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5">@Model.TotalLogs</div>
+            <small class="text-muted">Tổng log</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5 text-primary">@Model.TodayActions</div>
+            <small class="text-muted">Hôm nay</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5 text-success">@Model.CreateCount</div>
+            <small class="text-muted">Tạo mới</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5 text-warning">@Model.UpdateCount</div>
+            <small class="text-muted">Cập nhật</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5 text-danger">@Model.DeleteCount</div>
+            <small class="text-muted">Xoá</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fw-bold fs-5 text-info">@Model.LoginCount</div>
+            <small class="text-muted">Đăng nhập</small>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="get" asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+              class="row g-2 align-items-end filter-form">
+            <div class="col-12 col-md-4">
+                <input type="text" name="search" value="@Model.SearchText"
+                       class="form-control" placeholder="Tìm kiếm mô tả, người dùng..." />
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="actionType" class="form-select">
+                    <option value="">-- Hành động --</option>
+                    @foreach (var at in Model.ActionTypes)
+                    {
+                        <option value="@at" selected="@(Model.SelectedActionType == at)">@at</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="module" class="form-select">
+                    <option value="">-- Module --</option>
+                    @foreach (var m in Model.Modules)
+                    {
+                        <option value="@m" selected="@(Model.SelectedModule == m)">@m</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <button type="submit" class="btn btn-primary w-100 btn-sm">
+                    <i class="bi bi-search me-1"></i>Lọc
+                </button>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+                   class="btn btn-outline-secondary w-100 btn-sm">
+                    <i class="bi bi-x me-1"></i>Xoá lọc
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Audit Log Table: Thời gian | Người dùng | Hành động | Chi tiết -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width:150px">Thời gian</th>
+                        <th style="width:160px">Người dùng</th>
+                        <th style="width:110px">Hành động</th>
+                        <th style="width:100px">Module</th>
+                        <th>Chi tiết</th>
+                        <th style="width:90px">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        Func<string, (string, string)> GetActionStyle = (action) => action switch
+                        {
+                            "Create" => ("bg-success", "text-white"),
+                            "Update" => ("bg-warning", "text-dark"),
+                            "Delete" => ("bg-danger", "text-white"),
+                            "Login"  => ("bg-primary", "text-white"),
+                            "Logout" => ("bg-secondary", "text-white"),
+                            "Error"  => ("bg-dark", "text-white"),
+                            _        => ("bg-light border", "text-dark")
+                        };
+                    }
+                    @if (Model.Logs.Any())
+                    {
+                        @foreach (var log in Model.Logs)
+                        {
+                            var (actionBg, actionText) = GetActionStyle(log.Action);
+                            var statusBadge = log.Status == "Failed" ? "bg-danger" : "bg-success";
+                            <tr class="log-row">
+                                <td class="ps-3">
+                                    <small class="fw-semibold d-block">@log.CreatedAt.ToString("HH:mm:ss")</small>
+                                    <small class="text-muted">@log.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-secondary fw-bold flex-shrink-0"
+                                             style="width:28px;height:28px;font-size:.7rem">
+                                            @((log.Username ?? log.UserId ?? "?").Length > 0 ? (log.Username ?? log.UserId ?? "?")[0].ToString().ToUpper() : "?")
+                                        </div>
+                                        <div class="overflow-hidden">
+                                            <div class="small fw-semibold text-truncate" style="max-width:120px" title="@(log.Username ?? log.UserId)">
+                                                @(log.Username ?? log.UserId ?? "Hệ thống")
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(log.UserRole))
+                                            {
+                                                <small class="text-muted">@log.UserRole</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge action-badge @actionBg @actionText">
+                                        @(log.Action ?? "N/A")
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">@(log.LogLevel ?? "—")</small>
+                                </td>
+                                <td>
+                                    <div class="small text-truncate" style="max-width:300px" title="@log.Description">
+                                        @log.Description
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(log.EntityName))
+                                    {
+                                        <small class="text-muted">
+                                            <i class="bi bi-tag me-1"></i>@log.EntityName
+                                        </small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @statusBadge" style="font-size:.7rem">
+                                        @(log.Status ?? "Success")
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(log.IpAddress) && log.IpAddress != "Unknown")
+                                    {
+                                        <br><small class="text-muted" style="font-size:.65rem">@log.IpAddress</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
+                                Không tìm thấy log nào phù hợp với bộ lọc hiện tại.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white d-flex align-items-center justify-content-between">
+            <small class="text-muted">
+                Hiển thị @((Model.CurrentPage - 1) * Model.PageSize + 1)–@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount))
+                / @Model.TotalCount bản ghi
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link" asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+                           asp-route-page="@(Model.CurrentPage - 1)"
+                           asp-route-search="@Model.SearchText"
+                           asp-route-actionType="@Model.SelectedActionType"
+                           asp-route-module="@Model.SelectedModule">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-search="@Model.SearchText"
+                               asp-route-actionType="@Model.SelectedActionType"
+                               asp-route-module="@Model.SelectedModule">@i</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link" asp-area="Admin" asp-controller="SystemLog" asp-action="Index"
+                           asp-route-page="@(Model.CurrentPage + 1)"
+                           asp-route-search="@Model.SearchText"
+                           asp-route-actionType="@Model.SelectedActionType"
+                           asp-route-module="@Model.SelectedModule">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

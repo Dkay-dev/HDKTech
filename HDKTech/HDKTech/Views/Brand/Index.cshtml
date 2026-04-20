@@ -1,0 +1,154 @@
+﻿@model IEnumerable<HDKTech.Models.Product>
+@{
+    ViewData["Title"] = "Trang Chủ - HDKTech";
+}
+
+<link rel="stylesheet" href="~/css/pages/category.css" />
+
+<div class="container-fluid my-4 px-lg-2">
+    <div class="search-section-modern bg-white p-4 rounded-4 shadow-sm mb-4 border-light">
+        <form asp-action="Index" method="get" class="row g-3 align-items-center">
+            <div class="col-xl-3 col-lg-4 d-none d-lg-block border-end">
+                <div class="d-flex flex-column">
+                    <h2 class="fw-bold text-dark mb-0" style="letter-spacing: -1px;">HDK<span class="text-danger">TECH</span></h2>
+                    <p class="text-muted extra-small mb-0">Hệ thống laptop & linh kiện chính hãng</p>
+                </div>
+            </div>
+
+            <div class="col-xl-7 col-lg-5 col-md-9 ps-lg-4">
+                <div class="input-group input-group-lg search-box-custom">
+                    <span class="input-group-text bg-light border-0 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="searchTerm" class="form-control border-0 bg-light fs-6 shadow-none"
+                           placeholder="Bạn cần tìm gì?">
+                    <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">
+                        TÌM KIẾM
+                    </button>
+                </div>
+                <div class="mt-2 d-none d-md-block quick-links">
+                    <span class="text-muted extra-small">Gợi ý:</span>
+                    <a href="#" class="extra-small text-secondary text-decoration-none ms-2">RTX 4060</a>
+                    <a href="#" class="extra-small text-secondary text-decoration-none ms-2">Macbook M3</a>
+                    <a href="#" class="extra-small text-secondary text-decoration-none ms-2">Bàn phím cơ</a>
+                </div>
+            </div>
+
+            <div class="col-xl-2 col-lg-3 text-end d-none d-xl-block">
+                <div class="hotline-box border rounded p-2 text-center">
+                    <div class="text-danger fw-bold fs-5 mb-0">1900.xxxx</div>
+                    <div class="extra-small text-muted">Hỗ trợ kỹ thuật 24/7</div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="filter-section bg-white p-3 rounded-3 shadow-sm mb-4 border-light">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted small"><i class="bi bi-house-fill me-1"></i>Trang chủ</a></li>
+                <li class="breadcrumb-item active small" aria-current="page">Linh kiện máy tính</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="btn btn-outline-secondary btn-sm px-3 shadow-none fw-bold">
+                <i class="bi bi-funnel me-1"></i> Bộ lọc
+            </button>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Tình trạng</button></div>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Giá</button></div>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Hãng</button></div>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Dòng CPU</button></div>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Dòng VGA</button></div>
+            <div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle px-3" data-bs-toggle="dropdown">Loại RAM</button></div>
+        </div>
+
+        <div class="d-flex justify-content-end border-top pt-3">
+            <div class="sort-wrapper border rounded-2 px-3 py-1 bg-light">
+                <span class="small text-muted me-1">
+                    <i class="bi bi-sort-down"></i> Xếp theo:
+                </span>
+                <select class="border-0 bg-transparent fw-bold small sort-select shadow-none" style="cursor:pointer; outline:none;">
+                    <option selected>Nổi bật</option>
+                    <option value="1">Tên từ A-Z</option>
+                    <option value="2">Tên từ Z-A</option>
+                    <option value="3">Giá tăng dần</option>
+                    <option value="4">Giá giảm dần</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        @if (Model != null)
+        {
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm product-card p-2">
+                        <div class="position-relative overflow-hidden rounded-3 text-center pt-3" style="height: 200px; background: #fff;">
+                            @{
+                                // Lấy tên file từ cột Url trong bảng HinhAnh
+                                var fileName = item.Images?.FirstOrDefault(h => h.IsDefault)?.ImageUrl
+                                               ?? item.Images?.FirstOrDefault()?.ImageUrl
+                                               ?? "no-image.png";
+
+                                // Đường dẫn nối vào thư mục products trong wwwroot
+                                var fullPath = "/images/products/" + fileName;
+                            }
+
+                            <img src="@fullPath"
+                                 class="card-img-top img-fluid product-img h-100"
+                                 alt="@item.Name"
+                                 style="object-fit: contain;"
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=500&q=60';">
+
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-2 px-2 py-1 shadow-sm">Mới</span>
+                        </div>
+
+                        <div class="card-body d-flex flex-column px-2 pb-2">
+                            <h6 class="card-title fw-bold text-dark text-truncate-2 mb-2">@item.Name</h6>
+
+                            <div class="mt-auto">
+                                @{
+                                    var itemPrice     = item.DisplayPrice ?? 0m;
+                                    var itemListPrice = item.DisplayListPrice;
+                                    var itemDiscount  = item.DefaultVariant?.DiscountPercent ?? 0;
+                                }
+                                <div class="price-box mb-2">
+                                    @if (itemListPrice.HasValue && itemListPrice > itemPrice)
+                                    {
+                                        <span class="text-decoration-line-through text-muted small me-1">
+                                            @itemListPrice.Value.ToString("#,##0")₫
+                                        </span>
+                                    }
+
+                                    <div class="d-flex align-items-center">
+                                        <span class="fs-5 fw-bold text-danger me-2">@itemPrice.ToString("#,##0")₫</span>
+
+                                        @if (itemDiscount > 0)
+                                        {
+                                            <span class="badge border border-danger text-danger bg-white p-1" style="font-size: 0.75rem;">
+                                                -@itemDiscount%
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="small mb-2">
+                                    <span class="text-warning">4.9 <i class="bi bi-star-fill"></i></span>
+                                    <span class="text-muted ms-1">(30 đánh giá)</span>
+                                </div>
+
+                                <button class="btn btn-outline-danger w-100 btn-sm fw-bold py-2 shadow-sm">
+                                    <i class="bi bi-cart3 me-1"></i> THÊM GIỎ HÀNG
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+

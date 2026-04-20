@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDKTech - Shop Linh Kiện Máy Tính</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           RESET & BASE STYLES
+           ═══════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-black: #0a0a0a;
+            --secondary-black: #1a1a1a;
+            --card-bg: #141414;
+            --card-border: #2a2a2a;
+            --accent-red: #ed1c24;
+            --accent-red-hover: #c91017;
+            --text-white: #ffffff;
+            --text-gray: #8e8e8e;
+            --text-muted: #5c5c5c;
+            --gold: #ffa500;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--primary-black);
+            color: var(--text-white);
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HEADER - Single Row Dark Style
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            background: #000000;
+            border-bottom: 1px solid #1f1f1f;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .logo span:first-child {
+            color: var(--text-white);
+        }
+
+        .logo span:last-child {
+            color: var(--accent-red);
+        }
+
+        .nav {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav a {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-gray);
+            transition: color 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav a:hover {
+            color: var(--text-white);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            padding: 10px 14px;
+            color: var(--text-white);
+            width: 240px;
+            font-size: 13px;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-box input:focus {
+            outline: none;
+        }
+
+        .search-box button {
+            background: transparent;
+            border: none;
+            padding: 10px 14px;
+            color: var(--text-gray);
+            cursor: pointer;
+        }
+
+        .search-box button:hover {
+            color: var(--text-white);
+        }
+
+        .cart-btn {
+            position: relative;
+            padding: 8px;
+            color: var(--text-white);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--accent-red);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 5px;
+            border-radius: 10px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           HERO BANNER - Full Width
+           ═══════════════════════════════════════════════════════════════ */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            overflow: hidden;
+        }
+
+        .hero-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .hero-content {
+            max-width: 500px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--accent-red);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 16px;
+        }
+
+        .hero-title span {
+            color: var(--accent-red);
+        }
+
+        .hero-desc {
+            font-size: 16px;
+            color: var(--text-gray);
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            background: var(--accent-red);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-red-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-white);
+            padding: 14px 28px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-white);
+        }
+
+        .hero-image {
+            position: relative;
+        }
+
+        .hero-image img {
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CATEGORY STRIP
+           ═══════════════════════════════════════════════════════════════ */
+        .category-strip {
+            background: #141414;
+            border-top: 1px solid #1f1f1f;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .category-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px 0;
+        }
+
+        .category-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .category-chip:hover {
+            background: #1f1f1f;
+        }
+
+        .category-icon {
+            width: 44px;
+            height: 44px;
+            background: #1f1f1f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .category-name {
+            font-size: 12px;
+            color: var(--text-gray);
+            font-weight: 500;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SECTION STYLES
+           ═══════════════════════════════════════════════════════════════ */
+        .section {
+            padding: 64px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .section-title i {
+            color: var(--accent-red);
+            margin-right: 12px;
+        }
+
+        .view-all {
+            font-size: 13px;
+            color: var(--accent-red);
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .view-all:hover {
+            opacity: 0.8;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PRODUCT GRID - 4 Columns Dark Cards
+           ═══════════════════════════════════════════════════════════════ */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .product-card:hover {
+            border-color: #3a3a3a;
+            transform: translateY(-4px);
+        }
+
+        .product-image {
+            position: relative;
+            background: #0f0f0f;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-badges {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-discount {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .badge-new {
+            background: #2a2a2a;
+            color: var(--text-white);
+        }
+
+        .product-info {
+            padding: 16px;
+        }
+
+        .product-brand {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .product-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-specs {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .product-spec {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .product-spec span {
+            color: var(--text-gray);
+        }
+
+        .product-price {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .price-current {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+
+        .price-original {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 0.3s;
+        }
+
+        .product-card:hover .product-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-add-cart {
+            flex: 1;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-add-cart:hover {
+            background: var(--accent-red-hover);
+        }
+
+        .btn-compare {
+            background: transparent;
+            color: var(--text-gray);
+            border: 1px solid var(--card-border);
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-compare:hover {
+            border-color: var(--text-white);
+            color: var(--text-white);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FEATURE BANNERS
+           ═════════��═��═══════════════════════════════════════════════════ */
+        .feature-banners {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 0 24px 64px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .feature-banner {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 2.5/1;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .feature-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+        }
+
+        .feature-content {
+            position: absolute;
+            top: 50%;
+            left: 24px;
+            transform: translateY(-50%);
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-gray);
+            margin-bottom: 12px;
+        }
+
+        .feature-link {
+            font-size: 12px;
+            color: var(--accent-red);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════════════════════════ */
+        .footer {
+            background: #000000;
+            border-top: 1px solid #1f1f1f;
+            padding: 48px 24px 24px;
+        }
+
+        .footer-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 32px;
+        }
+
+        .footer-brand {
+            max-width: 280px;
+        }
+
+        .footer-logo {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .footer-logo span:first-child {
+            color: var(--text-white);
+        }
+
+        .footer-logo span:last-child {
+            color: var(--accent-red);
+        }
+
+        .footer-desc {
+            font-size: 13px;
+            color: var(--text-gray);
+            line-height: 1.7;
+        }
+
+        .footer-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-white);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .footer-links a {
+            display: block;
+            font-size: 13px;
+            color: var(--text-gray);
+            padding: 6px 0;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-white);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #1f1f1f;
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-copyright {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 16px;
+        }
+
+        .footer-social a {
+            width: 36px;
+            height: 36px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-gray);
+            transition: all 0.2s;
+        }
+
+        .footer-social a:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 1024px) {
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .hero-inner {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-content {
+                max-width: 100%;
+            }
+
+            .hero-image {
+                display: none;
+            }
+
+            .footer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                display: none;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .feature-banners {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .category-inner {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="#" class="logo">
+                <span>HDK</span><span>Tech</span>
+            </a>
+
+            <nav class="nav">
+                <a href="#">Laptop</a>
+                <a href="#">Máy Bàn</a>
+                <a href="#">Lin Kiện</a>
+                <a href="#">Màn Hình</a>
+                <a href="#">Phụ Kiện</a>
+                <a href="#">Khuyến Mãi</a>
+            </nav>
+
+            <div class="header-right">
+                <div class="search-box">
+                    <input type="text" placeholder="Tìm kiếm sản phẩm...">
+                    <button>&#128269;</button>
+                </div>
+                <a href="#" class="cart-btn">
+                    <span>&#128722;</span>
+                    <span class="cart-count">3</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       HERO BANNER
+       ═══════════════════════════════════════════════════════════════ -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-content">
+                <span class="hero-badge">Khuyến Mãi</span>
+                <h1 class="hero-title">
+                    ROG <span>Strix G16</span><br>
+                    Gaming Laptop
+                </h1>
+                <p class="hero-desc">
+                    Cấu hình mạnh mẽ với Intel Core i9 và NVIDIA RTX 4070.
+                    Trải nghiệm gaming đỉnh cao với tần số quét 240Hz.
+                </p>
+                <div class="hero-cta">
+                    <a href="#" class="btn-primary">Mua Ngay</a>
+                    <a href="#" class="btn-outline">Xem Chi Tiết</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="/images/products/laptops-gaming/rog-strix-g16.png" alt="ROG Strix G16">
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       CATEGORY STRIP
+       ═══════════════════════════════════════════════════════════════ -->
+    <section class="category-strip">
+        <div class="category-inner">
+            <div class="category-chip">
+                <div class="category-icon">&#128187;</div>
+                <span class="category-name">Laptop Gaming</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128421;</div>
+                <span class="category-name">Máy Bàn</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128423;</div>
+                <span class="category-name">CPU</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128444;</div>
+                <span class="category-name">VGA</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128421;</div>
+                <span class="category-name">Mainboard</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128190;</div>
+                <span class="category-name">RAM</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128190;</div>
+                <span class="category-name">SSD</span>
+            </div>
+            <div class="category-chip">
+                <div class="category-icon">&#128167;</div>
+                <span class="category-name">Nguồn</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       FEATURE PRODUCTS
+       ═══════════════════════════════════════════════════════════════ -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i>&#9733;</i>Sản Phẩm Nổi Bật
+            </h2>
+            <a href="#" class="view-all">Xem Tất Cả &#8594;</a>
+        </div>
+
+        <div class="product-grid">
+            <!-- Product 1 -->
+            <div class="product-card">
+                <div class="product-image">
+                    <div class="product-badges">
+                        <span class="badge badge-discount">-15%</span>
+                        <span class="badge badge-new">Mới</span>
+                    </div>
+                    <img src="/images/products/laptops-gaming/rog-strix-g16.png" alt="ROG Strix G16">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand">ASUS</div>
+                    <h3 class="product-name">ROG Strix G16 G614JIR</h3>
+                    <div class="product-specs">
+                        <div class="product-spec">CPU: <span>Intel Core i9-13980HX</span></div>
+                        <div class="product-spec">RAM: <span>32GB DDR5</span></div>
+                        <div class="product-spec">VGA: <span>RTX 4070 8GB</span></div>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-current">59.990.000đ</span>
+                        <span class="price-original">69.990.000đ</span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn-add-cart">Thêm Vào Giỏ</button>
+                        <button class="btn-compare">So Sánh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 2 -->
+            <div class="product-card">
+                <div class="product-image">
+                    <div class="product-badges">
+                        <span class="badge badge-discount">-10%</span>
+                    </div>
+                    <img src="/images/products/components/cpu-14900k.png" alt="Intel Core i9">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand">Intel</div>
+                    <h3 class="product-name">Core i9-14900K Processor</h3>
+                    <div class="product-specs">
+                        <div class="product-spec">Core: <span>24 Cores</span></div>
+                        <div class="product-spec">Thread: <span>32 Threads</span></div>
+                        <div class="product-spec">Base: <span>3.2GHz</span></div>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-current">14.490.000đ</span>
+                        <span class="price-original">15.990.000đ</span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn-add-cart">Thêm Vào Giỏ</button>
+                        <button class="btn-compare">So Sánh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 3 -->
+            <div class="product-card">
+                <div class="product-image">
+                    <div class="product-badges">
+                        <span class="badge badge-discount">-20%</span>
+                        <span class="badge badge-new">Mới</span>
+                    </div>
+                    <img src="/images/products/components/rtx-4080.png" alt="RTX 4080">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand">NVIDIA</div>
+                    <h3 class="product-name">GeForce RTX 4080 Super</h3>
+                    <div class="product-specs">
+                        <div class="product-spec">VRAM: <span>16GB GDDR6X</span></div>
+                        <div class="product-spec">Clock: <span>2550MHz</span></div>
+                        <div class="product-spec">Interface: <span>PCIe 4.0</span></div>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-current">33.990.000đ</span>
+                        <span class="price-original">41.990.000đ</span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn-add-cart">Thêm Vào Giỏ</button>
+                        <button class="btn-compare">So Sánh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 4 -->
+            <div class="product-card">
+                <div class="product-image">
+                    <div class="product-badges">
+                        <span class="badge badge-discount">-12%</span>
+                    </div>
+                    <img src="/images/products/monitor ROG Strix XG27A.png" alt="Monitor ROG">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand">ASUS</div>
+                    <h3 class="product-name">ROG Strix XG27AQM</h3>
+                    <div class="product-specs">
+                        <div class="product-spec">Size: <span>27 inch</span></div>
+                        <div class="product-spec">Refresh: <span>240Hz</span></div>
+                        <div class="product-spec">Panel: <span>IPS</span></div>
+                    </div>
+                    <div class="product-price">
+                        <span class="price-current">11.990.000đ</span>
+                        <span class="price-original">13.590.000đ</span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn-add-cart">Thêm Vào Giỏ</button>
+                        <button class="btn-compare">So Sánh</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       FEATURE BANNERS
+       ═══════════════════════════════════════════════════════════════ -->
+    <div class="feature-banners">
+        <div class="feature-banner">
+            <div class="feature-content">
+                <h3 class="feature-title">Build PC Gaming</h3>
+                <p class="feature-desc">Lắp máy theo yêu cầu</p>
+                <a href="#" class="feature-link">Xem Ngay &#8594;</a>
+            </div>
+        </div>
+        <div class="feature-banner">
+            <div class="feature-content">
+                <h3 class="feature-title">Bảo Hành 1 Đổi 1</h3>
+                <p class="feature-desc">Áp dụng toàn bộ linh kiện</p>
+                <a href="#" class="feature-link">Tìm Hiểu &#8594;</a>
+            </div>
+        </div>
+        <div class="feature-banner">
+            <div class="feature-content">
+                <h3 class="feature-title">Gaming Gear</h3>
+                <p class="feature-desc"> Chuột, bàn phím, tai nghe</p>
+                <a href="#" class="feature-link">Khám Phá &#8594;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span>HDK</span><span>Tech</span>
+                    </div>
+                    <p class="footer-desc">
+                        Chuyên cung cấp laptop, linh kiện máy tính chính hãng.
+                        Hỗ trợ gánh nhanh chóng, bảo hành 1 đổi 1.
+                    </p>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-title">Sản Phẩm</h4>
+                    <div class="footer-links">
+                        <a href="#">Laptop Gaming</a>
+                        <a href="#">Máy Bàn</a>
+                        <a href="#">Linh Kiện</a>
+                        <a href="#">Màn Hình</a>
+                        <a href="#">Phụ Kiện</a>
+                    </div>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-title">Hỗ Trợ</h4>
+                    <div class="footer-links">
+                        <a href="#">Chính Sách Bảo Hành</a>
+                        <a href="#">Chính Sách Đổi Trả</a>
+                        <a href="#">Hướng Dẫn Mua Hàng</a>
+                        <a href="#">Thanh Toán</a>
+                        <a href="#">Liên Hệ</a>
+                    </div>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-title">Về HDKTech</h4>
+                    <div class="footer-links">
+                        <a href="#">Giới Thiệu</a>
+                        <a href="#">Tin Tức</a>
+                        <a href="#">Tuyển Dụng</a>
+                        <a href="#">Liên Hệ</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2024 HDKTech. All rights reserved.
+                </p>
+                <div class="footer-social">
+                    <a href="#">f</a>
+                    <a href="#">in</a>
+                    <a href="#">yt</a>
+                    <a href="#">z</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+﻿@{
+    ViewData["Title"] = "Trung Tâm Chính Sách - HDKTech";
+}
+
+<style>
+    :root { --hdk-red: #ef4444; --hdk-dark: #212529; --hdk-gray: #f8f9fa; }
+
+    /* --- Hero Banner Combined --- */
+    .privacy-hero-combined {
+        background: linear-gradient(135deg, rgba(30, 60, 114, 0.95) 0%, rgba(42, 82, 152, 0.9) 100%), url('/images/banners/policy-hero-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 100px 0 220px 0 !important;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 4px solid var(--hdk-red);
+    }
+
+    .banner-overlay-dark { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 1; }
+    .banner-main-content { position: relative; z-index: 2; text-align: center; }
+    
+    .commit-in-banner {
+        position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 3; width: 100%; max-width: 1140px;
+    }
+
+    .commit-orange-box {
+        background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        padding: 30px 20px; border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 40px rgba(239, 68, 68, 0.3);
+    }
+
+    /* --- Sidebar Navigation --- */
+    .policy-sidebar {
+        position: sticky; top: 150px;
+        background: white; border-radius: 15px; padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: fit-content;
+        border: 1px solid #f0f0f0;
+    }
+
+    .policy-nav-item {
+        display: block; padding: 12px 15px; color: #6b7280;
+        text-decoration: none; border-left: 3px solid transparent;
+        margin-bottom: 5px; transition: 0.3s; font-weight: 500; font-size: 0.9rem;
+    }
+
+    .policy-nav-item:hover, .policy-nav-item.active {
+        color: var(--hdk-red); border-left-color: var(--hdk-red);
+        background: rgba(239, 68, 68, 0.05); border-radius: 0 8px 8px 0;
+    }
+
+    /* --- Content Section --- */
+    .policy-section { scroll-margin-top: 160px; margin-bottom: 60px; }
+    .policy-section h3 { font-size: 1.6rem; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
+
+    .accordion-item { border-radius: 12px !important; border: 1px solid #eee !important; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .accordion-button { font-weight: 600; padding: 20px; }
+    .accordion-button:not(.collapsed) { background-color: rgba(239, 68, 68, 0.05); color: var(--hdk-red); box-shadow: none; }
+    .accordion-body { line-height: 1.8; color: #4b5563; font-size: 0.95rem; }
+
+    .policy-highlight-box {
+        background: #f8fafc; border-left: 4px solid var(--hdk-red);
+        padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 20px;
+    }
+
+    @@media (max-width: 992px) {
+        .privacy-hero-combined { padding-bottom: 300px !important; }
+        .policy-sidebar { position: relative; top: 0; margin-bottom: 30px; }
+    }
+</style>
+
+<div class="privacy-hero-combined">
+    <div class="banner-overlay-dark"></div>
+    <div class="container banner-main-content text-white">
+        <h1 class="display-4 fw-bold mb-3">TRUNG TÂM CHÍNH SÁCH</h1>
+        <p class="lead opacity-75 mx-auto" style="max-width: 700px;">HDKTech cam kết bảo vệ quyền lợi khách hàng bằng những chính sách minh bạch và dịch vụ tận tâm nhất.</p>
+    </div>
+
+    <div class="commit-in-banner container">
+        <div class="commit-orange-box">
+            <div class="row g-4 text-center text-white text-uppercase fw-bold small" style="letter-spacing: 1px;">
+                <div class="col-6 col-md-3 border-end border-white border-opacity-25">
+                    <i class="bi bi-patch-check fs-4 d-block mb-1"></i> 100% Chính hãng
+                </div>
+                <div class="col-6 col-md-3 border-end border-white border-opacity-25">
+                    <i class="bi bi-truck fs-4 d-block mb-1"></i> Giao hàng 2h
+                </div>
+                <div class="col-6 col-md-3 border-end border-white border-opacity-25">
+                    <i class="bi bi-arrow-repeat fs-4 d-block mb-1"></i> Đổi trả 7 ngày
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="bi bi-headset fs-4 d-block mb-1"></i> Hỗ trợ 24/7
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="policy-sidebar">
+                <h6 class="fw-bold mb-3 text-uppercase small text-muted">Mục lục nhanh</h6>
+                <nav id="policy-nav">
+                    <a href="#warranty" class="policy-nav-item active">Chính sách bảo hành</a>
+                    <a href="#exchange" class="policy-nav-item">Chính sách đổi trả</a>
+                    <a href="#shipping" class="policy-nav-item">Chính sách vận chuyển</a>
+                    <a href="#payment" class="policy-nav-item">Phương thức thanh toán</a>
+                    <a href="#privacy" class="policy-nav-item">Chính sách bảo mật</a>
+                    <a href="#terms" class="policy-nav-item">Điều khoản sử dụng</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            
+            <div class="policy-section" id="warranty">
+                <h3 class="fw-bold text-dark"><i class="bi bi-shield-check text-danger"></i> CHÍNH SÁCH BẢO HÀNH</h3>
+                <div class="accordion accordion-flush" id="accWarranty">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#w1">Thời gian bảo hành chi tiết</button></h2>
+                        <div id="w1" class="accordion-collapse collapse show" data-bs-parent="#accWarranty">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Laptop:</strong> Bảo hành 12-24 tháng theo tiêu chuẩn hãng (Tặng thêm 6 tháng tại HDKTech).</li>
+                                    <li><strong>Linh kiện (Main, CPU, VGA):</strong> Bảo hành 36 tháng (1 đổi 1 trong 12 tháng đầu).</li>
+                                    <li><strong>Ổ cứng (SSD/HDD):</strong> Bảo hành từ 36 đến 60 tháng.</li>
+                                    <li><strong>Phụ kiện & Gear:</strong> Bảo hành chính hãng 12 tháng.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#w2">Điều kiện & Quy trình</button></h2>
+                        <div id="w2" class="accordion-collapse collapse" data-bs-parent="#accWarranty">
+                            <div class="accordion-body">
+                                <p>Sản phẩm phải còn nguyên tem bảo hành, không có dấu hiệu va đập, vào nước hoặc côn trùng xâm nhập. Quy trình gồm 4 bước:</p>
+                                <ol>
+                                    <li>Liên hệ Hotline 1900.xxxx để yêu cầu hỗ trợ.</li>
+                                    <li>Mang sản phẩm đến trung tâm HDKTech hoặc gửi chuyển phát.</li>
+                                    <li>Đội ngũ kỹ thuật kiểm tra và xác nhận tình trạng trong 24h.</li>
+                                    <li>Xử lý bảo hành và bàn giao lại cho khách hàng từ 3-7 ngày làm việc.</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-section" id="exchange">
+                <h3 class="fw-bold text-dark"><i class="bi bi-arrow-repeat text-danger"></i> CHÍNH SÁCH ĐỔI TRẢ</h3>
+                <div class="policy-highlight-box">
+                    <h6 class="fw-bold text-danger">Đặc quyền "Dùng thử 7 ngày"</h6>
+                    <p class="mb-0 small">HDKTech hỗ trợ khách hàng đổi sang mẫu mã khác trong vòng 7 ngày đầu nếu không ưng ý (Phụ thu 10% phí dịch vụ trên giá trị máy).</p>
+                </div>
+                <div class="accordion accordion-flush" id="accExchange">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#e1">Điều kiện đổi trả miễn phí</button></h2>
+                        <div id="e1" class="accordion-collapse collapse" data-bs-parent="#accExchange">
+                            <div class="accordion-body">
+                                <p>Đổi mới 100% hoặc hoàn tiền nếu sản phẩm lỗi nhà sản xuất, sai mô tả, hoặc phát hiện điểm chết màn hình (từ 3 điểm trở lên) ngay khi nhận hàng.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-section" id="shipping">
+                <h3 class="fw-bold text-dark"><i class="bi bi-truck text-danger"></i> CHÍNH SÁCH VẬN CHUYỂN</h3>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card p-3 border-0 shadow-sm bg-light">
+                            <h6 class="fw-bold">HDK-Express (Nội thành)</h6>
+                            <p class="small text-muted">Giao siêu tốc trong <strong>2 giờ</strong> cho các đơn hàng linh kiện sẵn có tại khu vực Đà Nẵng.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3 border-0 shadow-sm bg-light">
+                            <h6 class="fw-bold">Giao hàng Toàn Quốc</h6>
+                            <p class="small text-muted">Miễn phí cho đơn hàng từ 5 triệu đồng. Thời gian từ 2-5 ngày làm việc qua GHN/Viettel Post.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-section" id="payment">
+                <h3 class="fw-bold text-dark"><i class="bi bi-credit-card text-danger"></i> PHƯƠNG THỨC THANH TOÁN</h3>
+                <div class="accordion accordion-flush" id="accPayment">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#p1">Trả góp 0% Lãi suất</button></h2>
+                        <div id="p1" class="accordion-collapse collapse" data-bs-parent="#accPayment">
+                            <div class="accordion-body">
+                                <p>Hỗ trợ trả góp qua thẻ tín dụng hơn 25 ngân hàng hoặc qua công ty tài chính (Home Credit, FE Credit). Thủ tục xét duyệt nhanh trong 15-30 phút.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-section" id="privacy">
+                <h3 class="fw-bold text-dark"><i class="bi bi-lock text-danger"></i> CHÍNH SÁCH BẢO MẬT</h3>
+                <div class="accordion accordion-flush" id="accPrivacy">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pr1">Cam kết bảo mật dữ liệu</button></h2>
+                        <div id="pr1" class="accordion-collapse collapse" data-bs-parent="#accPrivacy">
+                            <div class="accordion-body">
+                                <p>HDKTech tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân. Chúng tôi cam kết không chia sẻ thông tin khách hàng cho bất kỳ bên thứ ba nào vì mục đích thương mại.</p>
+                                <p>Dữ liệu chỉ sử dụng để: Xác nhận đơn hàng, Bảo hành điện tử và Gửi thông báo ưu đãi định kỳ.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-section" id="terms">
+                <h3 class="fw-bold text-dark"><i class="bi bi-file-earmark-text text-danger"></i> ĐIỀU KHOẢN SỬ DỤNG</h3>
+                <div class="accordion accordion-flush" id="accTerms">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#t1">Quy định về giá và bản quyền</button></h2>
+                        <div id="t1" class="accordion-collapse collapse" data-bs-parent="#accTerms">
+                            <div class="accordion-body">
+                                <p>Giá sản phẩm trên website là giá đã bao gồm VAT. HDKTech có quyền điều chỉnh giá theo biến động thị trường mà không cần báo trước. Mọi hình ảnh và nội dung trên website thuộc sở hữu trí tuệ của HDKTech.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 bg-dark text-white rounded-4 text-center mt-5 shadow-lg">
+                <h4 class="fw-bold mb-3">Vẫn còn thắc mắc về chính sách?</h4>
+                <p class="text-white-50 mb-4">Đừng ngần ngại liên hệ với đội ngũ CSKH của chúng tôi để được tư vấn chi tiết hơn.</p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="/Home/Hotline" class="btn btn-danger btn-lg rounded-pill px-5 fw-bold shadow">📞 Gọi 1900.XXXX</a>
+                    <a href="#" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">Chat Messenger</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Xử lý cuộn mượt và đồng bộ Sidebar
+    document.querySelectorAll('.policy-nav-item').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            window.scrollTo({ top: target.offsetTop - 150, behavior: 'smooth' });
+        });
+    });
+
+    window.addEventListener('scroll', () => {
+        let current = "";
+        const sections = document.querySelectorAll('.policy-section');
+        sections.forEach(section => {
+            if (pageYOffset >= section.offsetTop - 180) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        document.querySelectorAll('.policy-nav-item').forEach(a => {
+            a.classList.remove('active');
+            if (a.getAttribute('href') === `#${current}`) a.classList.add('active');
+        });
+    });
+</script>
+
