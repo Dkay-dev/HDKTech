@@ -1,4 +1,4 @@
-﻿@model HDKTech.Models.HomeIndexViewModel
+@model HomeIndexViewModel
 @using HDKTech.Utils
 @{
     ViewData["Title"] = "HDKTech - Laptop, Linh kiện máy tính chính hãng";
@@ -134,7 +134,7 @@
                     <i class="bi bi-lightning-fill flash-icon-bolt"></i>
                     FLASH SALE
                 </div>
-                <div class="countdown-block" id="flashCountdown">
+                <div class="countdown-block" id="flashCountdown" data-end-time="@ViewBag.FlashSaleEndTime">
                     <div class="countdown-unit" id="cd-h">00</div>
                     <span class="countdown-sep">:</span>
                     <div class="countdown-unit" id="cd-m">00</div>
@@ -274,90 +274,7 @@
 
 
 @section Scripts {
-    <script>
-        (function () {
-
-            // ── Banner click tracking ────────────────────────────────────────────
-            window.trackBannerClick = function (bannerId) {
-                if (!bannerId) return;
-                fetch('/api/banneranalytics/track-click/' + bannerId, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                }).catch(function () {});
-            };
-
-            // ── Flash Sale Countdown — ends at midnight ──────────────────────────
-                    // ── Flash Sale Countdown — theo thời gian thực từ DB ──────────────────
-        function initCountdown() {
-            var cdH = document.getElementById('cd-h');
-            var cdM = document.getElementById('cd-m');
-            var cdS = document.getElementById('cd-s');
-            if (!cdH) return;
-
-            // Lấy thời gian kết thúc từ ViewBag (ISO 8601)
-            var endTimeStr = '@ViewBag.FlashSaleEndTime';
-            var endTime    = endTimeStr ? new Date(endTimeStr) : null;
-
-            // Nếu không có endTime từ DB, fallback về cuối ngày hôm nay
-            if (!endTime || isNaN(endTime.getTime())) {
-                endTime = new Date();
-                endTime.setHours(23, 59, 59, 999);
-            }
-
-            function pad(n) { return n < 10 ? '0' + n : n; }
-
-            function tick() {
-                var now  = new Date();
-                var diff = Math.max(0, Math.floor((endTime - now) / 1000));
-
-                if (diff === 0) {
-                    // Hết thời gian — reload để ẩn Flash Sale
-                    setTimeout(function () { location.reload(); }, 1500);
-                }
-
-                cdH.textContent = pad(Math.floor(diff / 3600));
-                cdM.textContent = pad(Math.floor((diff % 3600) / 60));
-                cdS.textContent = pad(diff % 60);
-            }
-
-            tick();
-            setInterval(tick, 1000);
-        }
-
-        initCountdown();
-
-            // ── Tab Filter — client-side (no page reload) ───────────────────────
-            // Data arrays built server-side and passed as JSON.
-            // Maps gridId → array of { id, brand, category, html }
-            var filterData = {};
-
-            window.filterProducts = function (gridKey, filterValue, btn) {
-                // Update active tab styling
-                var tabContainer = btn.closest('.section-tabs');
-                if (tabContainer) {
-                    tabContainer.querySelectorAll('.section-tab').forEach(function (t) {
-                        t.classList.remove('active');
-                    });
-                }
-                btn.classList.add('active');
-
-                var grid = document.getElementById('grid' + gridKey.charAt(0).toUpperCase() + gridKey.slice(1));
-                if (!grid) return;
-
-                var cards = grid.querySelectorAll('[data-brand], [data-category]');
-                cards.forEach(function (card) {
-                    if (filterValue === 'all') {
-                        card.style.display = '';
-                    } else {
-                        var brandMatch    = card.dataset.brand    && card.dataset.brand.toLowerCase()    === filterValue.toLowerCase();
-                        var categoryMatch = card.dataset.category && card.dataset.category.toLowerCase() === filterValue.toLowerCase();
-                        card.style.display = (brandMatch || categoryMatch) ? '' : 'none';
-                    }
-                });
-            };
-
-        })();
-    </script>
+    <script src="~/js/pages/home.js"></script>
 }
 
 @functions {

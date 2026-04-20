@@ -1,5 +1,6 @@
 // Services/SmtpEmailService.cs — Module D
 using HDKTech.Models;
+using HDKTech.Services.Interfaces;
 using System.Net;
 using System.Net.Mail;
 

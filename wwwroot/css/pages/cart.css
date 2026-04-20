@@ -121,3 +121,48 @@
     color: var(--hdk-red);
     transform: scale(1.1);
 }
+
+/* ── Selection / Checkbox UI (from Cart/Index inline) ─────────────── */
+.select-all-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.select-all-wrapper input {
+    width: 18px;
+    height: 18px;
+    accent-color: #d32f2f;
+}
+.select-all-wrapper label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #666;
+    cursor: pointer;
+}
+.cart-item-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #d32f2f;
+    cursor: pointer;
+}
+.cart-item-row      { transition: background-color 0.2s; }
+.cart-item-row:hover    { background-color: rgba(211, 47, 47, 0.03); }
+.cart-item-row.selected { background-color: rgba(211, 47, 47, 0.08); }
+
+.item-price-normal   { font-size: 1rem;   font-weight: 600; }
+.item-price-selected {
+    display: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #d32f2f;
+}
+.cart-item-row.selected .item-price-normal   { display: none; }
+.cart-item-row.selected .item-price-selected { display: block; }
+
+.summary-total {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #d32f2f;
+}

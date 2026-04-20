@@ -709,3 +709,49 @@
         font-size: 11px;
     }
 }
+
+/* ── Review Form UI (from Product/Details inline) ─────────────────── */
+.review-form-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.star-rating-input {
+    font-size: 2rem;
+    cursor: pointer;
+    user-select: none;
+}
+.star-rating-input .star {
+    transition: color 0.2s, transform 0.1s;
+    display: inline-block;
+    color: #ccc;
+}
+.star-rating-input .star:hover { transform: scale(1.2); }
+
+.review-login-prompt {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.review-login-prompt i { font-size: 2rem; color: #6c757d; margin-bottom: 10px; }
+.review-login-prompt p { margin: 0; color: #666; }
+.review-login-prompt a { color: #0d6efd; font-weight: 600; }
+
+.review-item .review-actions { margin-top: 10px; display: flex; gap: 10px; }
+.review-action-btn.btn-edit,
+.review-action-btn.btn-delete {
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.review-action-btn.btn-edit:hover   { background: #e7f3ff; border-color: #0d6efd; color: #0d6efd; }
+.review-action-btn.btn-delete:hover { background: #fff5f5; border-color: #dc3545; color: #dc3545; }

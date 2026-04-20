@@ -8,6 +8,7 @@ namespace HDKTech.Repositories.Interfaces
         Task<List<Brand>> GetAllWithProductCountAsync();
         Task<Brand?> GetByIdAsync(int id);
         Task<Brand?> GetByIdWithProductsAsync(int id);
+        Task<Brand?> GetByNameWithProductsAsync(string name);
         Task<bool> AddAsync(Brand brand);
         Task<bool> UpdateAsync(Brand brand);
         Task<bool> DeleteAsync(int id);

@@ -23,6 +23,11 @@ namespace HDKTech.Repositories
         public new async Task<Brand?> GetByIdAsync(int id)
             => await _dbSet.Include(b => b.Products).FirstOrDefaultAsync(b => b.Id == id);
 
+        public async Task<Brand?> GetByNameWithProductsAsync(string name)
+            => await _dbSet
+                .Include(b => b.Products).ThenInclude(p => p.Images)
+                .FirstOrDefaultAsync(b => b.Name.Trim().ToLower() == name.Trim().ToLower());
+
         public async Task<Brand?> GetByIdWithProductsAsync(int id)
             => await _dbSet
                 .Include(b => b.Products).ThenInclude(p => p.Images)

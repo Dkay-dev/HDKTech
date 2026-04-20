@@ -1,5 +1,6 @@
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
+using HDKTech.Services.Interfaces;
 
 namespace HDKTech.Services
 {

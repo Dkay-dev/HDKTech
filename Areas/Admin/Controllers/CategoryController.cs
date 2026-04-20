@@ -15,7 +15,7 @@ namespace HDKTech.Areas.Admin.Controllers
     /// Tích hợp ICategoryCacheService để làm mới bộ nhớ đệm khi dữ liệu thay đổi.
     /// </summary>
     [Area("Admin")]
-    [Authorize(Policy = "RequireManager")]
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("admin/[controller]")]
     public class CategoryController : Controller
     {

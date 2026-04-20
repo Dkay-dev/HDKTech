@@ -18,7 +18,7 @@ namespace HDKTech.Areas.Admin.Controllers
     /// AuditLog    : SystemLogs via ISystemLogService
     /// </summary>
     [Area("Admin")]
-    [Authorize(Policy = "RequireManager")]
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("admin/inventory")]
     public class InventoryController : Controller
     {

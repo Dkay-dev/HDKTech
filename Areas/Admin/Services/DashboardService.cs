@@ -1,7 +1,9 @@
+using HDKTech.Areas.Admin.Services.Interfaces;
 using HDKTech.Areas.Admin.ViewModels;
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Services;   // LowStockProductItem
+using HDKTech.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 

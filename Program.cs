@@ -16,6 +16,8 @@ using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
 using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Areas.Admin.Constants;
+using HDKTech.Services.Interfaces;
+using HDKTech.Areas.Admin.Services.Interfaces;
 
 namespace HDKTech
 {
@@ -100,6 +102,10 @@ namespace HDKTech
 
             // Admin Services
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IProductAdminService,
+                                       HDKTech.Areas.Admin.Services.ProductAdminService>();
+            builder.Services.AddScoped<IOrderAdminService,
+                                       HDKTech.Areas.Admin.Services.OrderAdminService>();
 
             // Inventory / Reports / Cart
             builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -125,6 +131,15 @@ namespace HDKTech
 
                 options.AddPolicy("RequireManager", policy =>
                     policy.RequireRole(AdminConstants.AdminRole, AdminConstants.ManagerRole));
+
+                // RequireAdminArea: bất kỳ role nào có ít nhất 1 permission claim
+                // đều được vào admin area. Không còn hardcode "Admin/Manager/Staff"
+                // — role tự tạo (vd "test") chỉ cần được cấp permission qua UI
+                // Permission Matrix là vào được. PermissionHandler xử lý wildcard.
+                options.AddPolicy("RequireAdminArea", policy =>
+                    policy.AddRequirements(new PermissionRequirement(
+                        PermissionRequirement.Wildcard,
+                        PermissionRequirement.Wildcard)));
 
                 // ─── Permission-based policies ──────────────────────────────
                 // Mỗi permission "Module.Action" được map thành 1 policy đồng tên;
@@ -183,6 +198,9 @@ namespace HDKTech
             // Category cache / Product service
             builder.Services.AddSingleton<ICategoryCacheService, CategoryCacheService>();
             builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IBrandService, BrandService>();
+            builder.Services.AddScoped<IHomeService, HomeService>();
+            builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
             // ─────────────────────────────────────────────────────────────
             // Rate Limiting — ASP.NET Core built-in (.NET 7+)

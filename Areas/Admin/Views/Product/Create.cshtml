@@ -105,6 +105,41 @@
                     </div>
                 </div>
 
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-bolt text-danger me-2"></i>Flash Sale
+                        <small class="text-muted fw-normal ms-2">Tùy chọn</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="isFlashSaleToggle" name="IsFlashSale" value="true"
+                                       style="width:48px;height:24px;cursor:pointer;" />
+                                <label class="form-check-label fw-semibold ms-1" for="isFlashSaleToggle">
+                                    Bật Flash Sale ngay sau khi tạo
+                                </label>
+                            </div>
+                        </div>
+                        <div id="flashSaleFields" style="display:none;" class="row g-3 p-3 rounded" style="background:rgba(220,53,69,0.04);border:1.5px dashed #dc3545;">
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Giá Flash Sale (₫) <span class="text-danger">*</span></label>
+                                <input type="number" name="FlashSalePrice" step="1000" class="form-control"
+                                       placeholder="Giá sale đặc biệt" />
+                                <small class="text-muted">Giá bán cố định trong thời Flash Sale</small>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Bắt đầu</label>
+                                <input type="datetime-local" name="FlashSaleStart" class="form-control" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Kết thúc</label>
+                                <input type="datetime-local" name="FlashSaleEnd" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white fw-semibold border-bottom">
                         <i class="fa-solid fa-images text-info me-2"></i>Hình ảnh sản phẩm
@@ -178,9 +213,24 @@
             input.files = allFiles.files;
         }
 
-        // Flash Sale Toggle
-        document.getElementById('isFlashSaleToggle').addEventListener('change', function() {
-            document.getElementById('flashSaleFields').style.display = this.checked ? 'flex' : 'none';
-        });
+        // Flash Sale toggle
+        const flashToggle = document.getElementById('isFlashSaleToggle');
+        const flashFields = document.getElementById('flashSaleFields');
+        if (flashToggle && flashFields) {
+            flashToggle.addEventListener('change', function() {
+                flashFields.style.display = this.checked ? 'flex' : 'none';
+                if (this.checked) {
+                    const startInput = flashFields.querySelector('[name="FlashSaleStart"]');
+                    const endInput   = flashFields.querySelector('[name="FlashSaleEnd"]');
+                    if (startInput && !startInput.value) {
+                        const now = new Date();
+                        startInput.value = now.toISOString().slice(0, 16);
+                    }
+                    if (endInput && !endInput.value) {
+                        endInput.value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+                    }
+                }
+            });
+        }
     </script>
 }

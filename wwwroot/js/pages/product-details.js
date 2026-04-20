@@ -248,3 +248,122 @@ function loadMoreReviews() {
     // TODO: Implement load more reviews via AJAX
     alert('Chức năng tải thêm nhận xét sẽ được implement sớm');
 }
+
+// ── GLightbox + Review CRUD (from Product/Details inline) ────────────
+var lightbox;
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof GLightbox !== 'undefined') {
+        lightbox = GLightbox({ selector: '.glightbox' });
+    }
+});
+
+var selectedRating = 0;
+var ratingLabels   = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Tuyệt vời'];
+
+function setRating(rating) {
+    selectedRating = rating;
+    document.getElementById('ratingValue').value = rating;
+    document.getElementById('ratingText').textContent = ratingLabels[rating];
+
+    document.querySelectorAll('#starRating .star').forEach(function (star, index) {
+        star.textContent = index < rating ? '★' : '☆';
+        star.style.color = index < rating ? '#f59e0b' : '#ccc';
+    });
+}
+
+var reviewForm = document.getElementById('reviewForm');
+if (reviewForm) {
+    reviewForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        var productId = document.getElementById('productId').value;
+        var rating    = parseInt(document.getElementById('ratingValue').value);
+        var content   = document.getElementById('reviewContent').value;
+        var submitBtn = document.getElementById('submitReviewBtn');
+
+        if (rating === 0)       { alert('Vui lòng chọn số sao đánh giá!'); return; }
+        if (content.length < 10) { alert('Nội dung đánh giá phải có ít nhất 10 ký tự!'); return; }
+
+        submitBtn.disabled   = true;
+        submitBtn.innerHTML  = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi...';
+
+        try {
+            var response = await fetch('/Review/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'productId=' + productId + '&rating=' + rating + '&content=' + encodeURIComponent(content)
+            });
+            var data = await response.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('reviewContent').value  = '';
+                document.getElementById('ratingValue').value    = '0';
+                document.getElementById('ratingText').textContent = '';
+                setRating(0);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+        } finally {
+            submitBtn.disabled  = false;
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> Gửi đánh giá';
+        }
+    });
+}
+
+async function deleteReview(reviewId) {
+    if (!confirm('Bạn có chắc muốn xóa đánh giá này?')) return;
+    try {
+        var response = await fetch('/Review/Delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'reviewId=' + reviewId
+        });
+        var data = await response.json();
+        if (data.success) { alert(data.message); location.reload(); }
+        else              { alert(data.message); }
+    } catch { alert('Có lỗi xảy ra. Vui lòng thử lại!'); }
+}
+
+function editReview(reviewId, rating, content) {
+    setRating(rating);
+    document.getElementById('reviewContent').value      = content;
+    document.getElementById('reviewForm').dataset.editMode     = 'true';
+    document.getElementById('reviewForm').dataset.editReviewId = reviewId;
+    document.getElementById('submitReviewBtn').innerHTML = '<i class="bi bi-check"></i> Cập nhật đánh giá';
+
+    document.getElementById('reviewForm').onsubmit = async function (e) {
+        e.preventDefault();
+
+        var productId  = document.getElementById('productId').value;
+        var newRating  = parseInt(document.getElementById('ratingValue').value);
+        var newContent = document.getElementById('reviewContent').value;
+        var submitBtn  = document.getElementById('submitReviewBtn');
+
+        if (newRating === 0)         { alert('Vui lòng chọn số sao đánh giá!'); return; }
+        if (newContent.length < 10)  { alert('Nội dung đánh giá phải có ít nhất 10 ký tự!'); return; }
+
+        submitBtn.disabled  = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang cập nhật...';
+
+        try {
+            var response = await fetch('/Review/Update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'reviewId=' + reviewId + '&rating=' + newRating + '&content=' + encodeURIComponent(newContent)
+            });
+            var data = await response.json();
+            if (data.success) { alert(data.message); location.reload(); }
+            else              { alert(data.message); }
+        } catch { alert('Có lỗi xảy ra. Vui lòng thử lại!'); }
+        finally {
+            submitBtn.disabled  = false;
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> Gửi đánh giá';
+        }
+    };
+
+    document.getElementById('reviewFormContainer').scrollIntoView({ behavior: 'smooth' });
+}

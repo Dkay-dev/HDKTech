@@ -71,7 +71,12 @@ namespace HDKTech.Data.Seeds
             var existing = await userManager.FindByIdAsync(id);
             if (existing != null)
             {
-                await SyncRoleAsync(userManager, existing, roleName);
+                // KHÔNG đồng bộ lại role cho user đã tồn tại — để không ghi đè
+                // lên role mà admin đã chỉnh qua UI /admin/users/update-role.
+                // Chỉ gán role mặc định nếu user CHƯA CÓ role nào (data corrupt).
+                var currentRoles = await userManager.GetRolesAsync(existing);
+                if (currentRoles.Count == 0)
+                    await userManager.AddToRoleAsync(existing, roleName);
                 return;
             }
 
@@ -105,25 +110,6 @@ namespace HDKTech.Data.Seeds
                 throw new InvalidOperationException(
                     $"UserSeed: không gán được role '{roleName}' cho user {email}. Lỗi: {errors}");
             }
-        }
-
-        /// <summary>
-        /// Đồng bộ role duy nhất cho user: gỡ role thừa, thêm role đang cần.
-        /// </summary>
-        private static async Task SyncRoleAsync(
-            UserManager<AppUser> userManager,
-            AppUser user,
-            string desiredRole)
-        {
-            var current = await userManager.GetRolesAsync(user);
-            if (current.Count == 1 &&
-                string.Equals(current[0], desiredRole, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            if (current.Count > 0)
-                await userManager.RemoveFromRolesAsync(user, current);
-
-            await userManager.AddToRoleAsync(user, desiredRole);
         }
 
         private static async Task EnsureAddressAsync(

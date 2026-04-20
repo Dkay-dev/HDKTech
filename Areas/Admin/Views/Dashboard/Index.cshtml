@@ -344,14 +344,12 @@
                         Tổng: @((Model.DailyRevenue.Sum(d => d.Revenue) / 1_000_000m).ToString("F1"))M ₫
                     </span>
                     <a asp-area="Admin"
-                       asp-controller="Reports"
-                       asp-action="ExportRevenue"
-                       asp-route-start="@DateTime.Now.AddDays(-6).ToString("yyyy-MM-dd")"
-                       asp-route-end="@DateTime.Now.ToString("yyyy-MM-dd")"
-                       class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
-                       title="Tải báo cáo doanh thu 7 ngày vừa qua">
-                        <i class="bi bi-file-earmark-arrow-down"></i>
-                        <span class="d-none d-xl-inline">Tải báo cáo</span>
+                       asp-controller="RevenueAnalytics"
+                       asp-action="Index"
+                       class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                       title="Xem thống kê doanh thu chi tiết">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span class="d-none d-xl-inline">Xem doanh thu</span>
                     </a>
                 </div>
             </div>

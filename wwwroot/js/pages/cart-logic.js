@@ -181,3 +181,73 @@ function updateGlobalCartUI(data) {
     if (countEl) countEl.innerText = data.totalItems;
     if (badgeEl) badgeEl.innerText = data.totalItems;
 }
+
+// ── Cart Selection Logic ─────────────────────────────────────────────
+function updateSelection() {
+    const checkboxes   = document.querySelectorAll('.cart-item-checkbox');
+    const checkedBoxes = document.querySelectorAll('.cart-item-checkbox:checked');
+    let selectedTotal  = 0;
+
+    checkedBoxes.forEach(cb => {
+        selectedTotal += (parseFloat(cb.dataset.price) || 0) * (parseInt(cb.dataset.quantity) || 1);
+    });
+
+    document.querySelectorAll('.cart-item-row').forEach(row => {
+        const cb     = row.querySelector('.cart-item-checkbox');
+        const key    = cb.dataset.rowKey;
+        const price  = parseFloat(cb.dataset.price)    || 0;
+        const qty    = parseInt(cb.dataset.quantity)   || 1;
+        const selTot = document.getElementById(`selected-total-${key}`);
+
+        if (cb.checked) {
+            row.classList.add('selected');
+            if (selTot) selTot.textContent = (price * qty).toLocaleString('vi-VN') + '₫';
+        } else {
+            row.classList.remove('selected');
+        }
+    });
+
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        if (checkedBoxes.length === checkboxes.length && checkboxes.length > 0) {
+            selectAll.checked = true;  selectAll.indeterminate = false;
+        } else if (checkedBoxes.length > 0) {
+            selectAll.checked = false; selectAll.indeterminate = true;
+        } else {
+            selectAll.checked = false; selectAll.indeterminate = false;
+        }
+    }
+
+    const fmt    = selectedTotal.toLocaleString('vi-VN') + '₫';
+    const selSum = document.getElementById('summary-selected');
+    const totSum = document.getElementById('summary-total');
+    if (selSum) selSum.textContent = fmt;
+    if (totSum) totSum.textContent = fmt;
+
+    const btn = document.getElementById('btn-checkout');
+    if (btn) btn.disabled = checkedBoxes.length === 0;
+}
+
+function toggleSelectAll() {
+    const selectAll  = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.cart-item-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateSelection();
+}
+
+function goToCheckout() {
+    const picked = Array.from(document.querySelectorAll('.cart-item-checkbox:checked'))
+        .map(cb => ({
+            productId:        parseInt(cb.dataset.productId),
+            productVariantId: parseInt(cb.dataset.variantId)
+        }));
+
+    if (picked.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để đặt hàng.');
+        return;
+    }
+
+    window.location.href = '/Checkout/Index?selectedItems=' + encodeURIComponent(JSON.stringify(picked));
+}
+
+document.addEventListener('DOMContentLoaded', updateSelection);

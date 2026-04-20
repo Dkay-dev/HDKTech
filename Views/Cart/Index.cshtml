@@ -1,4 +1,4 @@
-﻿@model HDKTech.Models.Cart
+@model HDKTech.Models.Cart
 @{
     ViewData["Title"] = "Giỏ Hàng - HDKTech";
 }
@@ -22,64 +22,6 @@
 
 <link rel="stylesheet" href="~/css/pages/cart.css" />
 
-<style>
-    .cart-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .select-all-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .select-all-wrapper input {
-        width: 18px;
-        height: 18px;
-        accent-color: #d32f2f;
-    }
-
-    .select-all-wrapper label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #666;
-        cursor: pointer;
-    }
-
-    .cart-item-checkbox {
-        width: 18px;
-        height: 18px;
-        accent-color: #d32f2f;
-        cursor: pointer;
-    }
-
-    .cart-item-row      { transition: background-color 0.2s; }
-    .cart-item-row:hover                 { background-color: rgba(211, 47, 47, 0.03); }
-    .cart-item-row.selected              { background-color: rgba(211, 47, 47, 0.08); }
-
-    .item-price-normal  { font-size: 1rem;   font-weight: 600; }
-    .item-price-selected {
-        display: none;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #d32f2f;
-    }
-
-    .cart-item-row.selected .item-price-normal   { display: none; }
-    .cart-item-row.selected .item-price-selected { display: block; }
-
-    .summary-total {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #d32f2f;
-    }
-</style>
 
 <div class="cart-container">
     <div class="container">
@@ -273,91 +215,4 @@
 
 @section Scripts {
     <script src="~/js/pages/cart-logic.js"></script>
-    <script>
-        // ============================================================
-        //  SELECTION LOGIC — giữ nguyên UX Huy, hỗ trợ (Pid, VariantId)
-        // ============================================================
-        function updateSelection() {
-            const checkboxes    = document.querySelectorAll('.cart-item-checkbox');
-            const checkedBoxes  = document.querySelectorAll('.cart-item-checkbox:checked');
-            let   selectedTotal = 0;
-
-            checkedBoxes.forEach(cb => {
-                const price = parseFloat(cb.dataset.price) || 0;
-                const qty   = parseInt(cb.dataset.quantity) || 1;
-                selectedTotal += price * qty;
-            });
-
-            // Highlight rows
-            document.querySelectorAll('.cart-item-row').forEach(row => {
-                const cb      = row.querySelector('.cart-item-checkbox');
-                const rowKey  = cb.dataset.rowKey;
-                const price   = parseFloat(cb.dataset.price)    || 0;
-                const qty     = parseInt(cb.dataset.quantity)   || 1;
-                const selTot  = document.getElementById(`selected-total-${rowKey}`);
-
-                if (cb.checked) {
-                    row.classList.add('selected');
-                    if (selTot) selTot.textContent = (price * qty).toLocaleString('vi-VN') + '₫';
-                } else {
-                    row.classList.remove('selected');
-                }
-            });
-
-            // Select-all tri-state
-            const selectAll = document.getElementById('selectAll');
-            if (selectAll) {
-                if (checkedBoxes.length === checkboxes.length && checkboxes.length > 0) {
-                    selectAll.checked       = true;
-                    selectAll.indeterminate = false;
-                } else if (checkedBoxes.length > 0) {
-                    selectAll.checked       = false;
-                    selectAll.indeterminate = true;
-                } else {
-                    selectAll.checked       = false;
-                    selectAll.indeterminate = false;
-                }
-            }
-
-            const fmt = selectedTotal.toLocaleString('vi-VN') + '₫';
-            const selSum = document.getElementById('summary-selected');
-            const totSum = document.getElementById('summary-total');
-            if (selSum) selSum.textContent = fmt;
-            if (totSum) totSum.textContent = fmt;
-
-            // Enable/disable checkout button
-            const btn = document.getElementById('btn-checkout');
-            if (btn) btn.disabled = checkedBoxes.length === 0;
-        }
-
-        function toggleSelectAll() {
-            const selectAll  = document.getElementById('selectAll');
-            const checkboxes = document.querySelectorAll('.cart-item-checkbox');
-            checkboxes.forEach(cb => cb.checked = selectAll.checked);
-            updateSelection();
-        }
-
-        // ============================================================
-        //  Đi tới Checkout, truyền danh sách cặp (ProductId, VariantId)
-        //  đã chọn (JSON) — CheckoutController đọc query "selectedItems"
-        // ============================================================
-        function goToCheckout() {
-            const picked = Array.from(document.querySelectorAll('.cart-item-checkbox:checked'))
-                .map(cb => ({
-                    productId:        parseInt(cb.dataset.productId),
-                    productVariantId: parseInt(cb.dataset.variantId)
-                }));
-
-            if (picked.length === 0) {
-                alert('Vui lòng chọn ít nhất một sản phẩm để đặt hàng.');
-                return;
-            }
-
-            const url = '/Checkout/Index?selectedItems=' +
-                        encodeURIComponent(JSON.stringify(picked));
-            window.location.href = url;
-        }
-
-        document.addEventListener('DOMContentLoaded', updateSelection);
-    </script>
 }

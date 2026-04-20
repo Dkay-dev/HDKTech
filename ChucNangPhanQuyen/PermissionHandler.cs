@@ -71,9 +71,16 @@ namespace HDKTech.ChucNangPhanQuyen
                 if (role == null) continue;
 
                 var claims = await _roleManager.GetClaimsAsync(role);
-                if (claims.Any(c =>
+
+                // Trường hợp đặc biệt: requirement dùng wildcard (vd RequireAdminArea)
+                // → pass nếu role có BẤT KỲ permission claim nào.
+                var matched = requirement.IsAnyPermission
+                    ? claims.Any(c => c.Type == PermissionClaimType)
+                    : claims.Any(c =>
                         c.Type == PermissionClaimType &&
-                        string.Equals(c.Value, targetValue, StringComparison.OrdinalIgnoreCase)))
+                        string.Equals(c.Value, targetValue, StringComparison.OrdinalIgnoreCase));
+
+                if (matched)
                 {
                     context.Succeed(requirement);
                     return;

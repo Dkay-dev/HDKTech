@@ -1,5 +1,6 @@
 using HDKTech.Models;
-using HDKTech.Repositories;
+using HDKTech.Models.Requests;
+using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 using HDKTech.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -10,17 +11,17 @@ namespace HDKTech.Controllers
     public class CartController : Controller
     {
         private readonly ICartService _cartService;
-        private readonly ProductRepository _productRepo;
+        private readonly IProductRepository _productRepo;
         private readonly ILogger<CartController> _logger;
 
         public CartController(
             ICartService cartService,
-            ProductRepository productRepo,
+            IProductRepository productRepo,
             ILogger<CartController> logger)
         {
             _cartService = cartService;
             _productRepo = productRepo;
-            _logger = logger;
+            _logger      = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -29,9 +30,6 @@ namespace HDKTech.Controllers
             return View(cart);
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // ADD (GET) — id = productId, variantId optional (dùng default)
-        // ─────────────────────────────────────────────────────────────
         [HttpGet]
         public async Task<IActionResult> Add(int id, int? variantId = null, int quantity = 1)
         {
@@ -41,7 +39,6 @@ namespace HDKTech.Controllers
             var product = await _productRepo.GetProductWithDetailsAsync(id);
             if (product == null) return NotFound("Sản phẩm không tồn tại");
 
-            // Pick variant — user chọn hoặc fallback sang default
             var variant = PickVariant(product, variantId);
             if (variant == null)
             {
@@ -71,16 +68,12 @@ namespace HDKTech.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // DbCartService throw khi không đủ tồn kho
                 TempData["Error"] = ex.Message;
             }
 
             return RedirectToAction("Index");
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // ADD (POST / AJAX)
-        // ─────────────────────────────────────────────────────────────
         [HttpPost]
         [EnableRateLimiting("add-to-cart")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
@@ -118,15 +111,14 @@ namespace HDKTech.Controllers
 
                 return Ok(new
                 {
-                    success     = true,
-                    message     = $"Đã thêm {product.Name} vào giỏ",
-                    totalItems  = cart.TotalItems,
-                    totalPrice  = cart.TotalPrice.ToString("C")
+                    success    = true,
+                    message    = $"Đã thêm {product.Name} vào giỏ",
+                    totalItems = cart.TotalItems,
+                    totalPrice = cart.TotalPrice.ToString("C")
                 });
             }
             catch (InvalidOperationException ex)
             {
-                // DbCartService throw khi không đủ tồn kho
                 return BadRequest(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
@@ -136,9 +128,6 @@ namespace HDKTech.Controllers
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // REMOVE (POST) — cần ProductId + ProductVariantId
-        // ─────────────────────────────────────────────────────────────
         [HttpPost]
         public async Task<IActionResult> Remove(
             [FromBody] RemoveItemRequest? request = null,
@@ -176,9 +165,6 @@ namespace HDKTech.Controllers
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // UPDATE QUANTITY (AJAX)
-        // ─────────────────────────────────────────────────────────────
         [HttpPost]
         public async Task<IActionResult> UpdateQuantity([FromBody] UpdateQuantityRequest request)
         {
@@ -202,7 +188,6 @@ namespace HDKTech.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // DbCartService throw khi không đủ tồn kho
                 return BadRequest(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
@@ -230,9 +215,6 @@ namespace HDKTech.Controllers
             });
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // Helpers
-        // ─────────────────────────────────────────────────────────────
         private static ProductVariant? PickVariant(Product product, int? variantId)
         {
             if (product.Variants == null || !product.Variants.Any()) return null;
@@ -253,25 +235,5 @@ namespace HDKTech.Controllers
                 .Where(s => !string.IsNullOrWhiteSpace(s));
             return string.Join(" / ", parts);
         }
-    }
-
-    public class AddToCartRequest
-    {
-        public int ProductId        { get; set; }
-        public int ProductVariantId { get; set; }
-        public int Quantity         { get; set; } = 1;
-    }
-
-    public class UpdateQuantityRequest
-    {
-        public int ProductId        { get; set; }
-        public int ProductVariantId { get; set; }
-        public int Quantity         { get; set; }
-    }
-
-    public class RemoveItemRequest
-    {
-        public int ProductId        { get; set; }
-        public int ProductVariantId { get; set; }
     }
 }

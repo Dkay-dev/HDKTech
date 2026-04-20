@@ -1,7 +1,7 @@
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
-using HDKTech.Services;
+using HDKTech.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Text.Json;

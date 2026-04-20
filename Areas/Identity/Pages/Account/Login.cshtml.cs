@@ -9,22 +9,26 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 using HDKTech.Models;
+using HDKTech.ChucNangPhanQuyen;
 
 namespace HDKTech.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
-        private readonly SignInManager<AppUser> _signInManager;
-        private readonly UserManager<AppUser>   _userManager;
-        private readonly ILogger<LoginModel>    _logger;
+        private readonly SignInManager<AppUser>    _signInManager;
+        private readonly UserManager<AppUser>      _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ILogger<LoginModel>       _logger;
 
         public LoginModel(
-            SignInManager<AppUser> signInManager,
-            UserManager<AppUser>   userManager,
-            ILogger<LoginModel>    logger)
+            SignInManager<AppUser>    signInManager,
+            UserManager<AppUser>      userManager,
+            RoleManager<IdentityRole> roleManager,
+            ILogger<LoginModel>       logger)
         {
             _signInManager = signInManager;
             _userManager   = userManager;
+            _roleManager   = roleManager;
             _logger        = logger;
         }
 
@@ -35,8 +39,10 @@ namespace HDKTech.Areas.Identity.Pages.Account
         public string? ReturnUrl { get; set; }
         public string? ErrorMessage { get; set; }
 
-        // ── Danh sách Role được điều hướng vào Admin Area ─────────────────────
-        private static readonly string[] AdminRoles = { "Admin", "Manager", "Staff" };
+        // ── Role nào được coi là "khách thuần" (không vào admin area) ─────────
+        // Mọi role khác — kể cả role tự tạo qua UI — đều được điều hướng vào
+        // /Admin/Dashboard nếu role đó có ít nhất 1 permission claim.
+        private const string CustomerRole = "Customer";
 
         public class InputModel
         {
@@ -92,20 +98,15 @@ namespace HDKTech.Areas.Identity.Pages.Account
                 // ✅ Lấy thông tin user để kiểm tra Role
                 var user = await _userManager.FindByEmailAsync(Input.Email);
 
-                if (user != null)
+                if (user != null && await HasAnyAdminPermissionAsync(user))
                 {
-                    var roles = await _userManager.GetRolesAsync(user);
-
-                    // ✅ Fix #1: Admin / Manager / WarehouseStaff → Admin Dashboard
-                    if (roles.Any(r => AdminRoles.Contains(r)))
-                    {
-                        _logger.LogInformation("Admin user {Email} → redirect /Admin/Dashboard", Input.Email);
-                        return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
-                    }
+                    _logger.LogInformation(
+                        "Admin-level user {Email} → redirect /Admin/Dashboard", Input.Email);
+                    return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
                 }
 
-                // Customer / User thường → returnUrl hoặc trang chủ
-                // LocalRedirect bảo vệ chống Open Redirect
+                // Customer / user không có permission admin → returnUrl hoặc trang chủ.
+                // LocalRedirect bảo vệ chống Open Redirect.
                 return LocalRedirect(returnUrl);
             }
 
@@ -127,6 +128,30 @@ namespace HDKTech.Areas.Identity.Pages.Account
             // Đăng nhập thất bại
             ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
             return Page();
+        }
+
+        /// <summary>
+        /// Trả về true nếu user thuộc ít nhất 1 role có permission claim — tức là
+        /// role admin-level (gồm các role mặc định Admin/Manager/Staff lẫn role
+        /// tuỳ biến do admin tự tạo và cấp quyền qua Permission Matrix).
+        /// Customer (không có permission nào) sẽ trả về false.
+        /// </summary>
+        private async Task<bool> HasAnyAdminPermissionAsync(AppUser user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var roleName in roles)
+            {
+                if (string.Equals(roleName, CustomerRole, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var role = await _roleManager.FindByNameAsync(roleName);
+                if (role == null) continue;
+
+                var claims = await _roleManager.GetClaimsAsync(role);
+                if (claims.Any(c => c.Type == PermissionHandler.PermissionClaimType))
+                    return true;
+            }
+            return false;
         }
     }
 }

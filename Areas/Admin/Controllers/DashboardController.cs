@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using HDKTech.Areas.Admin.Services;
 
 using HDKTech.Areas.Admin.Repositories;
+using HDKTech.Areas.Admin.Services.Interfaces;
 
 namespace HDKTech.Areas.Admin.Controllers
 {

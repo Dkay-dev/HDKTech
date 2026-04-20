@@ -1,6 +1,6 @@
 using HDKTech.Areas.Admin.Models;
 using HDKTech.Models;
-using HDKTech.Services;   // LowStockProductItem
+using HDKTech.Services.Interfaces;   // LowStockProductItem
 
 namespace HDKTech.Areas.Admin.ViewModels
 {

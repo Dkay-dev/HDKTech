@@ -1,111 +1,57 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using HDKTech.Data;
 using HDKTech.Models;
-using HDKTech.Services;
 using HDKTech.Utilities;
-using Microsoft.EntityFrameworkCore;
+using HDKTech.Areas.Admin.Services;
+using HDKTech.Areas.Admin.Services.Interfaces;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "RequireManager")]
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("admin/[controller]")]
     public class OrderController : Controller
     {
-        private readonly HDKTechContext            _context;
-        private readonly ILogger<OrderController>  _logger;
-        private readonly ISystemLogService         _logService;
-        private readonly IInventoryService         _inventoryService;
+        private readonly IOrderAdminService           _orderService;
+        private readonly ILogger<OrderController>     _logger;
 
         public OrderController(
-            HDKTechContext context,
-            ILogger<OrderController> logger,
-            ISystemLogService logService,
-            IInventoryService inventoryService)
+            IOrderAdminService       orderService,
+            ILogger<OrderController> logger)
         {
-            _context          = context;
-            _logger           = logger;
-            _logService       = logService;
-            _inventoryService = inventoryService;
+            _orderService = orderService;
+            _logger       = logger;
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // INDEX
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("")]
         [HttpGet("index")]
         [Authorize(Policy = "Order.Read")]
         public async Task<IActionResult> Index(
-            int page = 1,
-            int pageSize = 20,
+            int page          = 1,
+            int pageSize      = 20,
             string searchTerm = "",
-            int statusFilter = -1,
-            string sortBy = "date")
+            int statusFilter  = -1,
+            string sortBy     = "date")
         {
             try
             {
-                IQueryable<Order> query = _context.Orders
-                    .AsNoTracking()
-                    .Include(o => o.User)
-                    .Include(o => o.Items);
+                var result = await _orderService.GetOrdersPagedAsync(page, pageSize, searchTerm, statusFilter, sortBy);
 
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                    query = query.Where(o =>
-                        o.OrderCode.Contains(searchTerm) ||
-                        o.RecipientName.Contains(searchTerm) ||
-                        o.RecipientPhone.Contains(searchTerm));
-
-                if (statusFilter >= 0)
-                {
-                    var s = (OrderStatus)statusFilter;
-                    query = query.Where(o => o.Status == s);
-                }
-
-                query = sortBy switch
-                {
-                    "amount_high" => query.OrderByDescending(o => o.TotalAmount),
-                    "amount_low"  => query.OrderBy(o => o.TotalAmount),
-                    "customer"    => query.OrderBy(o => o.RecipientName),
-                    _             => query.OrderByDescending(o => o.OrderDate)
-                };
-
-                var totalCount = await query.CountAsync();
-                var orders = await query
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                ViewBag.Orders       = orders;
-                ViewBag.TotalCount   = totalCount;
-                ViewBag.Page         = page;
-                ViewBag.PageSize     = pageSize;
-                ViewBag.TotalPages   = (int)Math.Ceiling((double)totalCount / pageSize);
-                ViewBag.SearchTerm   = searchTerm;
-                ViewBag.StatusFilter = statusFilter;
-                ViewBag.SortBy       = sortBy;
-
-                var stats = await _context.Orders.AsNoTracking()
-                    .GroupBy(o => o.Status)
-                    .Select(g => new { Status = g.Key, Count = g.Count() })
-                    .ToListAsync();
-
-                ViewBag.PendingCount    = stats.FirstOrDefault(s => s.Status == OrderStatus.Pending)?.Count    ?? 0;
-                ViewBag.ProcessingCount = stats.FirstOrDefault(s => s.Status == OrderStatus.Confirmed)?.Count  ?? 0;
-                ViewBag.ShippingCount   = stats.FirstOrDefault(s => s.Status == OrderStatus.Shipping)?.Count   ?? 0;
-                ViewBag.DeliveredCount  = stats.FirstOrDefault(s => s.Status == OrderStatus.Delivered)?.Count  ?? 0;
-                ViewBag.CancelledCount  = stats.FirstOrDefault(s => s.Status == OrderStatus.Cancelled)?.Count  ?? 0;
-
-                var today = DateTime.Now.Date;
-                var todayRevenue = await _context.Orders.AsNoTracking()
-                    .Where(o => o.OrderDate.Date == today && o.Status == OrderStatus.Delivered)
-                    .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
-                var todayCount = await _context.Orders.AsNoTracking()
-                    .Where(o => o.OrderDate.Date == today)
-                    .CountAsync();
-
-                ViewBag.TodayRevenue    = todayRevenue;
-                ViewBag.TodayOrderCount = todayCount;
+                ViewBag.Orders          = result.Orders;
+                ViewBag.TotalCount      = result.TotalCount;
+                ViewBag.Page            = page;
+                ViewBag.PageSize        = pageSize;
+                ViewBag.TotalPages      = (int)Math.Ceiling((double)result.TotalCount / pageSize);
+                ViewBag.SearchTerm      = searchTerm;
+                ViewBag.StatusFilter    = statusFilter;
+                ViewBag.SortBy          = sortBy;
+                ViewBag.PendingCount    = result.PendingCount;
+                ViewBag.ProcessingCount = result.ProcessingCount;
+                ViewBag.ShippingCount   = result.ShippingCount;
+                ViewBag.DeliveredCount  = result.DeliveredCount;
+                ViewBag.CancelledCount  = result.CancelledCount;
+                ViewBag.TodayRevenue    = result.TodayRevenue;
+                ViewBag.TodayOrderCount = result.TodayOrderCount;
 
                 return View();
             }
@@ -117,29 +63,18 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // DETAILS
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("details/{id:int}")]
         [Authorize(Policy = "Order.Read")]
         public async Task<IActionResult> Details(int id)
         {
             try
             {
-                var order = await _context.Orders
-                    .AsNoTracking()
-                    .Include(o => o.User)
-                    .Include(o => o.Items)
-                        .ThenInclude(i => i.Product)
-                            .ThenInclude(p => p!.Images)
-                    .FirstOrDefaultAsync(o => o.Id == id);
-
+                var order = await _orderService.GetOrderDetailsAsync(id);
                 if (order == null)
                 {
                     TempData["Error"] = "Không tìm thấy đơn hàng.";
                     return RedirectToAction(nameof(Index));
                 }
-
                 return View(order);
             }
             catch (Exception ex)
@@ -150,56 +85,36 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // UPDATE STATUS
-        // ──────────────────────────────────────────────────────────────
         [HttpPost("update-status")]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "Order.Update")]
         public async Task<IActionResult> UpdateStatus(int orderId, int newStatus)
         {
-            if (!Enum.IsDefined(typeof(OrderStatus), newStatus))
-                return Json(new { success = false, message = "Trạng thái không hợp lệ." });
-
             try
             {
-                var order = await _context.Orders
-                    .Include(o => o.Items)
-                    .FirstOrDefaultAsync(o => o.Id == orderId);
+                var username = User.Identity?.Name ?? "System";
+                var userId   = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userRole = User.IsInRole("Admin") ? "Admin" : "Manager";
 
-                if (order == null)
-                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
+                var (success, message) = await _orderService.UpdateStatusAsync(orderId, newStatus, username, userId);
 
-                var target = (OrderStatus)newStatus;
-
-                // Đã giao chỉ có thể chuyển sang Cancelled / Returned
-                if (order.Status == OrderStatus.Delivered &&
-                    target != OrderStatus.Cancelled && target != OrderStatus.Returned)
-                    return Json(new { success = false, message = "Đơn hàng đã giao không thể thay đổi trạng thái." });
-
-                var oldStatusName = GetStatusName(order.Status);
-                var username      = User.Identity?.Name ?? "System";
-                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                var userRole      = User.IsInRole("Admin") ? "Admin" : "Manager";
-
-                order.Status = target;
-                if (target == OrderStatus.Delivered) order.DeliveredAt = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                await LoggingHelper.LogOrderStatusChangeAsync(
-                    username  : username,
-                    orderId   : order.Id,
-                    orderCode : order.OrderCode,
-                    oldStatus : oldStatusName,
-                    newStatus : GetStatusName(target),
-                    userId    : userId,
-                    userRole  : userRole);
-
-                return Json(new
+                if (success)
                 {
-                    success = true,
-                    message = $"Cập nhật trạng thái → \"{GetStatusName(target)}\" thành công."
-                });
+                    var order = await _orderService.GetOrderDetailsAsync(orderId);
+                    if (order != null)
+                    {
+                        await LoggingHelper.LogOrderStatusChangeAsync(
+                            username  : username,
+                            orderId   : order.Id,
+                            orderCode : order.OrderCode,
+                            oldStatus : "Trước",
+                            newStatus : OrderAdminService.GetStatusName((OrderStatus)newStatus),
+                            userId    : userId,
+                            userRole  : userRole);
+                    }
+                }
+
+                return Json(new { success, message });
             }
             catch (Exception ex)
             {
@@ -208,9 +123,6 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // CANCEL
-        // ──────────────────────────────────────────────────────────────
         [HttpPost("cancel")]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "Order.Delete")]
@@ -218,45 +130,29 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var order = await _context.Orders
-                    .Include(o => o.Items)
-                    .FirstOrDefaultAsync(o => o.Id == orderId);
+                var username = User.Identity?.Name ?? "System";
+                var userId   = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userRole = User.IsInRole("Admin") ? "Admin" : "Manager";
 
-                if (order == null)
-                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
+                var (success, message) = await _orderService.CancelOrderAsync(orderId, username, userId);
 
-                if (order.Status == OrderStatus.Delivered)
-                    return Json(new { success = false, message = "Không thể hủy đơn hàng đã giao thành công." });
-
-                if (order.Status == OrderStatus.Cancelled)
-                    return Json(new { success = false, message = "Đơn hàng đã bị hủy trước đó." });
-
-                var oldStatusName = GetStatusName(order.Status);
-                var username      = User.Identity?.Name ?? "System";
-                var userId        = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                order.Status       = OrderStatus.Cancelled;
-                order.CancelledAt  = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                if (order.Items != null && order.Items.Any())
+                if (success)
                 {
-                    await _inventoryService.ReleaseStockAsync(
-                        items   : order.Items.ToList(),
-                        username: username,
-                        userId  : userId);
+                    var order = await _orderService.GetOrderDetailsAsync(orderId);
+                    if (order != null)
+                    {
+                        await LoggingHelper.LogOrderStatusChangeAsync(
+                            username  : username,
+                            orderId   : order.Id,
+                            orderCode : order.OrderCode,
+                            oldStatus : "Trước",
+                            newStatus : "Đã hủy",
+                            userId    : userId,
+                            userRole  : userRole);
+                    }
                 }
 
-                await LoggingHelper.LogOrderStatusChangeAsync(
-                    username  : username,
-                    orderId   : order.Id,
-                    orderCode : order.OrderCode,
-                    oldStatus : oldStatusName,
-                    newStatus : "Đã hủy",
-                    userId    : userId,
-                    userRole  : User.IsInRole("Admin") ? "Admin" : "Manager");
-
-                return Json(new { success = true, message = "Đã hủy đơn hàng và hoàn kho thành công." });
+                return Json(new { success, message });
             }
             catch (Exception ex)
             {
@@ -265,45 +161,19 @@ namespace HDKTech.Areas.Admin.Controllers
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // EXPORT CSV
-        // ──────────────────────────────────────────────────────────────
         [HttpGet("export")]
         public async Task<IActionResult> Export(string searchTerm = "", int statusFilter = -1)
         {
-            var query = _context.Orders.AsNoTracking().Include(o => o.User).AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-                query = query.Where(o => o.OrderCode.Contains(searchTerm) || o.RecipientName.Contains(searchTerm));
-
-            if (statusFilter >= 0)
-            {
-                var s = (OrderStatus)statusFilter;
-                query = query.Where(o => o.Status == s);
-            }
-
-            var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
-            var csv = "Mã Đơn Hàng,Người Nhận,Số ĐT,Địa chỉ,Tổng Tiền,Phí Ship,Trạng Thái,Ngày Đặt\n";
+            var orders = await _orderService.GetOrdersForExportAsync(searchTerm, statusFilter);
+            var csv    = "Mã Đơn Hàng,Người Nhận,Số ĐT,Địa chỉ,Tổng Tiền,Phí Ship,Trạng Thái,Ngày Đặt\n";
 
             foreach (var o in orders)
-                csv += $"\"{o.OrderCode}\",\"{o.RecipientName}\",\"{o.RecipientPhone}\",\"{o.ShippingAddressLine}\"," +
-                       $"{o.TotalAmount},{o.ShippingFee},\"{GetStatusName(o.Status)}\",{o.OrderDate:yyyy-MM-dd}\n";
+                csv += $"\"{o.OrderCode}\",\"{o.RecipientName}\",\"{o.RecipientPhone}\"," +
+                       $"\"{o.ShippingAddressLine}\",{o.TotalAmount},{o.ShippingFee}," +
+                       $"\"{OrderAdminService.GetStatusName(o.Status)}\",{o.OrderDate:yyyy-MM-dd}\n";
 
             return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv",
                         $"orders_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
-
-        // ── Helpers ──────────────────────────────────────────────────
-        private static string GetStatusName(OrderStatus status) => status switch
-        {
-            OrderStatus.Pending    => "Chờ xác nhận",
-            OrderStatus.Confirmed  => "Đã xác nhận",
-            OrderStatus.Packing    => "Đang đóng gói",
-            OrderStatus.Shipping   => "Đang giao",
-            OrderStatus.Delivered  => "Đã giao",
-            OrderStatus.Cancelled  => "Đã hủy",
-            OrderStatus.Returned   => "Trả hàng",
-            _                      => "Không xác định"
-        };
     }
 }

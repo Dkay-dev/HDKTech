@@ -1,40 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
-using HDKTech.Data;
 using HDKTech.Services;
 using HDKTech.Utilities;
-using Microsoft.EntityFrameworkCore;
-
-using HDKTech.Areas.Admin.Repositories;
+using HDKTech.Areas.Admin.Services.Interfaces;
 
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "RequireManager")]
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("admin/[controller]")]
     public class ProductController : Controller
     {
-        private readonly IAdminProductRepository  _productRepo;
+        private readonly IProductAdminService      _productAdminService;
         private readonly ILogger<ProductController> _logger;
-        private readonly HDKTechContext            _context;
-        private readonly IWebHostEnvironment       _env;
-        private readonly ISystemLogService         _logService;
-
-        private const string ImgFolder = "images/products";
+        private readonly IWebHostEnvironment        _env;
+        private readonly ISystemLogService          _logService;
 
         public ProductController(
-            IAdminProductRepository    productRepo,
+            IProductAdminService      productAdminService,
             ILogger<ProductController> logger,
-            HDKTechContext             context,
             IWebHostEnvironment        env,
             ISystemLogService          logService)
         {
-            _productRepo = productRepo;
-            _logger      = logger;
-            _context     = context;
-            _env         = env;
-            _logService  = logService;
+            _productAdminService = productAdminService;
+            _logger              = logger;
+            _env                 = env;
+            _logService          = logService;
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -51,33 +43,11 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                IQueryable<Product> query = _context.Products
-                    .AsNoTracking()
-                    .Include(p => p.Category)
-                    .Include(p => p.Brand)
-                    .Include(p => p.Images)
-                    .Include(p => p.Variants).ThenInclude(v => v.Inventories);
+                var (products, totalCount, categories, brands) =
+                    await _productAdminService.GetProductsPagedAsync(searchTerm, categoryId, brandId, page, pageSize);
 
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                    query = query.Where(p =>
-                        p.Name.Contains(searchTerm) ||
-                        (p.Description != null && p.Description.Contains(searchTerm)));
-
-                if (categoryId.HasValue) query = query.Where(p => p.CategoryId == categoryId.Value);
-                if (brandId.HasValue)    query = query.Where(p => p.BrandId    == brandId.Value);
-
-                var totalCount = await query.CountAsync();
-                var products   = await query
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                ViewBag.Categories  = await _context.Categories.AsNoTracking()
-                                        .Where(c => c.ParentCategoryId == null)
-                                        .OrderBy(c => c.Name).ToListAsync();
-                ViewBag.Brands      = await _context.Brands.AsNoTracking()
-                                        .OrderBy(b => b.Name).ToListAsync();
+                ViewBag.Categories  = categories;
+                ViewBag.Brands      = brands;
                 ViewBag.SearchTerm  = searchTerm;
                 ViewBag.CategoryId  = categoryId;
                 ViewBag.BrandId     = brandId;
@@ -97,20 +67,23 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // DETAILS — xem + sửa (Variants hiển thị trong view)
+        // DETAILS
         // ──────────────────────────────────────────────────────────────
         [HttpGet("details/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
-            var product = await _productRepo.GetProductByIdAsync(id);
+            var product = await _productAdminService.GetProductByIdAsync(id);
             if (product == null)
             {
                 TempData["Error"] = "Sản phẩm không tìm thấy.";
                 return RedirectToAction(nameof(Index));
             }
+
             await LoadDropdowns();
-            ViewBag.Variants = product.Variants?.OrderByDescending(v => v.IsDefault).ToList()
-                               ?? new List<ProductVariant>();
+            ViewBag.Variants  = product.Variants?.OrderByDescending(v => v.IsDefault).ToList()
+                                ?? new List<ProductVariant>();
+            ViewBag.FlashSale = await _productAdminService.GetFlashSaleForProductAsync(id);
+
             return View(product);
         }
 
@@ -132,7 +105,11 @@ namespace HDKTech.Areas.Admin.Controllers
             Product product,
             IList<IFormFile> images,
             [Bind(Prefix = "DefaultVariant")] ProductVariant DefaultVariant,
-            int InitialStock = 0)
+            int InitialStock   = 0,
+            bool IsFlashSale   = false,
+            decimal FlashSalePrice = 0,
+            DateTime? FlashSaleStart = null,
+            DateTime? FlashSaleEnd   = null)
         {
             ModelState.Remove(nameof(Product.Category));
             ModelState.Remove(nameof(Product.Brand));
@@ -153,45 +130,17 @@ namespace HDKTech.Areas.Admin.Controllers
             try
             {
                 product.CreatedAt = DateTime.Now;
-                var created = await _productRepo.CreateProductAsync(product);
+                var created = await _productAdminService.CreateProductAsync(product);
 
                 if (images?.Count > 0)
-                    await SaveProductImages(created.Id, images, created.Category?.Name);
+                    await _productAdminService.SaveProductImagesAsync(created.Id, images, created.Category?.Name);
 
                 if (DefaultVariant != null && DefaultVariant.Price > 0)
-                {
-                    var sku = string.IsNullOrWhiteSpace(DefaultVariant.Sku)
-                        ? $"P{created.Id}-DEFAULT"
-                        : DefaultVariant.Sku.Trim();
+                    await _productAdminService.CreateDefaultVariantAsync(created.Id, DefaultVariant, InitialStock);
 
-                    var variant = new ProductVariant
-                    {
-                        ProductId   = created.Id,
-                        Sku         = sku,
-                        VariantName = "Mặc định",
-                        Price       = DefaultVariant.Price,
-                        ListPrice   = DefaultVariant.ListPrice,
-                        IsActive    = true,
-                        IsDefault   = true,
-                        CreatedAt   = DateTime.Now
-                    };
-                    _context.ProductVariants.Add(variant);
-                    await _context.SaveChangesAsync();
+                await _productAdminService.SaveFlashSaleAsync(
+                    created.Id, created.Name, IsFlashSale, FlashSalePrice, FlashSaleStart, FlashSaleEnd);
 
-                    if (InitialStock > 0)
-                    {
-                        _context.Inventories.Add(new Inventory
-                        {
-                            ProductId        = created.Id,
-                            ProductVariantId = variant.Id,
-                            Quantity         = InitialStock,
-                            UpdatedAt        = DateTime.Now
-                        });
-                        await _context.SaveChangesAsync();
-                    }
-                }
-
-                // ── Audit Log ────────────────────────────────────────────
                 await LoggingHelper.LogCreateAsync(
                     username   : User.Identity?.Name ?? "Admin",
                     module     : "Product",
@@ -221,7 +170,11 @@ namespace HDKTech.Areas.Admin.Controllers
             int id,
             Product product,
             IList<IFormFile> images,
-            [Bind(Prefix = "DefaultVariant")] ProductVariant DefaultVariant)
+            [Bind(Prefix = "DefaultVariant")] ProductVariant DefaultVariant,
+            bool IsFlashSale       = false,
+            decimal FlashSalePrice = 0,
+            DateTime? FlashSaleStart = null,
+            DateTime? FlashSaleEnd   = null)
         {
             if (id != product.Id) return BadRequest();
 
@@ -243,9 +196,7 @@ namespace HDKTech.Areas.Admin.Controllers
 
             try
             {
-                var existing = await _context.Products
-                    .Include(p => p.Variants)
-                    .FirstOrDefaultAsync(p => p.Id == id);
+                var existing = await _productAdminService.GetProductWithVariantsAsync(id);
                 if (existing == null) return NotFound();
 
                 existing.Name             = product.Name;
@@ -258,47 +209,20 @@ namespace HDKTech.Areas.Admin.Controllers
                 existing.Specifications   = product.Specifications;
                 existing.UpdatedAt        = DateTime.Now;
 
+                await _productAdminService.UpdateProductAsync(existing);
+
                 if (DefaultVariant != null && DefaultVariant.Price > 0)
-                {
-                    var defVariant = existing.Variants?.FirstOrDefault(v => v.IsDefault)
-                                     ?? existing.Variants?.FirstOrDefault();
-
-                    if (defVariant == null)
-                    {
-                        defVariant = new ProductVariant
-                        {
-                            ProductId   = existing.Id,
-                            Sku         = string.IsNullOrWhiteSpace(DefaultVariant.Sku)
-                                            ? $"P{existing.Id}-DEFAULT"
-                                            : DefaultVariant.Sku.Trim(),
-                            VariantName = "Mặc định",
-                            Price       = DefaultVariant.Price,
-                            ListPrice   = DefaultVariant.ListPrice,
-                            IsActive    = true,
-                            IsDefault   = true,
-                            CreatedAt   = DateTime.Now
-                        };
-                        _context.ProductVariants.Add(defVariant);
-                    }
-                    else
-                    {
-                        defVariant.Price     = DefaultVariant.Price;
-                        defVariant.ListPrice = DefaultVariant.ListPrice;
-                        if (!string.IsNullOrWhiteSpace(DefaultVariant.Sku))
-                            defVariant.Sku = DefaultVariant.Sku.Trim();
-                        defVariant.UpdatedAt = DateTime.Now;
-                    }
-                }
-
-                await _context.SaveChangesAsync();
+                    await _productAdminService.UpdateDefaultVariantAsync(existing, DefaultVariant);
 
                 if (images?.Count > 0)
                 {
-                    var cat = await _context.Categories.FindAsync(product.CategoryId);
-                    await SaveProductImages(product.Id, images, cat?.Name);
+                    var catName = (await _productAdminService.GetProductByIdAsync(product.Id))?.Category?.Name;
+                    await _productAdminService.SaveProductImagesAsync(product.Id, images, catName);
                 }
 
-                // ── Audit Log ────────────────────────────────────────────
+                await _productAdminService.SaveFlashSaleAsync(
+                    id, existing.Name, IsFlashSale, FlashSalePrice, FlashSaleStart, FlashSaleEnd);
+
                 await LoggingHelper.LogUpdateAsync(
                     username   : User.Identity?.Name ?? "Admin",
                     module     : "Product",
@@ -328,13 +252,10 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var img = await _context.ProductImages.FindAsync(imageId);
-                if (img == null) return Json(new { success = false, message = "Không tìm thấy ảnh." });
+                var url = await _productAdminService.DeleteImageAsync(imageId);
+                if (url == null) return Json(new { success = false, message = "Không tìm thấy ảnh." });
 
-                DeletePhysicalFile(img.ImageUrl);
-
-                _context.ProductImages.Remove(img);
-                await _context.SaveChangesAsync();
+                DeletePhysicalFile(url);
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -350,14 +271,8 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var img = await _context.ProductImages.FindAsync(imageId);
-                if (img == null) return Json(new { success = false });
-
-                var siblings = _context.ProductImages.Where(x => x.ProductId == img.ProductId);
-                await siblings.ForEachAsync(x => x.IsDefault = false);
-                img.IsDefault = true;
-                await _context.SaveChangesAsync();
-                return Json(new { success = true });
+                var ok = await _productAdminService.SetDefaultImageAsync(imageId);
+                return Json(new { success = ok });
             }
             catch (Exception ex)
             {
@@ -376,22 +291,21 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             try
             {
-                var product = await _productRepo.GetProductByIdAsync(id);
+                var product = await _productAdminService.GetProductByIdAsync(id);
                 if (product == null)
                 {
                     TempData["Error"] = "Sản phẩm không tìm thấy.";
                     return RedirectToAction(nameof(Index));
                 }
 
-                var currentUser = User.Identity?.Name ?? "Admin";
-                var (success, error, imageUrls) = await _productRepo.DeleteProductAsync(id, currentUser);
+                var (success, error, imageUrls) = await _productAdminService.DeleteProductAsync(
+                    id, User.Identity?.Name ?? "Admin");
 
                 if (imageUrls != null)
-                    foreach (var imgUrl in imageUrls) DeletePhysicalFile(imgUrl);
+                    foreach (var url in imageUrls) DeletePhysicalFile(url);
 
                 if (success)
                 {
-                    // ── Audit Log ─────────────────────────────────────────
                     await LoggingHelper.LogDeleteAsync(
                         username   : User.Identity?.Name ?? "Admin",
                         module     : "Product",
@@ -403,6 +317,7 @@ namespace HDKTech.Areas.Admin.Controllers
                 TempData[success ? "Success" : "Error"] = success
                     ? $"Đã xóa sản phẩm \"{product.Name}\"."
                     : $"Xóa sản phẩm thất bại: {error}";
+
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -414,7 +329,7 @@ namespace HDKTech.Areas.Admin.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────
-        // UPDATE STOCK (AJAX) — theo variant
+        // UPDATE STOCK (AJAX)
         // ──────────────────────────────────────────────────────────────
         [HttpPost("update-stock/{variantId:int}")]
         [Authorize(Policy = "Inventory.Update")]
@@ -424,7 +339,7 @@ namespace HDKTech.Areas.Admin.Controllers
             if (quantity < 0)
                 return Json(new { success = false, message = "Số lượng không hợp lệ." });
 
-            var ok = await _productRepo.UpdateVariantStockAsync(variantId, quantity);
+            var ok = await _productAdminService.UpdateVariantStockAsync(variantId, quantity);
             return Json(new
             {
                 success = ok,
@@ -432,43 +347,13 @@ namespace HDKTech.Areas.Admin.Controllers
             });
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // PRIVATE HELPERS
-        // ──────────────────────────────────────────────────────────────
-        private async Task SaveProductImages(int productId, IList<IFormFile> files, string? categoryName = null)
+        // ── PRIVATE HELPERS ───────────────────────────────────────────
+        private async Task LoadDropdowns()
         {
-            var subFolder = productId.ToString();
-            var uploadDir = Path.Combine(_env.WebRootPath, ImgFolder, subFolder);
-            Directory.CreateDirectory(uploadDir);
-
-            bool isFirst = !await _context.ProductImages.AnyAsync(x => x.ProductId == productId);
-
-            foreach (var file in files)
-            {
-                if (file.Length == 0) continue;
-
-                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                if (!new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" }.Contains(ext)) continue;
-
-                var fileName = $"{Guid.NewGuid():N}{ext}";
-                var physPath = Path.Combine(uploadDir, fileName);
-                var relUrl   = $"/{ImgFolder}/{subFolder}/{fileName}";
-
-                await using var stream = new FileStream(physPath, FileMode.Create);
-                await file.CopyToAsync(stream);
-
-                _context.ProductImages.Add(new ProductImage
-                {
-                    ProductId = productId,
-                    ImageUrl  = relUrl,
-                    IsDefault = isFirst,
-                    AltText   = Path.GetFileNameWithoutExtension(file.FileName),
-                    CreatedAt = DateTime.Now
-                });
-                isFirst = false;
-            }
-
-            await _context.SaveChangesAsync();
+            var (categories, brands, warranties) = await _productAdminService.GetDropdownsAsync();
+            ViewBag.Categories      = categories;
+            ViewBag.Brands          = brands;
+            ViewBag.WarrantyPolicies = warranties;
         }
 
         private void DeletePhysicalFile(string? relUrl)
@@ -484,20 +369,6 @@ namespace HDKTech.Areas.Admin.Controllers
             {
                 _logger.LogWarning(ex, "Không thể xóa file: {Url}", relUrl);
             }
-        }
-
-        private async Task LoadDropdowns()
-        {
-            ViewBag.Categories = await _context.Categories
-                .Where(c => c.ParentCategoryId == null)
-                .OrderBy(c => c.Name)
-                .ToListAsync();
-            ViewBag.Brands = await _context.Brands
-                .OrderBy(b => b.Name)
-                .ToListAsync();
-            ViewBag.WarrantyPolicies = await _context.WarrantyPolicies
-                .OrderBy(w => w.Name)
-                .ToListAsync();
         }
     }
 }

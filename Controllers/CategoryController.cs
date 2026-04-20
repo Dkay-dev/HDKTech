@@ -1,8 +1,8 @@
 ﻿// Controllers/CategoryController.cs — refactored
 using HDKTech.Models;
-using HDKTech.Services;
 using HDKTech.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using HDKTech.Services.Interfaces;
 
 namespace HDKTech.Controllers
 {

@@ -39,7 +39,7 @@
                 @if (User.Identity.IsAuthenticated)
                 {
                     <span class="badge ms-1" style="background-color: rgba(201, 168, 76, 0.15); color: #c9a84c; font-size: 0.65rem; border: 1px solid rgba(201, 168, 76, 0.3);">
-                        @(User.IsInRole("Admin") ? "ADMIN" : "MANAGER")
+                        @(User.IsInRole("Admin") ? "ADMIN" : User.IsInRole("Manager") ? "MANAGER" : "STAFF")
                     </span>
                 }
             </a>
@@ -87,12 +87,18 @@
                     </a>
                 </li>
 
+                @{
+                    var canRevenue = (await AuthorizationService.AuthorizeAsync(User, "RevenueAnalytics.Read")).Succeeded;
+                }
+                @if (canRevenue)
+                {
                 <li class="nav-item">
                     <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "RevenueAnalytics" ? "active" : "")"
                            href="/admin/revenueanalytics">
                         <i class="bi bi-graph-up-arrow me-2"></i> Thống kê Doanh thu
                     </a>
                 </li>
+                }
 
                 @* ── QUẢN LÝ HÀNG HOÁ ──────────────────────────────────── *@
                 @{
@@ -147,10 +153,9 @@
                 @* ── KINH DOANH ─────────────────────────────────────────── *@
                 @{
                     var canOrder     = (await AuthorizationService.AuthorizeAsync(User, "Order.Read")).Succeeded;
-                    var canReport    = (await AuthorizationService.AuthorizeAsync(User, "Report.Export")).Succeeded;
                     var canPromotion = (await AuthorizationService.AuthorizeAsync(User, "Promotion.Read")).Succeeded;
                 }
-                @if (canOrder || canReport || canPromotion)
+                @if (canOrder || canPromotion)
                 {
                 <li class="nav-item mt-2">
                     <span class="nav-section-label px-3">KINH DOANH</span>
@@ -164,15 +169,6 @@
                         <i class="bi bi-receipt me-2"></i> Đơn hàng
                     </a>
                 </li>
-                }
-                @if (canReport)
-                {
-                    <li class="nav-item">
-                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
-                           href="/admin/reports">
-                            <i class="bi bi-file-earmark-spreadsheet me-2"></i> Báo cáo Excel
-                        </a>
-                    </li>
                 }
                 @if (canPromotion)
                 {

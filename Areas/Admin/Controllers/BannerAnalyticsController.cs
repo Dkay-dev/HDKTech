@@ -7,8 +7,7 @@ using HDKTech.Areas.Admin.Repositories;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "RequireManager")]
-    [Authorize(Policy = "Banner.Read")]     // Sprint 3: Policy guard — chỉ ai có Banner.Read claim mới vào được
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("Admin/[controller]")]
     public class BannerAnalyticsController : Controller
     {
@@ -32,6 +31,7 @@ namespace HDKTech.Areas.Admin.Controllers
         [HttpGet]
         [Route("")]
         [Route("Index")]
+        [Authorize(Policy = "Banner.Read")]
         public async Task<IActionResult> Index()
         {
             try

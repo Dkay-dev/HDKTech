@@ -2,6 +2,7 @@
 using HDKTech.Areas.Admin.Models;
 using HDKTech.Data;
 using HDKTech.Models;
+using HDKTech.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace HDKTech.Services
@@ -99,6 +100,18 @@ namespace HDKTech.Services
                 .Where(p => productIds.Contains(p.Id))
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        public async Task<DateTime?> GetFlashSaleEndTimeAsync()
+        {
+            var now = DateTime.Now;
+            return await _context.Promotions
+                .Where(p => p.PromotionType == PromotionType.FlashSale
+                         && p.IsActive
+                         && p.StartDate <= now && p.EndDate >= now)
+                .OrderBy(p => p.EndDate)
+                .Select(p => (DateTime?)p.EndDate)
+                .FirstOrDefaultAsync();
         }
 
         // ── Build base query ───────────────────────────────────────

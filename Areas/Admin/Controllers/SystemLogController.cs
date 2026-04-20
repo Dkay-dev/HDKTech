@@ -63,9 +63,9 @@ namespace HDKTech.Areas.Admin.Controllers
                 SelectedActionType = actionType,
                 SelectedModule     = module,
                 SelectedUsername   = username,
-                ActionTypes        = (await _logRepository.GetModulesAsync())
+                ActionTypes        = (await _logRepository.GetActionTypesAsync())
                                         .Where(x => !string.IsNullOrEmpty(x)).ToList(),
-                Modules            = (await _logRepository.GetActionTypesAsync())
+                Modules            = (await _logRepository.GetModulesAsync())
                                         .Where(x => !string.IsNullOrEmpty(x)).ToList(),
                 Usernames          = (await _logRepository.GetUsernamesAsync())
                                         .Where(x => !string.IsNullOrEmpty(x)).ToList()

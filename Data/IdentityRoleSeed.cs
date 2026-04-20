@@ -33,6 +33,7 @@ namespace HDKTech.Data
             "Banner.Read",     "Banner.Create",    "Banner.Update",    "Banner.Delete",
             "Role.Read",       "Role.Update",
             "Report.Export",
+            "RevenueAnalytics.Read", "RevenueAnalytics.Export",
             "SystemLog.Read",
             "User.Read",       "User.Update",      "User.Delete",
         };
@@ -82,12 +83,16 @@ namespace HDKTech.Data
         }
 
         /// <summary>
-        /// Đảm bảo role tồn tại; đồng bộ claims với <paramref name="desiredPermissions"/>:
-        ///   - thêm claim còn thiếu
-        ///   - giữ nguyên claim đã đúng
-        ///   - xoá claim thừa (nằm trong <see cref="AllPermissions"/> nhưng không còn được cấp cho role này)
+        /// Đảm bảo role tồn tại và chỉ seed permission MẶC ĐỊNH khi role
+        /// được tạo mới ở lần chạy đầu tiên.
         ///
-        /// Không đụng đến claim có <c>Type != "permission"</c> (nếu dev khác đã seed thêm).
+        /// Quan trọng: nếu role đã tồn tại, KHÔNG chạm vào RoleClaims nữa —
+        /// để giữ nguyên mọi thay đổi mà admin đã lưu qua Permission Matrix
+        /// ở UI (/admin/role/manage-permissions/{roleCode}).
+        ///
+        /// Trước đây hàm này đồng bộ cưỡng bức: thiếu thì thêm, thừa thì xoá.
+        /// Điều đó khiến mọi lần app khởi động lại đều reset permission về
+        /// danh sách hardcode, ghi đè thao tác của admin.
         /// </summary>
         private static async Task EnsureRoleWithClaimsAsync(
             RoleManager<IdentityRole>    roleManager,
@@ -95,6 +100,8 @@ namespace HDKTech.Data
             IEnumerable<string>          desiredPermissions)
         {
             var role = await roleManager.FindByNameAsync(roleName);
+            var isNewRole = false;
+
             if (role == null)
             {
                 role = new IdentityRole(roleName) { NormalizedName = roleName.ToUpperInvariant() };
@@ -105,28 +112,16 @@ namespace HDKTech.Data
                     throw new InvalidOperationException(
                         $"IdentityRoleSeed: không tạo được role '{roleName}'. Lỗi: {errors}");
                 }
+                isNewRole = true;
             }
+
+            // Chỉ seed permission khi role VỪA được tạo mới.
+            // Role đã có → tôn trọng cấu hình admin đã chỉnh qua UI, không đụng vào.
+            if (!isNewRole) return;
 
             var desired = new HashSet<string>(desiredPermissions, StringComparer.OrdinalIgnoreCase);
-            var existingPermissionClaims = (await roleManager.GetClaimsAsync(role))
-                .Where(c => c.Type == PermissionHandler.PermissionClaimType)
-                .ToList();
-
-            // Xoá claim thừa
-            foreach (var c in existingPermissionClaims)
-            {
-                if (!desired.Contains(c.Value))
-                    await roleManager.RemoveClaimAsync(role, c);
-            }
-
-            var already = new HashSet<string>(
-                existingPermissionClaims.Select(c => c.Value),
-                StringComparer.OrdinalIgnoreCase);
-
-            // Thêm claim còn thiếu
             foreach (var perm in desired)
             {
-                if (already.Contains(perm)) continue;
                 await roleManager.AddClaimAsync(role,
                     new Claim(PermissionHandler.PermissionClaimType, perm));
             }

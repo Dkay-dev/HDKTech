@@ -414,14 +414,63 @@
                     <label class="form-label">Thông tin bảo hành</label>
                     <input name="DefaultVariant.WarrantyInfo" class="form-input" style="width: 100%;" placeholder="VD: 24 tháng chính hãng" />
                 </div>
-
-                @*<!-- Promotion - Removed: Use separate Promotion model instead -->
-                <div class="form-group" style="display: none;">
-                    <label class="form-label">Khuyến mãi / Quà tặng</label>
-                    <textarea rows="2" class="form-input" style="width: 100%; resize: vertical;" placeholder="VD: Giảm 15% | Tặng balo | Vệ sinh máy"></textarea>
-                    <p class="help-text">Ngăn cách bằng dấu |</p>
-                </div>*@
             </div>
+        </div>
+
+        <!-- SECTION 3: Flash Sale -->
+        @{
+            var fs = ViewBag.FlashSale as HDKTech.Areas.Admin.Models.Promotion;
+            var fsActive = fs != null && fs.IsActive;
+        }
+        <div class="mb-8">
+            <h3 class="form-section-title">
+                <span class="material-symbols-outlined" style="color:#ff2222;">local_fire_department</span>
+                Flash Sale
+            </h3>
+
+            <div class="form-group" style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+                <label class="form-label mb-0">Bật Flash Sale cho sản phẩm này</label>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="isFlashSaleToggle" name="IsFlashSale" value="true"
+                           @(fsActive ? "checked" : "") style="width:48px;height:24px;cursor:pointer;" />
+                </div>
+                @if (fsActive)
+                {
+                    <span class="badge" style="background:#ff2222;color:white;padding:4px 10px;border-radius:20px;font-size:12px;">
+                        🔥 Đang chạy đến @fs!.EndDate.ToString("dd/MM/yyyy HH:mm")
+                    </span>
+                }
+            </div>
+
+            <div id="flashSaleFields" style="display:@(fsActive ? "grid" : "none");grid-template-columns:1fr 1fr 1fr;gap:20px;background:rgba(255,34,34,0.03);border:1.5px dashed #ff2222;border-radius:10px;padding:20px;">
+                <div class="form-group mb-0">
+                    <label class="form-label" style="color:#ff2222;">Giá Flash Sale (₫) <span class="required">*</span></label>
+                    <div style="position:relative;">
+                        <span class="currency-symbol">₫</span>
+                        <input type="number" name="FlashSalePrice" step="1000" class="form-input"
+                               style="width:100%;padding-left:32px;"
+                               placeholder="Giá sale đặc biệt"
+                               value="@(fs?.Value)" />
+                    </div>
+                    <p class="help-text">Giá bán cố định trong thời gian Flash Sale</p>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label" style="color:#ff2222;">Bắt đầu <span class="required">*</span></label>
+                    <input type="datetime-local" name="FlashSaleStart" class="form-input" style="width:100%;"
+                           value="@(fs?.StartDate.ToString("yyyy-MM-ddTHH:mm"))" />
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label" style="color:#ff2222;">Kết thúc <span class="required">*</span></label>
+                    <input type="datetime-local" name="FlashSaleEnd" class="form-input" style="width:100%;"
+                           value="@(fs?.EndDate.ToString("yyyy-MM-ddTHH:mm"))" />
+                </div>
+            </div>
+            <p class="help-text mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Flash Sale sẽ tự động hiển thị giá khuyến mãi trên trang sản phẩm. Quản lý chi tiết tại
+                <a href="/admin/promotion" style="color:#ff2222;">Quản lý Khuyến mãi →</a>
+            </p>
         </div>
 
         <!-- Form Actions -->
@@ -455,6 +504,28 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Flash Sale toggle
+        const flashToggle = document.getElementById('isFlashSaleToggle');
+        const flashFields = document.getElementById('flashSaleFields');
+        if (flashToggle && flashFields) {
+            flashToggle.addEventListener('change', function() {
+                flashFields.style.display = this.checked ? 'grid' : 'none';
+                if (this.checked) {
+                    // Set default dates if empty
+                    const startInput = flashFields.querySelector('[name="FlashSaleStart"]');
+                    const endInput   = flashFields.querySelector('[name="FlashSaleEnd"]');
+                    if (startInput && !startInput.value) {
+                        const now = new Date();
+                        startInput.value = now.toISOString().slice(0, 16);
+                    }
+                    if (endInput && !endInput.value) {
+                        const tomorrow = new Date(Date.now() + 86400000);
+                        endInput.value = tomorrow.toISOString().slice(0, 16);
+                    }
+                }
+            });
+        }
+
         const productForm = document.getElementById('productForm');
 
         productForm.addEventListener('submit', function(e) {

@@ -183,11 +183,12 @@ namespace HDKTech.Areas.Admin.Repositories
 
         /// <summary>
         /// Get list of modules with logs
+        /// LogLevel = cột Module trong DB theo alias của SystemLog entity
         /// </summary>
         public async Task<List<string>> GetModulesAsync()
         {
             return await _context.Set<SystemLog>()
-                .Select(l => l.Action)
+                .Select(l => l.LogLevel)   // LogLevel alias → Module
                 .Distinct()
                 .OrderBy(m => m)
                 .ToListAsync();
@@ -195,11 +196,12 @@ namespace HDKTech.Areas.Admin.Repositories
 
         /// <summary>
         /// Get list of action types
+        /// Action = cột ActionType trong DB theo alias của SystemLog entity
         /// </summary>
         public async Task<List<string>> GetActionTypesAsync()
         {
             return await _context.Set<SystemLog>()
-                .Select(l => l.LogLevel)
+                .Select(l => l.Action)     // Action alias → ActionType
                 .Distinct()
                 .OrderBy(a => a)
                 .ToListAsync();

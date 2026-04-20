@@ -20,6 +20,10 @@
 
 <link rel="stylesheet" href="~/css/pages/category.css" />
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/product/filter.css" asp-append-version="true" />
+}
+
 <div class="container-fluid my-4 px-3 px-lg-4">
 
     <!-- ══ FILTER BAR ══════════════════════════════════════════════════════ -->
@@ -252,77 +256,22 @@
     }
 </div>
 
-<!-- Shared filter styles (same as Category/Index) -->
-<style>
-.hdk-filter-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:20px;background:#fff;font-size:.8rem;font-weight:500;color:#374151;cursor:pointer;transition:all .15s;white-space:nowrap}
-.hdk-filter-btn:hover{border-color:#ef4444;color:#ef4444}
-.hdk-filter-btn.active{background:#fef2f2;border-color:#ef4444;color:#ef4444;font-weight:600}
-.hdk-filter-count{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#ef4444;color:#fff;border-radius:50%;font-size:.65rem;font-weight:700;margin-left:1px}
-.hdk-filter-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;font-size:.73rem;color:#dc2626;font-weight:600}
-.hdk-filter-tag button{background:none;border:none;color:#dc2626;cursor:pointer;font-size:.85rem;line-height:1;padding:0}
-.hdk-clear-all-btn{padding:2px 10px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:12px;font-size:.73rem;color:#6b7280;cursor:pointer;transition:all .15s}
-.hdk-clear-all-btn:hover{background:#fef2f2;color:#dc2626;border-color:#fecaca}
-.hdk-brand-menu{min-width:200px;max-height:320px;overflow-y:auto}
-.hdk-brand-row{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:5px;cursor:pointer;font-size:.82rem;color:#374151;transition:background .1s}
-.hdk-brand-row:hover{background:#f9fafb}
-.hdk-brand-row.selected{color:#ef4444;font-weight:600}
-.hdk-brand-row input[type=checkbox]{accent-color:#ef4444}
-.hdk-price-preset{padding:2px 8px;border:1px solid #e5e7eb;border-radius:12px;font-size:.72rem;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all .15s}
-.hdk-price-preset:hover{border-color:#ef4444;color:#ef4444;background:#fef2f2}
-.hdk-sort-wrap{display:flex;align-items:center;border:1.5px solid #e5e7eb;border-radius:20px;padding:4px 12px;background:#fff}
-.hdk-sort-select{border:none;background:transparent;font-size:.8rem;font-weight:600;color:#374151;cursor:pointer;outline:none}
-.dropdown-item.active{background:#fef2f2!important;color:#ef4444!important;font-weight:600}
-</style>
+<div id="filter-state"
+     data-category-id="@(categoryId?.ToString() ?? "")"
+     data-keyword="@keyword"
+     data-brand-names="@System.Text.Json.JsonSerializer.Serialize(selectedBrandNames)"
+     data-min-price="@(minPrice.HasValue ? minPrice.Value.ToString("0") : "")"
+     data-max-price="@(maxPrice.HasValue ? maxPrice.Value.ToString("0") : "")"
+     data-sort-by="@currentSort"
+     data-cpu-line="@activeCpuLine"
+     data-vga-line="@activeVgaLine"
+     data-ram-type="@activeRamType"
+     style="display:none"></div>
 
-<script>
-(function(){
-    const state = {
-        categoryId : '@(categoryId?.ToString() ?? "")',
-        keyword    : '@Html.Raw(keyword.Replace("'","\\'"  ))',
-        brandNames : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedBrandNames)),
-        minPrice   : '@(minPrice.HasValue?minPrice.Value.ToString("0"):"")',
-        maxPrice   : '@(maxPrice.HasValue?maxPrice.Value.ToString("0"):"")',
-        sortBy     : '@currentSort',
-        cpuLine    : '@activeCpuLine',
-        vgaLine    : '@activeVgaLine',
-        ramType    : '@activeRamType',
-    };
-    let pendingBrands = [...state.brandNames];
 
-    function navigate(ov){
-        const s = Object.assign({},state,ov);
-        const p = new URLSearchParams();
-        if(s.categoryId) p.set('categoryId',s.categoryId);
-        if(s.keyword)    p.set('keyword',s.keyword);
-        if(s.brandNames && s.brandNames.length) p.set('brandNames',s.brandNames.join(','));
-        if(s.minPrice)   p.set('minPrice',s.minPrice);
-        if(s.maxPrice)   p.set('maxPrice',s.maxPrice);
-        if(s.sortBy && s.sortBy!=='featured') p.set('sortBy',s.sortBy);
-        if(s.cpuLine)    p.set('cpuLine',s.cpuLine);
-        if(s.vgaLine)    p.set('vgaLine',s.vgaLine);
-        if(s.ramType)    p.set('ramType',s.ramType);
-        const qs=p.toString();
-        window.location.href='/Product/Filter'+(qs?'?'+qs:'');
-    }
-
-    window.toggleBrand=function(cb){
-        if(cb.checked){if(!pendingBrands.includes(cb.value))pendingBrands.push(cb.value);cb.closest('label').classList.add('selected');}
-        else{pendingBrands=pendingBrands.filter(b=>b!==cb.value);cb.closest('label').classList.remove('selected');}
-    };
-    window.applyBrands  =function(){navigate({brandNames:pendingBrands});};
-    window.clearBrands  =function(){pendingBrands=[];document.querySelectorAll('.hdk-brand-cb').forEach(c=>{c.checked=false;c.closest('label').classList.remove('selected');});};
-    window.removeBrand  =function(n){navigate({brandNames:state.brandNames.filter(b=>b!==n)});};
-    window.applyPrice   =function(min,max){navigate({minPrice:min?String(min):'',maxPrice:max?String(max):''});};
-    window.applyCustomPrice=function(){navigate({minPrice:document.getElementById('priceMin')?.value||'',maxPrice:document.getElementById('priceMax')?.value||''});};
-    window.clearPrice   =function(){navigate({minPrice:'',maxPrice:''});};
-    window.removePrice  =function(){navigate({minPrice:'',maxPrice:''});};
-    window.toggleSpec   =function(param,val){const o={};o[param]=(state[param]===val)?'':val;navigate(o);};
-    window.removeSpec   =function(param){const o={};o[param]='';navigate(o);};
-    window.applySort    =function(v){navigate({sortBy:v});};
-    window.clearAllFilters=function(){navigate({brandNames:[],minPrice:'',maxPrice:'',cpuLine:'',vgaLine:'',ramType:'',sortBy:'featured'});};
-    window.filterBrandSearch=function(q){const rows=document.querySelectorAll('#brandCheckboxList .hdk-brand-row');const lq=q.toLowerCase();rows.forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(lq)?'':'none';});};
-})();
-</script>
+@section Scripts {
+    <script src="~/js/pages/product/filter.js" asp-append-version="true"></script>
+}
 
 @functions {
     string BuildPageUrl(int page)
