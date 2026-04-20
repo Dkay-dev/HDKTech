@@ -132,14 +132,17 @@ namespace HDKTech
                 options.AddPolicy("RequireManager", policy =>
                     policy.RequireRole(AdminConstants.AdminRole, AdminConstants.ManagerRole));
 
-                // RequireAdminArea: bất kỳ role nào có ít nhất 1 permission claim
-                // đều được vào admin area. Không còn hardcode "Admin/Manager/Staff"
-                // — role tự tạo (vd "test") chỉ cần được cấp permission qua UI
-                // Permission Matrix là vào được. PermissionHandler xử lý wildcard.
                 options.AddPolicy("RequireAdminArea", policy =>
-                    policy.AddRequirements(new PermissionRequirement(
-                        PermissionRequirement.Wildcard,
-                        PermissionRequirement.Wildcard)));
+                policy.RequireAssertion(ctx =>
+                    ctx.User.IsInRole("Admin") ||
+                    ctx.User.IsInRole("Manager") ||
+                    ctx.User.IsInRole("Staff") ||
+                    // Hỗ trợ custom role tự tạo: có bất kỳ role nào không phải Customer
+                    (ctx.User.Identity?.IsAuthenticated == true &&
+                     !ctx.User.IsInRole("Customer") &&
+                     ctx.User.Claims.Any(c =>
+                         c.Type == System.Security.Claims.ClaimTypes.Role))
+                ));
 
                 // ─── Permission-based policies ──────────────────────────────
                 // Mỗi permission "Module.Action" được map thành 1 policy đồng tên;

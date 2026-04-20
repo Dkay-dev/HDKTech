@@ -7,7 +7,7 @@ using HDKTech.Areas.Admin.Services.Interfaces;
 namespace HDKTech.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "Dashboard.View")]
+    [Authorize(Policy = "RequireAdminArea")]
     [Route("admin/[controller]")]
     public class DashboardController : Controller
     {

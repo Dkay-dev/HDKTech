@@ -23,7 +23,6 @@ namespace HDKTech.Data
         // Dùng chung cho cả Program.cs (đăng ký policy) lẫn IdentityRoleSeed (gán claim).
         public static readonly IReadOnlyList<string> AllPermissions = new[]
         {
-            "Dashboard.View",
             "Product.Read",    "Product.Create",   "Product.Update",   "Product.Delete",
             "Category.Read",   "Category.Create",  "Category.Update",  "Category.Delete",
             "Brand.Read",      "Brand.Create",     "Brand.Update",     "Brand.Delete",

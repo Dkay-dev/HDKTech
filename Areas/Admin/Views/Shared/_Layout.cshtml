@@ -79,25 +79,26 @@
         <nav id="hdk-admin-sidebar" class="hdk-admin-sidebar d-flex flex-column">
             <ul class="nav flex-column pt-3 px-2">
 
-                @* Dashboard — mọi role đã authed đều thấy *@
+                @* Dashboard — Không cần check policy, cứ vào được Area Admin là thấy *@
                 <li class="nav-item">
                     <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")"
-                       href="/admin/dashboard">
+                           href="/admin/dashboard">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>
                 </li>
 
+                @* Thống kê Doanh thu — Vẫn giữ check Policy riêng biệt vì đây là dữ liệu nhạy cảm *@
                 @{
                     var canRevenue = (await AuthorizationService.AuthorizeAsync(User, "RevenueAnalytics.Read")).Succeeded;
                 }
                 @if (canRevenue)
                 {
-                <li class="nav-item">
-                    <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "RevenueAnalytics" ? "active" : "")"
-                           href="/admin/revenueanalytics">
-                        <i class="bi bi-graph-up-arrow me-2"></i> Thống kê Doanh thu
-                    </a>
-                </li>
+                    <li class="nav-item">
+                        <a class="nav-link hdk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "RevenueAnalytics" ? "active" : "")"
+                               href="/admin/revenueanalytics">
+                            <i class="bi bi-graph-up-arrow me-2"></i> Thống kê Doanh thu
+                        </a>
+                    </li>
                 }
 
                 @* ── QUẢN LÝ HÀNG HOÁ ──────────────────────────────────── *@
