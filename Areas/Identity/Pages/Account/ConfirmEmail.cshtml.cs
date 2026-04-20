@@ -1,13 +1,6 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
-
-using System;
-using System.Linq;
+﻿// Areas/Identity/Pages/Account/ConfirmEmail.cshtml.cs
 using System.Text;
-using System.Threading.Tasks;
 using HDKTech.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,28 +17,39 @@ namespace HDKTech.Areas.Identity.Pages.Account
             _userManager = userManager;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [TempData]
-        public string StatusMessage { get; set; }
+        public string? StatusMessage { get; set; }
+
+        public bool IsSuccess { get; set; }
+        public string? UserEmail { get; set; }
+
         public async Task<IActionResult> OnGetAsync(string userId, string code)
         {
-            if (userId == null || code == null)
-            {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
                 return RedirectToPage("/Index");
-            }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
+                return NotFound($"Không tìm thấy user ID '{userId}'.");
+
+            UserEmail = user.Email;
+
+            try
             {
-                return NotFound($"Unable to load user with ID '{userId}'.");
+                var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+                var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
+
+                IsSuccess = result.Succeeded;
+                StatusMessage = result.Succeeded
+                    ? "Email đã được xác nhận thành công!"
+                    : "Lỗi xác nhận email. Link đã hết hạn hoặc không hợp lệ.";
+            }
+            catch
+            {
+                IsSuccess = false;
+                StatusMessage = "Link xác nhận không hợp lệ.";
             }
 
-            code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-            var result = await _userManager.ConfirmEmailAsync(user, code);
-            StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
             return Page();
         }
     }

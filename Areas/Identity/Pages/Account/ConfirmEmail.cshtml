@@ -1,8 +1,116 @@
 ﻿@page
 @model ConfirmEmailModel
 @{
-    ViewData["Title"] = "Xác nhận email";
+    ViewData["Title"] = Model.IsSuccess ? "Xác nhận email thành công" : "Xác nhận email thất bại";
+    Layout = "/Views/Shared/_Layout.cshtml";
 }
 
-<h1>@ViewData["Title"]</h1>
-<partial name="_StatusMessage" model="Model.StatusMessage" />
+<style>
+.confirm-wrapper {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    background: #f5f5f5;
+}
+.confirm-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+}
+.confirm-icon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 36px;
+}
+.confirm-icon.success { background: #dcfce7; color: #16a34a; }
+.confirm-icon.fail    { background: #fee2e2; color: #dc2626; }
+.confirm-title { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+.confirm-title.success { color: #15803d; }
+.confirm-title.fail    { color: #dc2626; }
+.confirm-sub { color: #6b7280; font-size: 15px; line-height: 1.6; margin-bottom: 32px; }
+.confirm-email {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 32px;
+    word-break: break-all;
+}
+.btn-hdk {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 32px;
+    border-radius: 10px;
+    font-weight: 700; font-size: 14px;
+    text-decoration: none;
+    transition: all .2s;
+    border: none; cursor: pointer;
+}
+.btn-hdk-primary { background: #ef4444; color: #fff; }
+.btn-hdk-primary:hover { background: #dc2626; color: #fff; text-decoration: none; }
+.btn-hdk-outline { background: #fff; color: #ef4444; border: 1.5px solid #ef4444; margin-left: 8px; }
+.btn-hdk-outline:hover { background: #fef2f2; color: #dc2626; text-decoration: none; }
+</style>
+
+<div class="confirm-wrapper">
+    <div class="confirm-card">
+
+        @if (Model.IsSuccess)
+        {
+            <div class="confirm-icon success">
+                <i class="bi bi-check-lg"></i>
+            </div>
+            <h1 class="confirm-title success">Email đã được xác nhận!</h1>
+            <p class="confirm-sub">
+                Tài khoản của bạn đã được kích hoạt thành công.
+                Bây giờ bạn có thể đăng nhập và mua sắm tại HDKTech.
+            </p>
+
+            @if (!string.IsNullOrEmpty(Model.UserEmail))
+            {
+                <div class="confirm-email">
+                    <i class="bi bi-envelope-check-fill me-2" style="color:#ef4444;"></i>
+                    @Model.UserEmail
+                </div>
+            }
+
+            <div>
+                <a asp-page="./Login" class="btn-hdk btn-hdk-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> Đăng nhập ngay
+                </a>
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="btn-hdk btn-hdk-outline">
+                    <i class="bi bi-house"></i> Trang chủ
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="confirm-icon fail">
+                <i class="bi bi-x-lg"></i>
+            </div>
+            <h1 class="confirm-title fail">Xác nhận thất bại</h1>
+            <p class="confirm-sub">
+                Link xác nhận email đã <strong>hết hạn</strong> hoặc không hợp lệ.<br/>
+                Link có hiệu lực trong 24 giờ sau khi đăng ký.
+            </p>
+
+            <div>
+                <a asp-page="./ResendEmailConfirmation" class="btn-hdk btn-hdk-primary">
+                    <i class="bi bi-envelope-arrow-up"></i> Gửi lại email
+                </a>
+                <a asp-page="./Register" class="btn-hdk btn-hdk-outline">
+                    <i class="bi bi-person-plus"></i> Đăng ký lại
+                </a>
+            </div>
+        }
+    </div>
+</div>

@@ -1,57 +1,341 @@
 @page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Đăng ký";
+    ViewData["Title"] = "Đăng ký tài khoản";
+    Layout = "/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+:root { --hdk-red: #ef4444; --hdk-dark: #1a1a1a; }
 
-<div class="d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+.auth-wrapper {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    background: #f5f5f5;
+}
 
+.auth-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    width: 100%;
+    max-width: 460px;
+    overflow: hidden;
+}
 
-    <div class="card shadow-sm p-4" style="width: 100%; max-width: 450px; border-radius: 10px;">
-        <form id="registerForm" asp-route-returnImageUrl="@Model.ReturnImageUrl" method="post">
-           
-            <h1 class="h3 mb-3 fw-bold text-center">@ViewData["Title"]</h1>
-            <hr />
+.auth-header {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    padding: 28px 32px;
+    text-align: center;
+}
+.auth-header h1 {
+    color: #fff;
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+}
+.auth-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 0; }
 
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+.auth-body { padding: 32px; }
 
-            <div class="form-floating mb-3">
-                <input asp-for="Input.FullName" class="form-control" aria-required="true" placeholder="Nguyễn Văn A" />
-                <label asp-for="Input.FullName">Họ và tên</label>
-                <span asp-validation-for="Input.FullName" class="text-danger"></span>
-            </div>
+/* Social buttons */
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .2s;
+    text-decoration: none;
+}
+.btn-google:hover {
+    border-color: #4285F4;
+    background: #f0f4ff;
+    color: #4285F4;
+    text-decoration: none;
+}
+.btn-google svg { flex-shrink: 0; }
 
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: #9ca3af;
+    font-size: 13px;
+}
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
 
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="mật khẩu" />
-                <label asp-for="Input.Password">Mật khẩu</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
+/* Form */
+.form-floating-hdk {
+    position: relative;
+    margin-bottom: 16px;
+}
+.form-floating-hdk .form-control {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 16px 12px 44px;
+    font-size: 14px;
+    transition: border-color .2s;
+    height: auto;
+}
+.form-floating-hdk .form-control:focus {
+    border-color: var(--hdk-red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+    outline: none;
+}
+.form-floating-hdk .form-control.is-invalid {
+    border-color: #f87171;
+    background-image: none;
+}
+.form-floating-hdk .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 16px;
+    pointer-events: none;
+}
+.form-floating-hdk label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+    display: block;
+}
+.invalid-feedback { font-size: 12px; color: #dc2626; margin-top: 4px; }
 
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="xác nhận mật khẩu" />
-                <label asp-for="Input.ConfirmPassword">Xác nhận mật khẩu</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
+.btn-register {
+    width: 100%;
+    padding: 13px;
+    background: var(--hdk-red);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: 0.3px;
+}
+.btn-register:hover { background: #dc2626; transform: translateY(-1px); }
+.btn-register:active { transform: translateY(0); }
 
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary mb-3">Đăng ký</button>
+.auth-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #6b7280;
+}
+.auth-footer a { color: var(--hdk-red); font-weight: 600; text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
 
-            <div class="text-center small">
-                <p class="mb-0 text-muted">
-                    Đã có tài khoản? <a asp-page="./Login" asp-route-returnImageUrl="@Model.ReturnImageUrl" class="text-decoration-none fw-bold">Đăng nhập tại đây</a>
+.alert-hdk {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #dc2626;
+}
+.alert-hdk li { margin: 2px 0; }
+
+.password-strength {
+    height: 4px;
+    border-radius: 4px;
+    background: #e5e7eb;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.password-strength-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .3s, background .3s;
+    width: 0%;
+}
+
+.terms-note {
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.6;
+}
+.terms-note a { color: #ef4444; }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>HDK<span style="font-weight:300">Tech</span></h1>
+            <p>Tạo tài khoản mới — Mua sắm thông minh hơn</p>
+        </div>
+
+        <div class="auth-body">
+
+            @* ── Đăng ký bằng Google ── *@
+            @if (Model.ExternalLogins?.Any() == true)
+            {
+                <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    @foreach (var provider in Model.ExternalLogins)
+                    {
+                        if (provider.Name == "Google")
+                        {
+                            <button type="submit" name="provider" value="@provider.Name"
+                                    class="btn-google">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20">
+                                    <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                                    <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                                    <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z"/>
+                                    <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                                </svg>
+                                Đăng nhập bằng Google
+                            </button>
+                        }
+                    }
+                </form>
+
+                <div class="divider">hoặc đăng ký bằng email</div>
+            }
+
+            @* ── Lỗi validation ── *@
+            @{
+                var errors = ViewData.ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .Where(m => !string.IsNullOrEmpty(m))
+                    .ToList();
+            }
+            @if (errors.Any())
+            {
+                <div class="alert-hdk">
+                    <ul class="mb-0 ps-3">
+                        @foreach (var e in errors)
+                        {
+                            <li>@e</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @* ── Form đăng ký ── *@
+            <form asp-page-handler="" method="post" id="registerForm">
+                @Html.AntiForgeryToken()
+
+                <div class="form-floating-hdk">
+                    <label asp-for="Input.FullName">Họ và tên</label>
+                    <i class="bi bi-person input-icon"></i>
+                    <input asp-for="Input.FullName"
+                           class="form-control @(ViewData.ModelState["Input.FullName"]?.Errors.Any() == true ? "is-invalid" : "")"
+                           placeholder="Nguyễn Văn A"
+                           autocomplete="name" />
+                </div>
+
+                <div class="form-floating-hdk">
+                    <label asp-for="Input.Email">Email</label>
+                    <i class="bi bi-envelope input-icon"></i>
+                    <input asp-for="Input.Email"
+                           class="form-control @(ViewData.ModelState["Input.Email"]?.Errors.Any() == true ? "is-invalid" : "")"
+                           placeholder="you@example.com"
+                           autocomplete="email" />
+                </div>
+
+                <div class="form-floating-hdk">
+                    <label asp-for="Input.PhoneNumber">Số điện thoại <span style="color:#9ca3af;font-weight:400;">(tuỳ chọn)</span></label>
+                    <i class="bi bi-telephone input-icon"></i>
+                    <input asp-for="Input.PhoneNumber"
+                           class="form-control"
+                           placeholder="0901xxxxxx"
+                           autocomplete="tel" />
+                </div>
+
+                <div class="form-floating-hdk">
+                    <label asp-for="Input.Password">Mật khẩu</label>
+                    <i class="bi bi-lock input-icon"></i>
+                    <input asp-for="Input.Password" type="password"
+                           class="form-control @(ViewData.ModelState["Input.Password"]?.Errors.Any() == true ? "is-invalid" : "")"
+                           placeholder="Tối thiểu 6 ký tự"
+                           autocomplete="new-password"
+                           id="passwordInput" />
+                    <div class="password-strength mt-1">
+                        <div class="password-strength-bar" id="strengthBar"></div>
+                    </div>
+                </div>
+
+                <div class="form-floating-hdk">
+                    <label asp-for="Input.ConfirmPassword">Xác nhận mật khẩu</label>
+                    <i class="bi bi-lock-fill input-icon"></i>
+                    <input asp-for="Input.ConfirmPassword" type="password"
+                           class="form-control @(ViewData.ModelState["Input.ConfirmPassword"]?.Errors.Any() == true ? "is-invalid" : "")"
+                           placeholder="Nhập lại mật khẩu"
+                           autocomplete="new-password" />
+                </div>
+
+                <button type="submit" class="btn-register" id="submitBtn">
+                    <i class="bi bi-person-plus me-2"></i>TẠO TÀI KHOẢN
+                </button>
+
+                <p class="terms-note">
+                    Bằng cách đăng ký, bạn đồng ý với
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Điều khoản sử dụng</a>
+                    và <a asp-area="" asp-controller="Home" asp-action="Privacy">Chính sách bảo mật</a>
+                    của HDKTech.
                 </p>
+            </form>
+
+            <div class="auth-footer">
+                Đã có tài khoản?
+                <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Đăng nhập ngay</a>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    <script>
+        // Password strength meter
+        const pwInput    = document.getElementById('passwordInput');
+        const strengthBar = document.getElementById('strengthBar');
 
+        pwInput?.addEventListener('input', function() {
+            const val = this.value;
+            let score = 0;
+            if (val.length >= 6)  score++;
+            if (val.length >= 10) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+            const widths = [0, 20, 40, 60, 80, 100];
+            strengthBar.style.width  = widths[score] + '%';
+            strengthBar.style.background = colors[score] || '#e5e7eb';
+        });
+
+        // Submit loading state
+        document.getElementById('registerForm')?.addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Đang tạo tài khoản...';
+        });
+    </script>
+}
