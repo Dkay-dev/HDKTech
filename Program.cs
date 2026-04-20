@@ -89,6 +89,10 @@ namespace HDKTech
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
 
+            // Chat realtime (SignalR)
+            builder.Services.AddScoped<IChatRepository, ChatRepository>();
+            builder.Services.AddScoped<IChatService, ChatService>();
+
             // Admin Repositories — canonical registration (Areas.Admin namespace)
             // HDKTech.Repositories.AdminProductRepository là deprecated stub, không register nữa
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository,
@@ -193,6 +197,9 @@ namespace HDKTech
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
 
+            // SignalR — realtime chat
+            builder.Services.AddSignalR();
+
             // Payment Services
             builder.Services.AddScoped<IVnPayService, VnPayService>();
             builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
@@ -296,6 +303,10 @@ namespace HDKTech
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.MapRazorPages();
+
+            // SignalR Hub endpoint
+            app.MapHub<HDKTech.Hubs.ChatHub>("/chathub");
+
             app.Run();
         }
     }

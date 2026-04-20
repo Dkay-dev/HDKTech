@@ -1,0 +1,1384 @@
+@* Views/Shared/_ChatWidget.cshtml *@
+@* Nhúng vào _Layout.cshtml trước </body> — chỉ hiện với trang khách (không phải /admin) *@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<HDKTech.Models.AppUser> SignInManager
+@inject UserManager<HDKTech.Models.AppUser> UserManager
+
+@{
+    var isAuthenticated = SignInManager.IsSignedIn(User);
+    var currentUser     = isAuthenticated ? await UserManager.GetUserAsync(User) : null;
+    var userName        = currentUser?.FullName ?? "";
+    var userId          = currentUser?.Id ?? "";
+    var userEmail       = currentUser?.Email ?? "";
+    var userPhone       = currentUser?.PhoneNumber ?? "";
+}
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- HDKTech Chat Widget — CellphoneS / CareSoft Style                 -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div id="hdk-chat-root">
+
+    <!-- ① FAB pill button -->
+    <button id="chat-fab" class="hdk-fab" aria-label="Liên hệ hỗ trợ" title="Liên hệ">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="hdk-fab-icon">
+            <path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.684l1 3A1 1 0 019 7.72l-1.293 1.293a11.048 11.048 0 005.28 5.28L14.28 13a1 1 0 011.036-.45l3 1A1 1 0 0119 14.5V17a2 2 0 01-2 2h-1C8.163 19 5 10.837 5 6V5z" fill="white"/>
+        </svg>
+        <span class="hdk-fab-text">Liên hệ</span>
+    </button>
+
+    <!-- ② Quick menu popup -->
+    <div id="hdk-quick-menu" class="hdk-quick-menu" aria-hidden="true">
+        <div class="hdk-qm-arrow"></div>
+        <div class="hdk-qm-item" id="hdk-btn-chat">
+            <div class="hdk-qm-avatar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" fill="#555"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#555"/>
+                </svg>
+            </div>
+            <span>Chat với nhân viên</span>
+            <svg class="hdk-qm-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="hdk-qm-divider"></div>
+        <div class="hdk-qm-item" id="hdk-btn-zalo">
+            <div class="hdk-qm-avatar hdk-qm-zalo-bg">
+                <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                    <rect width="48" height="48" rx="10" fill="#0068FF"/>
+                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+                          font-family="Arial Black,sans-serif" font-weight="900"
+                          font-size="18" fill="white">Z</text>
+                </svg>
+            </div>
+            <span>Liên hệ Zalo</span>
+            <svg class="hdk-qm-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ③ Chat window chính -->
+    <div id="hdk-chat-win" class="hdk-chat-win" aria-hidden="true">
+
+        <!-- Header đỏ -->
+        <div class="hdk-cw-header">
+            <div class="hdk-cw-agent">
+                <div class="hdk-cw-agent-avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="4" fill="white"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.85"/>
+                    </svg>
+                    <span class="hdk-cw-online-dot"></span>
+                </div>
+                <div class="hdk-cw-agent-info">
+                    <strong>HDKTech Hỗ Trợ</strong>
+                    <small>Chat trực tiếp tại Website</small>
+                </div>
+            </div>
+            <div class="hdk-cw-header-actions">
+                <button class="hdk-cw-icon-btn" id="hdk-cw-menu-btn" title="Menu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="5" cy="12" r="1.5" fill="white"/>
+                        <circle cx="12" cy="12" r="1.5" fill="white"/>
+                        <circle cx="19" cy="12" r="1.5" fill="white"/>
+                    </svg>
+                </button>
+                <button class="hdk-cw-icon-btn" id="hdk-cw-close-btn" title="Đóng">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body: Bot messages screen -->
+        <div class="hdk-cw-body" id="hdk-cw-body-bot">
+            <div class="hdk-cw-messages" id="hdk-bot-messages"></div>
+        </div>
+
+        <!-- Body: Live chat messages screen (ẩn mặc định) -->
+        <div class="hdk-cw-body" id="hdk-cw-body-live" style="display:none">
+            <div class="hdk-cw-messages" id="hdk-live-messages"></div>
+            <div class="hdk-typing-wrap" id="hdk-typing" style="display:none">
+                <div class="hdk-typing-dot"></div><div class="hdk-typing-dot"></div><div class="hdk-typing-dot"></div>
+                <small id="hdk-typing-name">Nhân viên đang nhập...</small>
+            </div>
+        </div>
+
+        <!-- Footer input -->
+        <div class="hdk-cw-footer">
+            <textarea id="hdk-chat-input" class="hdk-chat-textarea"
+                      placeholder="Nhập nội dung..." rows="1" maxlength="1000"></textarea>
+            <div class="hdk-chat-actions">
+                <button class="hdk-chat-action-btn" id="hdk-like-btn" title="Like">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M7 22V11M2 13v7a2 2 0 002 2h11.17a2 2 0 001.97-1.67l1.03-6A2 2 0 0016.2 11H13V5a2 2 0 00-2-2 1 1 0 00-1 1v1l-2.55 5.1" stroke="#aaa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="hdk-chat-action-btn" id="hdk-attach-btn" title="Đính kèm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="#aaa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="hdk-chat-action-btn" id="hdk-emoji-btn" title="Emoji">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="#aaa" stroke-width="1.8"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#aaa" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button class="hdk-send-btn" id="hdk-send-btn" title="Gửi" disabled>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ④ Lead Form — Chat với nhân viên tư vấn -->
+    <div id="hdk-lead-form" class="hdk-lead-form" aria-hidden="true">
+
+        <!-- Header đỏ -->
+        <div class="hdk-lf-header">
+            <span>Chat với nhân viên tư vấn</span>
+            <button class="hdk-cw-icon-btn" id="hdk-lf-close-btn" title="Đóng">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Bot greeting -->
+        <div class="hdk-lf-body">
+            <div class="hdk-lf-greeting">
+                <div class="hdk-lf-bot-avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="4" fill="white"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.85"/>
+                    </svg>
+                </div>
+                <div class="hdk-lf-bot-bubble">Em ở đây để hỗ trợ cho mình ạ 😊</div>
+            </div>
+
+            <!-- Form fields -->
+            <div class="hdk-lf-section-label">Thông tin cơ bản</div>
+
+            <div class="hdk-lf-field-wrap">
+                <input type="text" id="lf-name" class="hdk-lf-input"
+                       placeholder="Nhập tên của bạn *" maxlength="50" autocomplete="name"/>
+                <span class="hdk-lf-err" id="lf-name-err"></span>
+            </div>
+            <div class="hdk-lf-field-wrap">
+                <input type="email" id="lf-email" class="hdk-lf-input"
+                       placeholder="Nhập email của bạn" maxlength="100" autocomplete="email"/>
+            </div>
+            <div class="hdk-lf-field-wrap">
+                <input type="tel" id="lf-phone" class="hdk-lf-input"
+                       placeholder="Nhập số điện thoại của bạn *" maxlength="15" autocomplete="tel"/>
+                <span class="hdk-lf-err" id="lf-phone-err"></span>
+            </div>
+
+            <div class="hdk-lf-section-label" style="margin-top:10px">Thông tin bổ sung</div>
+            <div class="hdk-lf-field-wrap">
+                <select id="lf-gender" class="hdk-lf-input hdk-lf-select">
+                    <option value="">-- Giới tính --</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
+                </select>
+            </div>
+
+            <!-- General error -->
+            <div id="lf-general-err" class="hdk-lf-general-err" style="display:none"></div>
+
+            <button id="hdk-lf-submit-btn" class="hdk-lf-submit-btn">
+                BẮT ĐẦU TRÒ CHUYỆN
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- STYLES                                                            -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Root ──────────────────────────────────────────────────────────── */
+:root {
+    --hdk-red:       #e60012;
+    --hdk-red-dark:  #c4000f;
+    --hdk-red-light: #fff0f0;
+    --hdk-win-w:     360px;
+    --hdk-radius:    16px;
+    --hdk-shadow:    0 8px 40px rgba(0,0,0,0.18), 0 2px 12px rgba(0,0,0,0.1);
+    --hdk-z:         9999;
+}
+
+#hdk-chat-root {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    z-index: var(--hdk-z);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+}
+
+/* ── FAB pill button ────────────────────────────────────────────────── */
+.hdk-fab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--hdk-red);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 13px 20px 13px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(230,0,18,0.45);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    outline: none;
+    user-select: none;
+    white-space: nowrap;
+}
+.hdk-fab:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(230,0,18,0.55);
+}
+.hdk-fab:active { transform: scale(0.97); }
+.hdk-fab-text {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+}
+.hdk-fab-icon { flex-shrink: 0; }
+
+/* ── Quick menu ─────────────────────────────────────────────────────── */
+.hdk-quick-menu {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    right: 0;
+    width: 240px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: var(--hdk-shadow);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    transform-origin: bottom right;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+.hdk-quick-menu.hdk-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+.hdk-qm-arrow {
+    display: none; /* small caret optional */
+}
+.hdk-qm-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #222;
+    font-size: 13.5px;
+    font-weight: 500;
+}
+.hdk-qm-item:hover { background: #f5f5f5; }
+.hdk-qm-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #eee;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.hdk-qm-zalo-bg { background: transparent; }
+.hdk-qm-chevron { margin-left: auto; flex-shrink: 0; }
+.hdk-qm-divider { height: 1px; background: #f0f0f0; margin: 0 14px; }
+
+/* ── Chat window ────────────────────────────────────────────────────── */
+.hdk-chat-win {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    right: 0;
+    width: var(--hdk-win-w);
+    max-height: 540px;
+    background: white;
+    border-radius: var(--hdk-radius);
+    box-shadow: var(--hdk-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+    transform-origin: bottom right;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    pointer-events: none;
+}
+.hdk-chat-win.hdk-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+/* ── Chat window header ─────────────────────────────────────────────── */
+.hdk-cw-header {
+    background: var(--hdk-red);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.hdk-cw-agent {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.hdk-cw-agent-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.hdk-cw-online-dot {
+    position: absolute;
+    bottom: 1px; right: 1px;
+    width: 10px; height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid var(--hdk-red);
+}
+.hdk-cw-agent-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.hdk-cw-agent-info strong {
+    color: white;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.hdk-cw-agent-info small {
+    color: rgba(255,255,255,0.8);
+    font-size: 11px;
+}
+.hdk-cw-header-actions {
+    display: flex;
+    gap: 4px;
+}
+.hdk-cw-icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    outline: none;
+}
+.hdk-cw-icon-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ── Chat body / messages ───────────────────────────────────────────── */
+.hdk-cw-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 260px;
+    max-height: 380px;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+    background: #f8f8f8;
+}
+.hdk-cw-messages {
+    padding: 14px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Bot bubble */
+.hdk-bot-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+}
+.hdk-bot-avatar-sm {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--hdk-red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.hdk-bot-bubble {
+    background: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px 14px 14px 14px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: #222;
+    line-height: 1.5;
+    max-width: 240px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    word-break: break-word;
+}
+.hdk-bot-bubble a {
+    color: var(--hdk-red);
+    text-decoration: underline;
+}
+
+/* Quick reply buttons */
+.hdk-quick-replies {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 2px 12px 10px;
+}
+.hdk-qr-btn {
+    width: 100%;
+    padding: 9px 12px;
+    background: white;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #333;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    font-family: inherit;
+}
+.hdk-qr-btn:hover {
+    border-color: var(--hdk-red);
+    color: var(--hdk-red);
+    background: var(--hdk-red-light);
+}
+
+/* User message (right side) */
+.hdk-msg-me {
+    display: flex;
+    justify-content: flex-end;
+}
+.hdk-msg-me-bubble {
+    background: var(--hdk-red);
+    color: white;
+    border-radius: 14px 4px 14px 14px;
+    padding: 9px 13px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 240px;
+    word-break: break-word;
+}
+
+/* Staff message (left) */
+.hdk-msg-staff {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+}
+.hdk-msg-staff-bubble {
+    background: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px;
+    font-size: 13px;
+    color: #222;
+    line-height: 1.5;
+    max-width: 240px;
+    word-break: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.hdk-msg-time {
+    font-size: 10.5px;
+    color: #aaa;
+    margin-top: 2px;
+    padding: 0 2px;
+}
+.hdk-msg-me .hdk-msg-time { text-align: right; }
+
+/* Typing indicator */
+.hdk-typing-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 10px;
+}
+.hdk-typing-dot {
+    width: 6px; height: 6px;
+    background: #bbb;
+    border-radius: 50%;
+    animation: hdkTypeBounce 1.1s ease-in-out infinite;
+}
+.hdk-typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.hdk-typing-dot:nth-child(3) { animation-delay: 0.36s; }
+@@keyframes hdkTypeBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+}
+.hdk-typing-wrap small { font-size: 11px; color: #aaa; }
+
+/* System message */
+.hdk-msg-system {
+    text-align: center;
+    font-size: 11.5px;
+    color: #999;
+    background: #eee;
+    border-radius: 20px;
+    padding: 4px 12px;
+    align-self: center;
+    margin: 2px 0;
+}
+
+/* ── Chat footer / input ─────────────────────────────────────────────── */
+.hdk-cw-footer {
+    border-top: 1px solid #eee;
+    background: white;
+    padding: 8px 10px;
+    flex-shrink: 0;
+}
+.hdk-chat-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: #222;
+    line-height: 1.4;
+    max-height: 80px;
+    scrollbar-width: none;
+    padding: 4px 2px;
+    box-sizing: border-box;
+    background: transparent;
+}
+.hdk-chat-textarea::placeholder { color: #bbb; }
+.hdk-chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 4px;
+}
+.hdk-chat-action-btn {
+    width: 32px; height: 32px;
+    border: none; background: none;
+    cursor: pointer; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    outline: none;
+}
+.hdk-chat-action-btn:hover { background: #f0f0f0; }
+.hdk-send-btn {
+    margin-left: auto;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--hdk-red);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.12s;
+    outline: none;
+}
+.hdk-send-btn:hover:not(:disabled) {
+    background: var(--hdk-red-dark);
+    transform: scale(1.06);
+}
+.hdk-send-btn:disabled {
+    background: #e0e0e0;
+    cursor: not-allowed;
+}
+
+/* ── Lead form ───────────────────────────────────────────────────────── */
+.hdk-lead-form {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    right: 0;
+    width: var(--hdk-win-w);
+    background: white;
+    border-radius: var(--hdk-radius);
+    box-shadow: var(--hdk-shadow);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+    transform-origin: bottom right;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    pointer-events: none;
+}
+.hdk-lead-form.hdk-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+/* Lead form header */
+.hdk-lf-header {
+    background: var(--hdk-red);
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+/* Lead form body */
+.hdk-lf-body {
+    padding: 16px 16px 18px;
+    overflow-y: auto;
+    max-height: 440px;
+    scrollbar-width: thin;
+}
+.hdk-lf-greeting {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.hdk-lf-bot-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--hdk-red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.hdk-lf-bot-bubble {
+    background: #f5f5f5;
+    border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.45;
+}
+.hdk-lf-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+}
+.hdk-lf-field-wrap { margin-bottom: 8px; }
+.hdk-lf-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    color: #222;
+    transition: border-color 0.18s;
+    box-sizing: border-box;
+    background: white;
+}
+.hdk-lf-input:focus { border-color: var(--hdk-red); }
+.hdk-lf-input::placeholder { color: #bbb; }
+.hdk-lf-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.hdk-lf-err {
+    display: block;
+    font-size: 11.5px;
+    color: #e60012;
+    margin-top: 4px;
+    min-height: 16px;
+}
+.hdk-lf-general-err {
+    background: #fff0f0;
+    border: 1px solid #ffc0c0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: #c00;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+.hdk-lf-submit-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--hdk-red);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: background 0.15s, transform 0.12s;
+    font-family: inherit;
+    outline: none;
+}
+.hdk-lf-submit-btn:hover { background: var(--hdk-red-dark); }
+.hdk-lf-submit-btn:active { transform: scale(0.99); }
+.hdk-lf-submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* ── Slide-in animation ──────────────────────────────────────────────── */
+@@keyframes hdkMsgIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.hdk-bot-row, .hdk-msg-me, .hdk-msg-staff, .hdk-msg-system {
+    animation: hdkMsgIn 0.2s ease;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+@@media (max-width: 420px) {
+    #hdk-chat-root { bottom: 14px; right: 14px; }
+    .hdk-chat-win, .hdk-lead-form {
+        width: calc(100vw - 28px);
+        right: 0;
+    }
+}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                                        -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    'use strict';
+
+    /* ── Config ──────────────────────────────────────────────────────── */
+    const ZALO_URL   = 'https://zalo.me/hdktech';  // ← đổi link Zalo thật của shop
+    const BOT_MSG_1  = 'Kết nối Zalo HDKTech tại <a href="' + ZALO_URL + '" target="_blank">zalo.me/hdktech</a> để được tư vấn nhanh hơn!';
+    const BOT_MSG_2  = 'Dạ HDKTech xin chào! Mình có thể giúp gì cho bạn? 😊';
+    const QUICK_REPLIES = [
+        { label: '💻 Tư vấn sản phẩm',    msg: 'Tôi cần tư vấn sản phẩm' },
+        { label: '📦 Kiểm tra đơn hàng',  msg: 'Tôi muốn kiểm tra thông tin đơn hàng' },
+        { label: '💬 Liên hệ Zalo',        msg: null,   action: 'zalo' },
+        { label: '🎧 Gặp tư vấn viên',    msg: null,   action: 'form' }
+    ];
+
+    /* ── LocalStorage (chỉ dành cho Guest) ───────────────────────────── */
+    const LS_KEY = 'hdktech_chat_guest_v1';
+
+    function lsSave(name, email, phone, sessionId) {
+        try {
+            localStorage.setItem(LS_KEY, JSON.stringify({ name, email, phone, sessionId, ts: Date.now() }));
+        } catch (e) { /* private browsing - bỏ qua */ }
+    }
+
+    function lsLoad() {
+        try {
+            const raw = localStorage.getItem(LS_KEY);
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            // Bỏ dữ liệu quá 30 ngày (session đã cũ chắc chắn closed)
+            if (data.ts && Date.now() - data.ts > 30 * 24 * 3600 * 1000) { lsClear(); return null; }
+            return data;
+        } catch (e) { return null; }
+    }
+
+    function lsClear() {
+        try { localStorage.removeItem(LS_KEY); } catch (e) {}
+    }
+
+    /* ── State ───────────────────────────────────────────────────────── */
+    const state = {
+        view: 'idle',          // idle | menu | chat | form | live
+        sessionId: null,
+        connection: null,
+        currentUserId:   '@userId',
+        userName:        '@Html.Raw(userName.Replace("'", "\\'"))',
+        userEmail:       '@Html.Raw(userEmail.Replace("'", "\\'"))',
+        userPhone:       '@Html.Raw(userPhone.Replace("'", "\\'"))',
+        isAuthenticated: @(isAuthenticated ? "true" : "false"),
+        unreadCount:  0,
+        isConnecting: false,
+        submitting:   false,
+        typingTimer:  null,
+        botDone:      false,
+        _pendingMsg:  null
+    };
+
+    /* ── DOM refs ────────────────────────────────────────────────────── */
+    const fab         = document.getElementById('chat-fab');
+    const quickMenu   = document.getElementById('hdk-quick-menu');
+    const chatWin     = document.getElementById('hdk-chat-win');
+    const leadForm    = document.getElementById('hdk-lead-form');
+
+    const btnChat     = document.getElementById('hdk-btn-chat');
+    const btnZalo     = document.getElementById('hdk-btn-zalo');
+    const cwCloseBtn  = document.getElementById('hdk-cw-close-btn');
+    const lfCloseBtn  = document.getElementById('hdk-lf-close-btn');
+
+    const bodyBot     = document.getElementById('hdk-cw-body-bot');
+    const bodyLive    = document.getElementById('hdk-cw-body-live');
+    const botMsgList  = document.getElementById('hdk-bot-messages');
+    const liveMsgList = document.getElementById('hdk-live-messages');
+    const typingEl    = document.getElementById('hdk-typing');
+    const typingName  = document.getElementById('hdk-typing-name');
+
+    const chatInput   = document.getElementById('hdk-chat-input');
+    const sendBtn     = document.getElementById('hdk-send-btn');
+    const likeBtn     = document.getElementById('hdk-like-btn');
+    const attachBtn   = document.getElementById('hdk-attach-btn');
+    const emojiBtn    = document.getElementById('hdk-emoji-btn');
+
+    const lfSubmitBtn = document.getElementById('hdk-lf-submit-btn');
+    const lfNameInput = document.getElementById('lf-name');
+    const lfEmailInput= document.getElementById('lf-email');
+    const lfPhoneInput= document.getElementById('lf-phone');
+    const lfGenderSel = document.getElementById('lf-gender');
+    const lfNameErr   = document.getElementById('lf-name-err');
+    const lfPhoneErr  = document.getElementById('lf-phone-err');
+    const lfGeneralErr= document.getElementById('lf-general-err');
+
+    /* ── View controller ─────────────────────────────────────────────── */
+    function setView(view) {
+        state.view = view;
+        quickMenu.classList.remove('hdk-visible');
+        chatWin.classList.remove('hdk-visible');
+        leadForm.classList.remove('hdk-visible');
+        quickMenu.setAttribute('aria-hidden', true);
+        chatWin.setAttribute('aria-hidden', true);
+        leadForm.setAttribute('aria-hidden', true);
+
+        if (view === 'menu') {
+            quickMenu.classList.add('hdk-visible');
+            quickMenu.removeAttribute('aria-hidden');
+        } else if (view === 'chat' || view === 'live') {
+            chatWin.classList.add('hdk-visible');
+            chatWin.removeAttribute('aria-hidden');
+            if (view === 'live') {
+                bodyBot.style.display = 'none';
+                bodyLive.style.display = 'flex';
+                bodyLive.style.flexDirection = 'column';
+                setTimeout(() => chatInput.focus(), 80);
+            } else {
+                bodyBot.style.display = 'flex';
+                bodyBot.style.flexDirection = 'column';
+                bodyLive.style.display = 'none';
+            }
+        } else if (view === 'form') {
+            leadForm.classList.add('hdk-visible');
+            leadForm.removeAttribute('aria-hidden');
+            setTimeout(() => lfNameInput.focus(), 80);
+        }
+    }
+
+    /* ── FAB click: toggle menu ──────────────────────────────────────── */
+    fab.addEventListener('click', () => {
+        if (state.view === 'menu') {
+            setView('idle');
+        } else if (state.view === 'idle') {
+            setView('menu');
+            if (!state.botDone) {
+                // Pre-warm: render bot messages khi mở lần đầu
+            }
+        } else {
+            // Đang trong chat/form → thu gọn về idle
+            setView('idle');
+        }
+    });
+
+    /* Close click outside */
+    document.addEventListener('click', (e) => {
+        const root = document.getElementById('hdk-chat-root');
+        if (!root.contains(e.target) && (state.view === 'menu')) {
+            setView('idle');
+        }
+    });
+
+    /* ── Quick menu actions ──────────────────────────────────────────── */
+    btnChat.addEventListener('click', () => {
+        // Nếu đã có session (restored hoặc đang chat) → vào thẳng live
+        if (state.sessionId) {
+            setView('live');
+            scrollLive();
+            return;
+        }
+        // Chưa có session → bot messages như bình thường
+        setView('chat');
+        if (!state.botDone) renderBotMessages();
+    });
+
+    btnZalo.addEventListener('click', () => {
+        window.open(ZALO_URL, '_blank', 'noopener');
+        setView('idle');
+    });
+
+    /* ── Close buttons ───────────────────────────────────────────────── */
+    cwCloseBtn.addEventListener('click', () => setView('idle'));
+    lfCloseBtn.addEventListener('click', () => {
+        setView('chat');
+        if (!state.botDone) renderBotMessages();
+    });
+
+    /* ── Bot messages ────────────────────────────────────────────────── */
+    function renderBotMessages() {
+        state.botDone = true;
+        botMsgList.innerHTML = '';
+
+        // Message 1 — ngay lập tức
+        appendBotBubble(BOT_MSG_1, true);
+
+        // Message 2 — delay 900ms
+        setTimeout(() => {
+            appendBotBubble(BOT_MSG_2);
+
+            // Quick reply buttons
+            setTimeout(() => {
+                renderQuickReplies();
+                scrollBodyBot();
+            }, 100);
+        }, 900);
+    }
+
+    function appendBotBubble(htmlContent, isFirst) {
+        const row = document.createElement('div');
+        row.className = 'hdk-bot-row';
+        row.innerHTML = `
+            <div class="hdk-bot-avatar-sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" fill="white"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="white" opacity="0.85"/>
+                </svg>
+            </div>
+            <div class="hdk-bot-bubble">${htmlContent}</div>`;
+        botMsgList.appendChild(row);
+        scrollBodyBot();
+    }
+
+    function renderQuickReplies() {
+        const wrap = document.createElement('div');
+        wrap.className = 'hdk-quick-replies';
+        QUICK_REPLIES.forEach(qr => {
+            const btn = document.createElement('button');
+            btn.className = 'hdk-qr-btn';
+            btn.textContent = qr.label;
+            btn.addEventListener('click', () => handleQuickReply(qr));
+            wrap.appendChild(btn);
+        });
+        botMsgList.appendChild(wrap);
+    }
+
+    /* Điền form từ localStorage (guest) hoặc Identity (member) */
+    function prefillLeadForm() {
+        if (state.isAuthenticated) {
+            if (state.userName)  lfNameInput.value  = lfNameInput.value  || state.userName;
+            if (state.userEmail) lfEmailInput.value = lfEmailInput.value || state.userEmail;
+            if (state.userPhone) lfPhoneInput.value = lfPhoneInput.value || state.userPhone;
+        } else {
+            const saved = lsLoad();
+            if (!saved) return;
+            if (saved.name)  lfNameInput.value  = lfNameInput.value  || saved.name;
+            if (saved.email) lfEmailInput.value = lfEmailInput.value || saved.email;
+            if (saved.phone) lfPhoneInput.value = lfPhoneInput.value || saved.phone;
+        }
+    }
+
+    function handleQuickReply(qr) {
+        if (qr.action === 'zalo') {
+            window.open(ZALO_URL, '_blank', 'noopener');
+            return;
+        }
+        if (qr.action === 'form') {
+            // Đã có session (restored) → vào thẳng live
+            if (state.sessionId) { setView('live'); scrollLive(); return; }
+            setView('form');
+            setTimeout(prefillLeadForm, 50);
+            return;
+        }
+        // Quick reply gửi message tự động
+        if (state.sessionId && state.connection) {
+            setView('live');
+            sendLiveMessage(qr.msg);
+        } else {
+            setView('form');
+            state._pendingMsg = qr.msg;
+            setTimeout(prefillLeadForm, 50);
+        }
+    }
+
+    function scrollBodyBot() {
+        setTimeout(() => { bodyBot.scrollTop = bodyBot.scrollHeight; }, 40);
+    }
+
+    /* ── Lead form submission ────────────────────────────────────────── */
+    lfSubmitBtn.addEventListener('click', handleLeadFormSubmit);
+
+    // Enter key trên input cuối → submit
+    [lfNameInput, lfEmailInput, lfPhoneInput].forEach(el => {
+        el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); handleLeadFormSubmit(); }
+        });
+    });
+
+    async function handleLeadFormSubmit() {
+        if (state.submitting) return;   // Chặn double submit
+
+        // ── Validate ──────────────────────────────────────────────────
+        lfNameErr.textContent  = '';
+        lfPhoneErr.textContent = '';
+        lfGeneralErr.style.display = 'none';
+
+        const name   = lfNameInput.value.trim();
+        const email  = lfEmailInput.value.trim();
+        const phone  = lfPhoneInput.value.trim();
+        const gender = lfGenderSel.value;
+
+        let valid = true;
+
+        if (!name || name.length < 2) {
+            lfNameErr.textContent = 'Vui lòng nhập tên (ít nhất 2 ký tự).';
+            lfNameInput.focus();
+            valid = false;
+        }
+
+        const phoneRegex = /^(0|\+84)(3[2-9]|5[6-9]|7[06-9]|8[0-9]|9[0-9])\d{7}$/;
+        if (!phone) {
+            lfPhoneErr.textContent = 'Số điện thoại là bắt buộc.';
+            if (valid) lfPhoneInput.focus();
+            valid = false;
+        } else if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+            lfPhoneErr.textContent = 'Số điện thoại không hợp lệ (định dạng VN).';
+            if (valid) lfPhoneInput.focus();
+            valid = false;
+        }
+
+        if (!valid) return;
+
+        // ── Loading state ─────────────────────────────────────────────
+        state.submitting = true;
+        lfSubmitBtn.disabled = true;
+        lfSubmitBtn.textContent = 'Đang kết nối...';
+
+        try {
+            // ── Kết nối SignalR ───────────────────────────────────────
+            if (!state.connection) {
+                await initSignalR();
+            }
+
+            // Truyền cả email để backend kiểm tra session cũ
+            const result = await state.connection.invoke(
+                'StartSession', name, phone, email || null);
+            state.sessionId = result.sessionId;
+
+            // ── Lưu thông tin guest vào localStorage ──────────────────
+            // (chỉ khi không phải member đã đăng nhập)
+            if (!state.isAuthenticated) {
+                lsSave(name, email, phone, result.sessionId);
+            }
+
+            // ── Chuyển sang live chat ─────────────────────────────────
+            setView('live');
+
+            if (result.messages && result.messages.length > 0) {
+                // Xóa messages đã pre-render (nếu restore background đã render rồi)
+                liveMsgList.innerHTML = '';
+                result.messages.forEach(m => renderLiveMessage(m));
+            } else if (result.isNew) {
+                appendLiveSystem(`Xin chào ${name}, tư vấn viên sẽ hỗ trợ bạn ngay.`);
+            }
+            scrollLive();
+
+            // Gửi pending message nếu có
+            if (state._pendingMsg) {
+                const pm = state._pendingMsg;
+                state._pendingMsg = null;
+                setTimeout(() => sendLiveMessage(pm), 400);
+            }
+
+            // Reset form (giữ nguyên giá trị để user dùng lại nếu cần)
+            lfGenderSel.value = '';
+
+        } catch (err) {
+            console.error('[HDKChat] StartSession error:', err);
+            showLeadFormError(classifyError(err));
+        } finally {
+            state.submitting = false;
+            lfSubmitBtn.disabled = false;
+            lfSubmitBtn.textContent = 'BẮT ĐẦU TRÒ CHUYỆN';
+        }
+    }
+
+    /* Phân loại lỗi chi tiết */
+    function classifyError(err) {
+        if (!err) return '⚠ Lỗi không xác định. Vui lòng thử lại.';
+        const msg = (err.message || err.toString()).toLowerCase();
+
+        if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network'))
+            return '🔌 Không thể kết nối mạng. Kiểm tra kết nối Internet và thử lại.';
+        if (msg.includes('timeout') || msg.includes('timed out'))
+            return '⏱ Kết nối bị timeout. Server phản hồi chậm — thử lại sau.';
+        if (msg.includes('cors') || msg.includes('cross-origin'))
+            return '🚫 Lỗi CORS. Kiểm tra cấu hình server tại /chathub.';
+        if (msg.includes('404') || msg.includes('not found'))
+            return '❌ Không tìm thấy endpoint /chathub. Kiểm tra route SignalR trong Program.cs.';
+        if (msg.includes('500') || msg.includes('internal server'))
+            return '🔥 Server lỗi 500. Kiểm tra log ASP.NET tại ChatHub.StartSession.';
+        if (msg.includes('unauthorized') || msg.includes('401') || msg.includes('403'))
+            return '🔒 Không có quyền truy cập. Kiểm tra middleware Authorization.';
+        if (msg.includes('invalid') || msg.includes('json'))
+            return '⚠ Server trả về dữ liệu không hợp lệ. Kiểm tra response của StartSession.';
+        if (msg.includes('hubexception'))
+            return '⚠ Hub lỗi: ' + (err.message || 'Xem console để biết chi tiết.');
+
+        return `⚠ Không thể kết nối. Chi tiết: ${err.message || err}`;
+    }
+
+    function showLeadFormError(msg) {
+        lfGeneralErr.textContent = msg;
+        lfGeneralErr.style.display = 'block';
+        lfGeneralErr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ── SignalR init ────────────────────────────────────────────────── */
+    async function initSignalR() {
+        if (state.isConnecting) {
+            // Chờ cho đến khi kết nối xong
+            await waitUntil(() => !state.isConnecting, 10000);
+            return;
+        }
+        state.isConnecting = true;
+
+        try {
+            state.connection = new signalR.HubConnectionBuilder()
+                .withUrl('/chathub')
+                .withAutomaticReconnect([1000, 2000, 5000, 10000])
+                .configureLogging(signalR.LogLevel.Warning)
+                .build();
+
+            /* Sự kiện nhận tin nhắn */
+            state.connection.on('ReceiveMessage', (msg) => {
+                renderLiveMessage(msg);
+                scrollLive();
+                if (state.view !== 'live') incrementUnread();
+            });
+
+            state.connection.on('SystemMessage', (msg) => {
+                appendLiveSystem(msg.content);
+                scrollLive();
+            });
+
+            state.connection.on('SessionClosed', (data) => {
+                if (data.sessionId === state.sessionId) {
+                    appendLiveSystem('✓ ' + (data.message || 'Cuộc trò chuyện đã kết thúc.'));
+                    state.sessionId = null;
+                    chatInput.disabled = true;
+                    sendBtn.disabled = true;
+                    // Xóa cache localStorage khi session kết thúc → lần sau phải nhập lại form
+                    if (!state.isAuthenticated) lsClear();
+                }
+            });
+
+            state.connection.on('UserTyping', (data) => {
+                if (data.sessionId !== state.sessionId) return;
+                if (data.isTyping) {
+                    typingName.textContent = data.userName + ' đang nhập...';
+                    typingEl.style.display = 'flex';
+                    scrollLive();
+                } else {
+                    typingEl.style.display = 'none';
+                }
+            });
+
+            await state.connection.start();
+        } finally {
+            state.isConnecting = false;
+        }
+    }
+
+    function waitUntil(predicate, timeout) {
+        return new Promise((resolve, reject) => {
+            const start = Date.now();
+            const check = setInterval(() => {
+                if (predicate()) { clearInterval(check); resolve(); }
+                if (Date.now() - start > timeout) { clearInterval(check); reject(new Error('timeout')); }
+            }, 100);
+        });
+    }
+
+    /* ── Live chat send ──────────────────────────────────────────────── */
+    sendBtn.addEventListener('click', () => sendLiveMessage());
+    chatInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendLiveMessage(); }
+    });
+    chatInput.addEventListener('input', () => {
+        sendBtn.disabled = chatInput.value.trim().length === 0;
+        autoResize(chatInput);
+        if (state.connection && state.sessionId) {
+            state.connection.invoke('Typing', state.sessionId, true).catch(() => {});
+            clearTimeout(state.typingTimer);
+            state.typingTimer = setTimeout(() => {
+                state.connection.invoke('Typing', state.sessionId, false).catch(() => {});
+            }, 1500);
+        }
+    });
+
+    /* Like button → gửi 👍 */
+    likeBtn.addEventListener('click', () => {
+        if (!state.sessionId) return;
+        chatInput.value = '👍';
+        sendBtn.disabled = false;
+        sendLiveMessage();
+    });
+
+    async function sendLiveMessage(content) {
+        const text = content || chatInput.value.trim();
+        if (!text || !state.sessionId || !state.connection) return;
+
+        if (!content) {
+            chatInput.value = '';
+            sendBtn.disabled = true;
+            autoResize(chatInput);
+        }
+
+        try {
+            await state.connection.invoke('SendMessage', state.sessionId, text);
+        } catch (err) {
+            console.error('[HDKChat] SendMessage error:', err);
+            appendLiveSystem('⚠ Không thể gửi tin nhắn. Vui lòng thử lại.');
+        }
+    }
+
+    /* ── Render helpers (live) ───────────────────────────────────────── */
+    function renderLiveMessage(msg) {
+        const isMine = state.isAuthenticated
+            ? (msg.senderId === state.currentUserId)
+            : (!msg.isStaff && msg.senderId === '');
+
+        const time = fmtTime(new Date(msg.sentAt));
+        const el   = document.createElement('div');
+
+        if (isMine) {
+            el.className = 'hdk-msg-me';
+            el.innerHTML = `
+                <div>
+                    <div class="hdk-msg-me-bubble">${escHtml(msg.content)}</div>
+                    <div class="hdk-msg-time">${time}</div>
+                </div>`;
+        } else {
+            const initials = (msg.senderName || 'NV').charAt(0).toUpperCase();
+            el.className = 'hdk-msg-staff';
+            el.innerHTML = `
+                <div class="hdk-bot-avatar-sm" style="margin-bottom:18px">
+                    <span style="color:white;font-weight:700;font-size:12px">${initials}</span>
+                </div>
+                <div>
+                    <div class="hdk-msg-staff-bubble">${escHtml(msg.content)}</div>
+                    <div class="hdk-msg-time">${msg.senderName || 'Nhân viên'} · ${time}</div>
+                </div>`;
+        }
+        liveMsgList.appendChild(el);
+    }
+
+    function appendLiveSystem(text) {
+        const el = document.createElement('div');
+        el.className = 'hdk-msg-system';
+        el.textContent = text;
+        liveMsgList.appendChild(el);
+    }
+
+    function scrollLive() {
+        setTimeout(() => { bodyLive.scrollTop = bodyLive.scrollHeight; }, 40);
+    }
+
+    /* ── Unread badge ────────────────────────────────────────────────── */
+    function incrementUnread() {
+        state.unreadCount++;
+        // Hiện badge trên FAB nếu cần — có thể bổ sung sau
+    }
+
+    /* ── Utilities ───────────────────────────────────────────────────── */
+    function fmtTime(date) {
+        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       AUTO-RESTORE SESSION KHI TẢI TRANG (chạy nền, không mở chat)
+       ─────────────────────────────────────────────────────────────────
+       Mục tiêu: nếu khách/member đã chat trước đó và F5 trang, hệ thống
+       sẽ kết nối SignalR + pre-load lịch sử vào DOM trước. Khi họ click
+       FAB → "Chat với nhân viên", chat mở ngay mà không cần điền lại form.
+    ═══════════════════════════════════════════════════════════════════ */
+
+    @if (isAuthenticated)
+    {
+        <text>
+    /* ── Member: kiểm tra session qua REST API ── */
+    (async () => {
+        try {
+            const res  = await fetch('/Chat/CurrentSession');
+            const data = await res.json();
+            if (!data?.sessionId) return;
+
+            await initSignalR();
+            state.sessionId = data.sessionId;
+            await state.connection.invoke('JoinSession', data.sessionId);
+
+            const hRes = await fetch('/Chat/History?sessionId=' + data.sessionId);
+            const msgs = await hRes.json();
+            msgs.forEach(m => renderLiveMessage(m));
+            // KHÔNG gọi setView — chỉ pre-load lịch sử, widget vẫn thu gọn
+            // Người dùng sẽ thấy chat khi click FAB
+        } catch (e) { /* không có session cũ hoặc lỗi mạng — bỏ qua */ }
+    })();
+        </text>
+    }
+    else
+    {
+        <text>
+    /* ── Guest: kiểm tra localStorage → restore session nền ── */
+    (async () => {
+        const saved = lsLoad();
+        // Phải có SĐT hoặc email mới có thể lookup session
+        if (!saved || (!saved.phone && !saved.email)) return;
+
+        try {
+            await initSignalR();
+
+            const result = await state.connection.invoke(
+                'StartSession',
+                saved.name  || 'Khách hàng',
+                saved.phone || null,
+                saved.email || null
+            );
+
+            state.sessionId = result.sessionId;
+            // Cập nhật sessionId mới nhất vào localStorage
+            lsSave(saved.name, saved.email, saved.phone, result.sessionId);
+
+            // Pre-render lịch sử vào live panel (ẩn)
+            if (result.messages && result.messages.length > 0) {
+                result.messages.forEach(m => renderLiveMessage(m));
+            }
+            // KHÔNG gọi setView — widget vẫn thu gọn
+        } catch (e) {
+            // Restore thất bại (session đã closed, mạng lỗi...) → xóa cache cũ
+            if (e?.message?.toLowerCase().includes('closed') ||
+                e?.message?.toLowerCase().includes('not found')) {
+                lsClear();
+            }
+        }
+    })();
+        </text>
+    }
+
+})();
+</script>

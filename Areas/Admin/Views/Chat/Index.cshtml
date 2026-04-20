@@ -1,0 +1,859 @@
+@* Areas/Admin/Views/Chat/Index.cshtml *@
+@model List<HDKTech.Models.ChatSession>
+@inject Microsoft.AspNetCore.Identity.UserManager<HDKTech.Models.AppUser> UserManager
+@{
+    ViewData["Title"] = "Quản lý Chat";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+    var closedCount = (int)(ViewBag.ClosedCount ?? 0);
+}
+
+@section Styles {
+<style>
+:root {
+    --ac-red: #ef4444;
+    --ac-dark: #1a1a2e;
+    --ac-surface: #f8fafc;
+    --ac-border: #e5e7eb;
+    --ac-text: #111827;
+    --ac-muted: #6b7280;
+}
+
+.admin-chat-wrap {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 130px);
+    background: #fff;
+    border: 1px solid var(--ac-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ── Session list (left panel) ─────────────────────────────── */
+.session-panel {
+    border-right: 1px solid var(--ac-border);
+    display: flex;
+    flex-direction: column;
+    background: var(--ac-surface);
+}
+
+.session-panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--ac-border);
+    background: white;
+}
+
+.session-panel-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ac-text);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-filter-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.session-tab {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--ac-muted);
+}
+.session-tab.active {
+    background: var(--ac-red);
+    color: white;
+}
+
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    scrollbar-width: thin;
+}
+
+.session-item {
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+    border: 1.5px solid transparent;
+}
+
+.session-item:hover { background: white; }
+
+.session-item.active {
+    background: white;
+    border-color: var(--ac-red);
+}
+
+.session-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.session-guest-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--ac-text);
+}
+
+.session-time {
+    font-size: 0.7rem;
+    color: var(--ac-muted);
+}
+
+.session-preview {
+    font-size: 0.78rem;
+    color: var(--ac-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.badge-waiting {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-open {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* ── Chat panel (right) ────────────────────────────────────── */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.chat-panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--ac-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    flex-shrink: 0;
+}
+
+.chat-panel-guest {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-panel-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+}
+
+.chat-panel-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ac-text);
+}
+
+.chat-panel-meta {
+    font-size: 0.75rem;
+    color: var(--ac-muted);
+}
+
+.chat-panel-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.chat-action-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-join {
+    background: var(--ac-red);
+    color: white;
+}
+.btn-join:hover { background: #dc2626; }
+
+.btn-close-session {
+    background: var(--ac-surface);
+    color: var(--ac-muted);
+    border: 1px solid var(--ac-border);
+}
+.btn-close-session:hover { color: #dc2626; border-color: #dc2626; }
+
+/* ── Messages area ─────────────────────────────────────────── */
+.admin-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fafafa;
+    scrollbar-width: thin;
+}
+
+.admin-msg { display: flex; gap: 10px; max-width: 72%; }
+.admin-msg.admin-msg-me { align-self: flex-end; flex-direction: row-reverse; }
+
+.admin-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: white;
+    flex-shrink: 0;
+    margin-top: auto;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.admin-msg-me .admin-msg-avatar { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+
+.admin-msg-bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.admin-msg:not(.admin-msg-me) .admin-msg-bubble {
+    background: white;
+    border: 1px solid var(--ac-border);
+    border-radius: 4px 14px 14px 14px;
+    color: var(--ac-text);
+}
+
+.admin-msg-me .admin-msg-bubble {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-radius: 14px 4px 14px 14px;
+}
+
+.admin-msg-time {
+    font-size: 0.68rem;
+    color: var(--ac-muted);
+    margin-top: 3px;
+    padding: 0 4px;
+}
+.admin-msg-me .admin-msg-time { text-align: right; }
+
+.admin-msg-system {
+    align-self: center;
+    font-size: 0.75rem;
+    color: var(--ac-muted);
+    background: white;
+    border: 1px solid var(--ac-border);
+    padding: 4px 14px;
+    border-radius: 20px;
+}
+
+/* ── Input area ────────────────────────────────────────────── */
+.admin-chat-input {
+    border-top: 1px solid var(--ac-border);
+    padding: 14px 16px;
+    background: white;
+    flex-shrink: 0;
+}
+
+.admin-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.admin-textarea {
+    flex: 1;
+    border: 1.5px solid var(--ac-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+    max-height: 100px;
+    transition: border-color 0.2s;
+    scrollbar-width: none;
+}
+.admin-textarea:focus { border-color: var(--ac-red); }
+
+.admin-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--ac-red);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.admin-send-btn:hover:not(:disabled) { background: #dc2626; }
+.admin-send-btn:disabled { background: var(--ac-border); cursor: not-allowed; }
+
+/* ── Empty state ───────────────────────────────────────────── */
+.chat-empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ac-muted);
+    gap: 12px;
+    padding: 40px;
+}
+
+.chat-empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--ac-surface);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+/* ── Typing indicator ──────────────────────────────────────── */
+.admin-typing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.admin-typing-dot {
+    display: flex;
+    gap: 3px;
+}
+.admin-typing-dot span {
+    width: 5px; height: 5px;
+    background: var(--ac-muted);
+    border-radius: 50%;
+    animation: typingBounce2 1.2s ease-in-out infinite;
+}
+.admin-typing-dot span:nth-child(2) { animation-delay: 0.2s; }
+.admin-typing-dot span:nth-child(3) { animation-delay: 0.4s; }
+
+@@keyframes typingBounce2 {
+    0%,60%,100% { transform:translateY(0); }
+    30% { transform:translateY(-4px); }
+}
+</style>
+}
+
+<div class="p-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-chat-dots-fill text-danger me-2"></i>
+                Hỗ trợ Chat trực tuyến
+            </h5>
+            <small class="text-muted">Phản hồi khách hàng realtime qua SignalR</small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-warning text-dark" id="waiting-count-badge">
+                @Model.Count(s => s.Status == "waiting") chờ
+            </span>
+            <span class="badge bg-success" id="open-count-badge">
+                @Model.Count(s => s.Status == "open") đang chat
+            </span>
+            @if (closedCount > 0)
+            {
+                <span class="badge bg-secondary">@closedCount đã đóng (7 ngày)</span>
+            }
+        </div>
+    </div>
+
+    <!-- Main chat UI -->
+    <div class="admin-chat-wrap">
+
+        <!-- Session list (left panel) -->
+        <div class="session-panel">
+            <div class="session-panel-header">
+                <div class="session-panel-title">
+                    <i class="bi bi-people"></i> Cuộc trò chuyện
+                </div>
+                <div class="session-filter-tabs">
+                    <button class="session-tab active" data-filter="all">Tất cả</button>
+                    <button class="session-tab" data-filter="waiting">Chờ</button>
+                    <button class="session-tab" data-filter="open">Đang chat</button>
+                </div>
+            </div>
+            <div class="session-list" id="session-list">
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-5 text-muted small" id="empty-session-hint">
+                        <i class="bi bi-chat-square d-block mb-2 fs-4 opacity-50"></i>
+                        Chưa có cuộc trò chuyện nào
+                    </div>
+                }
+                @foreach (var session in Model)
+                {
+                    var displayName = session.DisplayName;
+                    var isMember    = session.CustomerId != null;
+                    var phone       = session.GuestPhone ?? session.Customer?.PhoneNumber ?? "";
+                    var email       = session.GuestEmail ?? session.Customer?.Email ?? "";
+                    var subInfo     = !string.IsNullOrWhiteSpace(phone) ? phone
+                                      : !string.IsNullOrWhiteSpace(email) ? email : "";
+                    var lastMsg     = session.Messages?.OrderByDescending(m => m.SentAt).FirstOrDefault();
+                    var preview     = lastMsg?.Content ?? "Chưa có tin nhắn";
+                    if (preview.Length > 40) preview = preview[..40] + "...";
+                    <div class="session-item"
+                         data-session-id="@session.Id"
+                         data-status="@session.Status"
+                         onclick="openSession(@session.Id, '@Html.Raw(displayName.Replace("'", "\\'"))', '@session.Status', '@Html.Raw(subInfo.Replace("'", "\\'"))')">
+                        <div class="session-item-header">
+                            <span class="session-guest-name">@displayName</span>
+                            <span class="session-time">@session.StartedAt.ToString("HH:mm")</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+                            @if (isMember)
+                            {
+                                <span style="font-size:0.65rem;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:1px 7px;border-radius:20px">👤 Thành viên</span>
+                            }
+                            else
+                            {
+                                <span style="font-size:0.65rem;font-weight:700;background:#f3f4f6;color:#6b7280;padding:1px 7px;border-radius:20px">🙋 Khách</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(phone))
+                            {
+                                <span style="font-size:0.7rem;color:#6b7280">📞 @phone</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(email))
+                            {
+                                <span style="font-size:0.7rem;color:#6b7280" title="@email">✉ @(email.Length > 18 ? email[..18] + "…" : email)</span>
+                            }
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <span class="session-preview">@preview</span>
+                            <span class="session-status-badge @(session.Status == "waiting" ? "badge-waiting" : "badge-open")">
+                                @(session.Status == "waiting" ? "⏳ Chờ" : "● Chat")
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Chat panel (right) -->
+        <div class="chat-panel" id="chat-panel">
+
+            <!-- Empty state -->
+            <div class="chat-empty-state" id="chat-empty">
+                <div class="chat-empty-icon">💬</div>
+                <div class="fw-semibold">Chọn cuộc trò chuyện</div>
+                <small class="text-center">Chọn một session ở bên trái để bắt đầu hỗ trợ khách hàng</small>
+            </div>
+
+            <!-- Active chat (hidden by default) -->
+            <div id="chat-active" style="display:none; flex-direction:column; height:100%;">
+
+                <!-- Chat header -->
+                <div class="chat-panel-header">
+                    <div class="chat-panel-guest">
+                        <div class="chat-panel-avatar" id="active-avatar">K</div>
+                        <div>
+                            <div class="chat-panel-name" id="active-name">Khách hàng</div>
+                            <div class="chat-panel-meta" id="active-meta">Đang chờ hỗ trợ</div>
+                        </div>
+                    </div>
+                    <div class="chat-panel-actions">
+                        <button class="chat-action-btn btn-join" id="btn-join" onclick="joinCurrentSession()" style="display:none">
+                            <i class="bi bi-person-check"></i>Nhận hỗ trợ
+                        </button>
+                        <button class="chat-action-btn btn-close-session" onclick="closeCurrentSession()">
+                            <i class="bi bi-x-circle"></i>Kết thúc
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="admin-messages" id="admin-messages"></div>
+
+                <!-- Typing indicator -->
+                <div id="admin-typing-row" style="display:none; padding:6px 20px;">
+                    <div class="admin-typing">
+                        <div class="admin-typing-dot">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <small class="text-muted" id="admin-typing-name">Khách đang nhập...</small>
+                    </div>
+                </div>
+
+                <!-- Input -->
+                <div class="admin-chat-input" id="admin-chat-input">
+                    <div class="admin-input-row">
+                        <textarea class="admin-textarea"
+                                  id="admin-textarea"
+                                  placeholder="Nhập tin nhắn hỗ trợ..."
+                                  rows="1"
+                                  maxlength="1000"></textarea>
+                        <button class="admin-send-btn" id="admin-send-btn" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-1" style="font-size:0.7rem">
+                        <kbd>Enter</kbd> gửi · <kbd>Shift+Enter</kbd> xuống dòng
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+<script>
+    const ADMIN_USER_ID = '@(await UserManager.GetUserIdAsync(await UserManager.GetUserAsync(User)))';
+
+    const state = {
+        connection: null,
+        currentSessionId: null,
+        currentGuestName: '',
+        currentStatus: ''
+    };
+
+    // ── SignalR init ──────────────────────────────────────────────────
+    async function initAdminSignalR() {
+        state.connection = new signalR.HubConnectionBuilder()
+            .withUrl('/chathub')
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+
+        state.connection.on('ReceiveMessage', (msg) => {
+            if (msg.sessionId === state.currentSessionId) {
+                renderAdminMessage(msg);
+                scrollAdminBottom();
+            }
+            updateSessionPreview(msg.sessionId, msg.content, msg.senderName);
+        });
+
+        state.connection.on('SystemMessage', (msg) => {
+            if (state.currentSessionId) {
+                renderAdminSystem(msg.content);
+                scrollAdminBottom();
+            }
+        });
+
+        state.connection.on('NewSession', (data) => {
+            addOrUpdateSessionItem(data);
+            updateCountBadges();
+            showToastNotif(`Khách mới: ${data.guestName}`, data.sessionId);
+            // Ẩn hint "chưa có cuộc trò chuyện"
+            const hint = document.getElementById('empty-session-hint');
+            if (hint) hint.style.display = 'none';
+        });
+
+        state.connection.on('SessionUpdated', (data) => {
+            updateSessionItem(data);
+            updateCountBadges();
+        });
+
+        state.connection.on('SessionClosed', (data) => {
+            removeSessionItem(data.sessionId);
+            if (state.currentSessionId === data.sessionId) {
+                renderAdminSystem('Cuộc trò chuyện đã kết thúc.');
+                document.getElementById('admin-chat-input').style.opacity = '0.5';
+                document.getElementById('admin-textarea').disabled = true;
+                document.getElementById('admin-send-btn').disabled = true;
+            }
+            updateCountBadges();
+        });
+
+        state.connection.on('UserTyping', (data) => {
+            if (data.sessionId !== state.currentSessionId) return;
+            const row = document.getElementById('admin-typing-row');
+            const name = document.getElementById('admin-typing-name');
+            if (data.isTyping) {
+                name.textContent = data.userName + ' đang nhập...';
+                row.style.display = 'block';
+                scrollAdminBottom();
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        await state.connection.start();
+        console.log('[AdminChat] SignalR connected');
+    }
+
+    // ── Mở session ────────────────────────────────────────────────────
+    async function openSession(sessionId, guestName, status, subInfo = '') {
+        state.currentSessionId = sessionId;
+        state.currentGuestName = guestName;
+        state.currentStatus = status;
+
+        document.getElementById('chat-empty').style.display = 'none';
+        const activeEl = document.getElementById('chat-active');
+        activeEl.style.display = 'flex';
+
+        document.getElementById('active-name').textContent = guestName;
+        document.getElementById('active-avatar').textContent = guestName.charAt(0).toUpperCase();
+
+        const metaText = status === 'waiting' ? '⏳ Đang chờ hỗ trợ' : '● Đang trò chuyện';
+        document.getElementById('active-meta').textContent =
+            subInfo ? `${metaText} · ${subInfo}` : metaText;
+
+        document.getElementById('btn-join').style.display = status === 'waiting' ? 'inline-flex' : 'none';
+
+        // Enable lại input nếu bị disable trước đó
+        document.getElementById('admin-chat-input').style.opacity = '';
+        document.getElementById('admin-textarea').disabled = false;
+
+        // Highlight active session
+        document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.querySelector(`[data-session-id="${sessionId}"]`);
+        if (activeItem) activeItem.classList.add('active');
+
+        // Join group + load history
+        await state.connection.invoke('JoinSession', sessionId);
+
+        const res = await fetch(`/admin/chat/session/${sessionId}/messages`);
+        const messages = await res.json();
+
+        const msgList = document.getElementById('admin-messages');
+        msgList.innerHTML = '';
+
+        if (messages.length === 0) {
+            renderAdminSystem('Chưa có tin nhắn nào. Hãy chào hỏi khách hàng!');
+        } else {
+            messages.forEach(m => renderAdminMessage(m));
+        }
+        scrollAdminBottom();
+
+        document.getElementById('admin-textarea').focus();
+    }
+
+    // ── Nhận hỗ trợ session ───────────────────────────────────────────
+    async function joinCurrentSession() {
+        if (!state.currentSessionId) return;
+        await state.connection.invoke('JoinSession', state.currentSessionId);
+        document.getElementById('btn-join').style.display = 'none';
+        document.getElementById('active-meta').textContent = '● Đang trò chuyện';
+    }
+
+    // ── Kết thúc session ─────────────────────────────────────────────
+    async function closeCurrentSession() {
+        if (!state.currentSessionId) return;
+        if (!confirm('Kết thúc cuộc trò chuyện này?')) return;
+        await state.connection.invoke('CloseSession', state.currentSessionId);
+    }
+
+    // ── Gửi tin nhắn ─────────────────────────────────────────────────
+    document.getElementById('admin-send-btn').addEventListener('click', sendAdminMessage);
+    document.getElementById('admin-textarea').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendAdminMessage();
+        }
+    });
+
+    document.getElementById('admin-textarea').addEventListener('input', function () {
+        document.getElementById('admin-send-btn').disabled = this.value.trim().length === 0;
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+
+        if (state.connection && state.currentSessionId) {
+            state.connection.invoke('Typing', state.currentSessionId, true).catch(() => {});
+        }
+    });
+
+    async function sendAdminMessage() {
+        const ta = document.getElementById('admin-textarea');
+        const content = ta.value.trim();
+        if (!content || !state.currentSessionId || !state.connection) return;
+
+        ta.value = '';
+        ta.style.height = 'auto';
+        document.getElementById('admin-send-btn').disabled = true;
+
+        await state.connection.invoke('SendMessage', state.currentSessionId, content);
+        state.connection.invoke('Typing', state.currentSessionId, false).catch(() => {});
+    }
+
+    // ── Render helpers ────────────────────────────────────────────────
+    function renderAdminMessage(msg) {
+        const isMe = msg.senderId === ADMIN_USER_ID;
+        const initials = (msg.senderName || '?').charAt(0).toUpperCase();
+        const time = new Date(msg.sentAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+        const el = document.createElement('div');
+        el.className = `admin-msg ${isMe ? 'admin-msg-me' : ''}`;
+        el.innerHTML = `
+            <div class="admin-msg-avatar">${initials}</div>
+            <div>
+                <div class="admin-msg-bubble">${escHtml(msg.content)}</div>
+                <div class="admin-msg-time">${isMe ? '' : msg.senderName + ' · '}${time}</div>
+            </div>`;
+        document.getElementById('admin-messages').appendChild(el);
+    }
+
+    function renderAdminSystem(text) {
+        const el = document.createElement('div');
+        el.className = 'admin-msg-system';
+        el.textContent = text;
+        document.getElementById('admin-messages').appendChild(el);
+    }
+
+    function scrollAdminBottom() {
+        const msgs = document.getElementById('admin-messages');
+        setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+    }
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+    }
+
+    // ── Quản lý session list ──────────────────────────────────────────
+    function updateSessionPreview(sessionId, content) {
+        const item = document.querySelector(`[data-session-id="${sessionId}"] .session-preview`);
+        if (item) {
+            item.textContent = content.length > 40 ? content.slice(0, 40) + '...' : content;
+        }
+    }
+
+    function updateSessionItem(data) {
+        const item = document.querySelector(`[data-session-id="${data.sessionId}"]`);
+        if (!item) return;
+        if (data.status) {
+            item.dataset.status = data.status;
+            const badge = item.querySelector('.session-status-badge');
+            if (badge) {
+                badge.className = `session-status-badge ${data.status === 'waiting' ? 'badge-waiting' : 'badge-open'}`;
+                badge.textContent = data.status === 'waiting' ? '⏳ Chờ' : '● Chat';
+            }
+        }
+    }
+
+    function addOrUpdateSessionItem(data) {
+        const list = document.getElementById('session-list');
+        if (document.querySelector(`[data-session-id="${data.sessionId}"]`)) return;
+
+        const el = document.createElement('div');
+        el.className = 'session-item';
+        el.dataset.sessionId = data.sessionId;
+        el.dataset.status = 'waiting';
+
+        const subInfo = data.guestPhone || data.guestEmail || '';
+        el.onclick = () => openSession(data.sessionId, data.guestName, 'waiting', subInfo);
+
+        const memberBadge = data.isMember
+            ? `<span style="font-size:0.65rem;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:1px 7px;border-radius:20px">👤 Thành viên</span>`
+            : `<span style="font-size:0.65rem;font-weight:700;background:#f3f4f6;color:#6b7280;padding:1px 7px;border-radius:20px">🙋 Khách</span>`;
+        const phoneHtml  = data.guestPhone ? `<span style="font-size:0.7rem;color:#6b7280">📞 ${data.guestPhone}</span>` : '';
+        const emailHtml  = data.guestEmail ? `<span style="font-size:0.7rem;color:#6b7280" title="${data.guestEmail}">✉ ${data.guestEmail.length > 18 ? data.guestEmail.slice(0,18) + '…' : data.guestEmail}</span>` : '';
+
+        el.innerHTML = `
+            <div class="session-item-header">
+                <span class="session-guest-name">${data.guestName}</span>
+                <span class="session-time">${new Date(data.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap">
+                ${memberBadge}${phoneHtml}${emailHtml}
+            </div>
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                <span class="session-preview">Mới kết nối...</span>
+                <span class="session-status-badge badge-waiting">⏳ Chờ</span>
+            </div>`;
+        list.insertBefore(el, list.firstChild);
+    }
+
+    function removeSessionItem(sessionId) {
+        const item = document.querySelector(`[data-session-id="${sessionId}"]`);
+        if (item) item.remove();
+    }
+
+    function updateCountBadges() {
+        const waiting = document.querySelectorAll('[data-status="waiting"]').length;
+        const open = document.querySelectorAll('[data-status="open"]').length;
+        document.getElementById('waiting-count-badge').textContent = waiting + ' chờ';
+        document.getElementById('open-count-badge').textContent = open + ' đang chat';
+        // Cập nhật badge sidebar nếu có
+        const sidebarBadge = document.getElementById('sidebar-chat-badge');
+        if (sidebarBadge) {
+            const total = waiting + open;
+            sidebarBadge.textContent = total;
+            sidebarBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+        }
+    }
+
+    function showToastNotif(msg, sessionId) {
+        if (typeof Swal !== 'undefined') {
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 5000 })
+                .fire({ icon: 'info', title: '💬 Khách mới', text: msg });
+        }
+    }
+
+    // ── Filter tabs ───────────────────────────────────────────────────
+    document.querySelectorAll('.session-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            document.querySelectorAll('.session-item').forEach(item => {
+                const status = item.dataset.status;
+                item.style.display = (filter === 'all' || status === filter) ? '' : 'none';
+            });
+        });
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────
+    initAdminSignalR();
+</script>
+}
