@@ -317,5 +317,12 @@
 
     <script src="~/js/layout/sidebar-toggle.js"></script>
     @RenderSection("Scripts", required: false)
+
+    @* Chat widget — chỉ hiển thị trang khách (không phải area Admin) *@
+    @if (!Context.Request.Path.StartsWithSegments("/admin"))
+    {
+        <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+        @await Html.PartialAsync("_ChatWidget")
+    }
 </body>
 </html>

@@ -332,14 +332,33 @@ public class HDKTechContext : IdentityDbContext<AppUser, IdentityRole, string>
         // ============================================================
         //  Chat, Review, v.v.
         // ============================================================
+        // CustomerId nullable: user đã đăng nhập có FK, guest thì null
         builder.Entity<ChatSession>()
             .HasOne(c => c.Customer).WithMany()
             .HasForeignKey(c => c.CustomerId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // StaffId nullable: staff chưa nhận thì null
         builder.Entity<ChatSession>()
             .HasOne(c => c.Staff).WithMany()
             .HasForeignKey(c => c.StaffId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ChatMessage → ChatSession cascade delete
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Session)
+            .WithMany(s => s.Messages)
+            .HasForeignKey(m => m.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // SenderId nullable: user đã đăng nhập có FK, guest thì null
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ============================================================

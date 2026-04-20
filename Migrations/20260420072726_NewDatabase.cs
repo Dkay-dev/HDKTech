@@ -342,8 +342,11 @@ namespace HDKTech.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    StaffId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    GuestName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    GuestPhone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    GuestEmail = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    StaffId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     StartedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
@@ -527,7 +530,8 @@ namespace HDKTech.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     SessionId = table.Column<int>(type: "int", nullable: false),
-                    SenderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    SenderId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    SenderName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SentAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -539,7 +543,7 @@ namespace HDKTech.Migrations
                         column: x => x.SenderId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ChatMessages_ChatSessions_SessionId",
                         column: x => x.SessionId,
