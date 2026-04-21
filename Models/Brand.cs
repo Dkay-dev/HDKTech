@@ -20,6 +20,10 @@ namespace HDKTech.Models
         [DisplayName("Mô tả")]
         public string? Description { get; set; }
 
+        [DisplayName("Logo thương hiệu")]
+        [StringLength(500, ErrorMessage = "URL logo không được vượt quá 500 ký tự.")]
+        public string? LogoUrl { get; set; }
+
         // ── Soft Delete (Module C) ────────────────────────────────
         /// <summary>
         /// Khi true, thương hiệu được coi là đã xóa (ẩn khỏi mọi query thông thường).

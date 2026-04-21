@@ -68,6 +68,35 @@ namespace HDKTech.Utils
         }
 
         /// <summary>
+        /// Trả về đường dẫn ảnh mặc định cho danh mục dựa theo tên.
+        /// Ưu tiên: Admin upload (BannerImageUrl) → gọi hàm này làm fallback → icon.
+        /// </summary>
+        public static string? GetCategoryImageUrl(string? categoryName)
+        {
+            if (string.IsNullOrWhiteSpace(categoryName)) return null;
+            var name = categoryName.Trim().ToLower();
+            return name switch
+            {
+                "laptop"                  => "/images/categories/Laptop.jpg",
+                "laptop gaming"           => "/images/categories/LaptopGaming.jpg",
+                "pc gvn"                  => "/images/categories/PC_GVN.png",
+                "main, cpu, vga"          => "/images/categories/main.jpg",
+                "case, nguồn, tản"        => "/images/categories/case.jpg",
+                "ổ cứng, ram, thẻ nhớ"   => "/images/categories/RAM.jpg",
+                "loa, micro, webcam"      => "/images/categories/Loa.jpg",
+                "màn hình"                => "/images/categories/Manhinh.jpg",
+                "bàn phím"                => "/images/categories/banphim.jpg",
+                "chuột + lót chuột"       => "/images/categories/chuot.jpg",
+                "tai nghe"                => "/images/categories/tainghe.jpg",
+                "handheld, console"       => "/images/categories/console.jpg",
+                // fallback: tên cũ / rút gọn vẫn match được
+                _ when name.StartsWith("chuột")    => "/images/categories/chuot.jpg",
+                _ when name.StartsWith("handheld") => "/images/categories/console.jpg",
+                _                                  => null
+            };
+        }
+
+        /// <summary>
         /// Map danh mục tiếng Việt -> tên folder ảnh
         /// Dùng cho khi cần convert Category.Name -> folder name
         /// </summary>

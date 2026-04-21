@@ -91,6 +91,7 @@
             <table class="table table-hover table-sm align-middle mb-0" style="font-size:13px;">
                 <thead class="table-light text-uppercase text-muted small">
                     <tr>
+                        <th style="width:40px;">#</th>
                         <th style="width:56px;"></th>
                         <th>Tên sản phẩm</th>
                         <th>Danh mục</th>
@@ -104,6 +105,7 @@
                 <tbody>
                     @if (Model?.Any() == true)
                     {
+                        int rowIndex = (currentPage - 1) * pageSize + 1;
                         @foreach (var p in Model)
                         {
                             var thumb   = p.Images?.FirstOrDefault(x => x.IsDefault) ?? p.Images?.FirstOrDefault();
@@ -111,6 +113,8 @@
                             var pPrice      = p.DisplayPrice ?? 0m;
                             var pListPrice  = p.DisplayListPrice;
                             <tr>
+                                <!-- STT -->
+                                <td class="text-muted small">@rowIndex</td>
                                 <!-- Ảnh -->
                                 <td class="text-center ps-3">
                                     @if (thumb != null)
@@ -183,12 +187,13 @@
                                     </div>
                                 </td>
                             </tr>
+                            rowIndex++;
                         }
                     }
                     else
                     {
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="9" class="text-center py-5 text-muted">
                                 <i class="fa-regular fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
                                 Không tìm thấy sản phẩm nào.
                                 <a href="@Url.Action("Create","Product",new{area="Admin"})">Thêm ngay!</a>

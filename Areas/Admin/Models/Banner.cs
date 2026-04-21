@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using HDKTech.Models;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HDKTech.Areas.Admin.Models
@@ -75,5 +76,14 @@ namespace HDKTech.Areas.Admin.Models
         /// Display end date (nullable) - for scheduling feature
         /// </summary>
         public DateTime? EndDate { get; set; }
+
+        /// <summary>
+        /// Danh mục gắn với banner (chỉ dùng cho BannerType = "Side").
+        /// Cho phép Home/Index map đúng 2 side banner cho mỗi danh mục.
+        /// </summary>
+        public int? CategoryId { get; set; }
+
+        [ForeignKey("CategoryId")]
+        public virtual Category? Category { get; set; }
     }
 }

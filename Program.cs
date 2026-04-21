@@ -1,23 +1,26 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.RateLimiting;
-using HDKTech.Models;
+// Program.cs — Phiên bản đầy đủ với Google OAuth + Email Confirmation
+// Thay thế Program.cs gốc bằng file này
+using HDKTech.Areas.Admin.Constants;
+using HDKTech.Areas.Admin.Repositories;
+using HDKTech.Areas.Admin.Services;
+using HDKTech.Areas.Admin.Services.Interfaces;
+using HDKTech.ChucNangPhanQuyen;
 using HDKTech.Data;
+using HDKTech.Models;
 using HDKTech.Models.Momo;
 using HDKTech.Repositories;
 using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
+using HDKTech.Services.Interfaces;
 using HDKTech.Services.Momo;
 using HDKTech.Services.Vnpay;
-using HDKTech.Areas.Admin.Repositories;
-using HDKTech.Areas.Admin.Services;
 using HDKTech.Utilities;
-using HDKTech.ChucNangPhanQuyen;
-using HDKTech.Areas.Admin.Constants;
-using HDKTech.Services.Interfaces;
-using HDKTech.Areas.Admin.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 namespace HDKTech
 {
@@ -35,20 +38,29 @@ namespace HDKTech
             builder.Services.AddDbContext<HDKTechContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            // Module D: IDbContextFactory — dùng trong DashboardService để tạo
-            // context riêng biệt cho từng Task.WhenAll group (tránh shared-context race)
             builder.Services.AddDbContextFactory<HDKTechContext>(options =>
                 options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped);
 
             // ─────────────────────────────────────────────────────────────
-            // Identity — Chuyển từ AddIdentityCore sang AddIdentity để hỗ trợ đầy đủ Store
+            // ✅ Email Service (MailKit — thay System.Net.Mail)
+            // ─────────────────────────────────────────────────────────────
+            builder.Services.AddSingleton<IEmailSender, MailKitEmailSender>();
+
+            // Adapter: bọc IEmailSender của HDKTech → Identity UI IEmailSender
+            builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender,
+                IdentityEmailSenderAdapter>();
+
+            // ─────────────────────────────────────────────────────────────
+            // Identity — với RequireConfirmedEmail = true
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
             {
-                options.SignIn.RequireConfirmedAccount = false;
+                options.SignIn.RequireConfirmedAccount = true;  // ✅ Bật xác nhận email
+                options.SignIn.RequireConfirmedEmail = true;  // ✅ Bật xác nhận email
+
                 options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 4;
+                options.Password.RequiredLength = 6;
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
@@ -58,20 +70,46 @@ namespace HDKTech
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
                 .AddEntityFrameworkStores<HDKTechContext>()
-                .AddDefaultTokenProviders();
+                .AddDefaultTokenProviders()
+                .AddDefaultUI();  // ✅ Cần cho Razor Pages Identity
 
-            // Sau khi dùng AddIdentity, bạn có thể xóa bớt các dòng AddSignInManager() 
-            // và AddAuthentication(...) lẻ tẻ bên dưới vì AddIdentity đã lo hết rồi.
-            // Đăng ký cookie scheme riêng (vì AddIdentityCore không đi kèm cookie)
-            
+            // ─────────────────────────────────────────────────────────────
+            // ✅ Google OAuth Authentication
+            // ─────────────────────────────────────────────────────────────
+            builder.Services.AddAuthentication()
+                .AddGoogle(googleOptions =>
+                {
+                    var googleId = builder.Configuration["GoogleAuth:ClientId"];
+                    var googleSecret = builder.Configuration["GoogleAuth:ClientSecret"];
+
+                    if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(googleSecret))
+                    {
+                        // Log warning nhưng không crash — Google login sẽ không hiện
+                        Console.WriteLine("⚠ CẢNH BÁO: GoogleAuth:ClientId hoặc ClientSecret chưa được cấu hình. Đăng nhập bằng Google sẽ không khả dụng.");
+                    }
+                    else
+                    {
+                        googleOptions.ClientId = googleId;
+                        googleOptions.ClientSecret = googleSecret;
+
+                        // Lấy thêm thông tin profile
+                        googleOptions.Scope.Add("profile");
+                        googleOptions.ClaimActions.MapJsonKey("picture", "picture", "url");
+
+                        googleOptions.SaveTokens = true;
+
+                        // URL callback — phải khớp với Google Console
+                        // Mặc định: /signin-google (không cần đổi)
+                    }
+                });
 
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.Cookie.SameSite     = SameSiteMode.None;
+                options.Cookie.SameSite = SameSiteMode.None;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.Cookie.HttpOnly     = true;
-                options.LoginPath           = "/Identity/Account/Login";
-                options.AccessDeniedPath    = "/Identity/Account/AccessDenied";
+                options.Cookie.HttpOnly = true;
+                options.LoginPath = "/Identity/Account/Login";
+                options.AccessDeniedPath = "/Identity/Account/AccessDenied";
             });
 
             // ─────────────────────────────────────────────────────────────
@@ -89,12 +127,9 @@ namespace HDKTech
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
 
-            // Chat realtime (SignalR)
             builder.Services.AddScoped<IChatRepository, ChatRepository>();
             builder.Services.AddScoped<IChatService, ChatService>();
 
-            // Admin Repositories — canonical registration (Areas.Admin namespace)
-            // HDKTech.Repositories.AdminProductRepository là deprecated stub, không register nữa
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.IAdminProductRepository,
                                        HDKTech.Areas.Admin.Repositories.AdminProductRepository>();
             builder.Services.AddScoped<HDKTech.Areas.Admin.Repositories.BannerRepository>();
@@ -104,32 +139,28 @@ namespace HDKTech
                                        HDKTech.Areas.Admin.Repositories.SystemLogRepository>();
             builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
-            // Admin Services
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IProductAdminService,
                                        HDKTech.Areas.Admin.Services.ProductAdminService>();
             builder.Services.AddScoped<IOrderAdminService,
                                        HDKTech.Areas.Admin.Services.OrderAdminService>();
 
-            // Inventory / Reports / Cart
             builder.Services.AddScoped<IInventoryService, InventoryService>();
             builder.Services.AddScoped<IReportService, ReportService>();
             builder.Services.AddScoped<IPromotionService, PromotionService>();
 
-            // Module D: Email xác nhận đơn hàng (SMTP)
+            // ✅ SmtpEmailService giờ dùng IEmailSender nội bộ
             builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
+            // OTP Service (dùng IMemoryCache, TTL 15 phút)
+            builder.Services.AddSingleton<IOtpService, OtpService>();
+
             // ─────────────────────────────────────────────────────────────
-            // Authorization — Policy-based Permission (ASP.NET Identity)
-            //   Handler đọc trực tiếp từ AspNetRoleClaims (Type="permission").
-            //   Roles được seed trong IdentityRoleSeed.
+            // Authorization
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
             builder.Services.AddAuthorization(options =>
             {
-                // ─── Role-based policies (Identity) ─────────────────────────
-                // Dùng CHUỖI role name từ AdminConstants — ánh xạ trực tiếp
-                // sang Identity Roles ("Admin", "Manager") trong AspNetRoles.
                 options.AddPolicy("RequireAdmin", policy =>
                     policy.RequireRole(AdminConstants.AdminRole));
 
@@ -141,16 +172,12 @@ namespace HDKTech
                     ctx.User.IsInRole("Admin") ||
                     ctx.User.IsInRole("Manager") ||
                     ctx.User.IsInRole("Staff") ||
-                    // Hỗ trợ custom role tự tạo: có bất kỳ role nào không phải Customer
                     (ctx.User.Identity?.IsAuthenticated == true &&
                      !ctx.User.IsInRole("Customer") &&
                      ctx.User.Claims.Any(c =>
                          c.Type == System.Security.Claims.ClaimTypes.Role))
                 ));
 
-                // ─── Permission-based policies ──────────────────────────────
-                // Mỗi permission "Module.Action" được map thành 1 policy đồng tên;
-                // PermissionHandler đọc AspNetRoleClaims để Succeed/Fail.
                 foreach (var perm in HDKTech.Data.IdentityRoleSeed.AllPermissions)
                 {
                     var parts = perm.Split('.');
@@ -165,39 +192,28 @@ namespace HDKTech
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout         = TimeSpan.FromDays(7);
-                options.Cookie.HttpOnly     = true;
-                options.Cookie.IsEssential  = true;
-                options.Cookie.SameSite     = SameSiteMode.None;
+                options.IdleTimeout = TimeSpan.FromDays(7);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+                options.Cookie.SameSite = SameSiteMode.None;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
             builder.Services.AddHttpContextAccessor();
-
-            // ── Cart: Session → Database (Module A Refactor) ──────────
-            // Đổi từ SessionCartService sang DbCartService để:
-            //   - Cart persist qua server restart / scale-out
-            //   - Hỗ trợ merge guest cart khi login
-            //   - Validate tồn kho real-time khi thêm/sửa giỏ
             builder.Services.AddScoped<ICartService, DbCartService>();
-
-            // Background job expire PendingCheckout quá 30 phút
             builder.Services.AddHostedService<ExpireCheckoutJob>();
 
             // ─────────────────────────────────────────────────────────────
-            // Memory cache (Dashboard)
+            // Memory cache / MVC / SignalR
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddMemoryCache(options =>
             {
-                options.SizeLimit            = null;
+                options.SizeLimit = null;
                 options.CompactionPercentage = 0.25;
             });
 
-            // MVC + Razor Pages (vẫn cần cho Identity scaffold UI nếu user muốn giữ)
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
-
-            // SignalR — realtime chat
             builder.Services.AddSignalR();
 
             // Payment Services
@@ -213,16 +229,12 @@ namespace HDKTech
             builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
             // ─────────────────────────────────────────────────────────────
-            // Rate Limiting — ASP.NET Core built-in (.NET 7+)
-            //   "checkout"   : 5 request / phút / user  → POST /Checkout
-            //   "add-to-cart": 20 request / phút / user → POST /Cart/AddToCart
-            // Key theo ClaimTypes.NameIdentifier (userId); nếu chưa đăng nhập dùng IP.
+            // Rate Limiting
             // ─────────────────────────────────────────────────────────────
             builder.Services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-                // ── Checkout: 5 req / 60s / user ─────────────────────────
                 options.AddPolicy("checkout", httpContext =>
                 {
                     var userId = httpContext.User.FindFirst(
@@ -234,14 +246,13 @@ namespace HDKTech
                     return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
                         new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit          = 5,
-                            Window               = TimeSpan.FromMinutes(1),
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            QueueLimit           = 0   // Không queue, reject ngay
+                            QueueLimit = 0
                         });
                 });
 
-                // ── AddToCart: 20 req / 60s / user ───────────────────────
                 options.AddPolicy("add-to-cart", httpContext =>
                 {
                     var userId = httpContext.User.FindFirst(
@@ -253,18 +264,16 @@ namespace HDKTech
                     return RateLimitPartition.GetFixedWindowLimiter(key, _ =>
                         new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit          = 20,
-                            Window               = TimeSpan.FromMinutes(1),
+                            PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                            QueueLimit           = 0
+                            QueueLimit = 0
                         });
                 });
             });
 
             var app = builder.Build();
 
-            // Initialize LoggingHelper với IServiceScopeFactory (singleton) — không dùng scoped instance
-            // để tránh disposed-scope bug. Mỗi lần log sẽ tạo scope mới qua factory.
             LoggingHelper.Initialize(app.Services.GetRequiredService<IServiceScopeFactory>());
 
             using (var scope = app.Services.CreateScope())
@@ -286,7 +295,7 @@ namespace HDKTech
             app.UseCookiePolicy(new CookiePolicyOptions
             {
                 MinimumSameSitePolicy = SameSiteMode.None,
-                Secure                = CookieSecurePolicy.Always
+                Secure = CookieSecurePolicy.Always
             });
 
             app.UseSession();
@@ -303,11 +312,31 @@ namespace HDKTech
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.MapRazorPages();
-
-            // SignalR Hub endpoint
             app.MapHub<HDKTech.Hubs.ChatHub>("/chathub");
 
             app.Run();
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Adapter: Bọc IEmailSender (HDKTech) → IEmailSender (Identity UI)
+    // Đặt ngay dưới class Program hoặc tách file riêng
+    // ─────────────────────────────────────────────────────────────
+    /// <summary>
+    /// ASP.NET Identity UI dùng interface Microsoft.AspNetCore.Identity.UI.Services.IEmailSender
+    /// để gửi confirm email và reset password. Adapter này chuyển đổi sang IEmailSender của HDKTech.
+    /// </summary>
+    public class IdentityEmailSenderAdapter
+        : Microsoft.AspNetCore.Identity.UI.Services.IEmailSender
+    {
+        private readonly HDKTech.Services.IEmailSender _sender;
+
+        public IdentityEmailSenderAdapter(HDKTech.Services.IEmailSender sender)
+        {
+            _sender = sender;
+        }
+
+        public Task SendEmailAsync(string email, string subject, string htmlMessage)
+            => _sender.SendEmailAsync(email, subject, htmlMessage);
     }
 }

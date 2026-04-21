@@ -107,6 +107,7 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th style="width:40px;">#</th>
                         <th>Tên Thương Hiệu</th>
                         <th>Mô Tả</th>
                         <th class="text-center" style="width: 80px;">Sản Phẩm</th>
@@ -116,20 +117,32 @@
                 <tbody>
                     @if (brands != null && brands.Count > 0)
                     {
+                        int rowIndex = (pageNumber - 1) * pageSize + 1;
                         @foreach (var brand in brands)
                         {
                             var productCount = brand.Products?.Count ?? 0;
 
                             <tr>
+                                <td class="text-muted small">@rowIndex</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-danger bg-opacity-10 p-2 rounded text-danger d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-building"></i>
-                                        </div>
+                                        @if (!string.IsNullOrEmpty(brand.LogoUrl))
+                                        {
+                                            <img src="@brand.LogoUrl" alt="@brand.Name"
+                                                 class="brand-logo-thumb"
+                                                 onerror="this.onerror=null;this.src='/images/products/no-image.png';" />
+                                        }
+                                        else
+                                        {
+                                            <div class="brand-logo-placeholder">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                        }
                                         <div>
                                             <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.Id })" class="text-danger fw-bold text-decoration-none">
                                                 @brand.Name
                                             </a>
+                                            <div class="text-muted small">ID: @brand.Id</div>
                                         </div>
                                     </div>
                                 </td>
@@ -155,12 +168,13 @@
                                     </div>
                                 </td>
                             </tr>
+                            rowIndex++;
                         }
                     }
                     else
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
+                            <td colspan="5" class="text-center py-5 text-muted">
                                 <div class="d-flex flex-column align-items-center gap-2">
                                     <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
                                     <p class="fw-medium">Không có thương hiệu nào</p>

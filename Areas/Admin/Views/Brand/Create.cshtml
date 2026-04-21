@@ -7,6 +7,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
 <!-- ========== PAGE HEADER ========== -->
@@ -31,7 +32,7 @@
             </div>
             <div class="card-body p-4">
 
-                <form asp-action="Create" asp-controller="Brand" asp-area="Admin" method="post" novalidate>
+                <form asp-action="Create" asp-controller="Brand" asp-area="Admin" method="post" enctype="multipart/form-data" novalidate>
                     @Html.AntiForgeryToken()
 
                     <!-- Tên Thương Hiệu -->
@@ -43,6 +44,49 @@
                                class="form-control"
                                placeholder="VD: Apple, Samsung, Dell, HP..." />
                         <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Logo Thương Hiệu -->
+                    <div class="mb-4">
+                        <label class="form-label">Logo Thương Hiệu</label>
+
+                        <!-- Dropzone (đồng bộ style với Banner) -->
+                        <div class="banner-dropzone" id="imageDropZone">
+                            <div class="dropzone-inner">
+                                <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                                <p class="dropzone-title">Kéo thả hoặc click để chọn logo</p>
+                                <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB</p>
+                                <p class="dropzone-hint">Khuyến nghị: 200×200 px</p>
+                            </div>
+                            <input type="file"
+                                   id="imageFile"
+                                   name="logoFile"
+                                   class="d-none"
+                                   accept=".jpg,.jpeg,.png,.webp,.gif,.svg" />
+                        </div>
+
+                        <!-- Preview ảnh upload -->
+                        <div id="uploadPreviewWrap" class="upload-preview-wrap d-none">
+                            <img id="uploadPreviewImg" src="" alt="Preview" class="upload-preview-img" />
+                            <button type="button" class="upload-remove-btn" id="removeUpload" title="Xoá logo đã chọn">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="banner-field-divider"><span>hoặc nhập URL</span></div>
+
+                        <!-- URL nhập tay -->
+                        <div class="banner-field">
+                            <div class="banner-input-group">
+                                <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                <input asp-for="LogoUrl"
+                                       id="imageUrlInput"
+                                       type="text"
+                                       class="banner-input banner-input-icon"
+                                       placeholder="https://... hoặc /images/..." />
+                            </div>
+                            <span asp-validation-for="LogoUrl" class="banner-error"></span>
+                        </div>
                     </div>
 
                     <!-- Mô Tả -->
@@ -102,4 +146,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
 }

@@ -330,6 +330,18 @@ public class HDKTechContext : IdentityDbContext<AppUser, IdentityRole, string>
             .HasIndex(wc => new { wc.Status, wc.ClaimDate });
 
         // ============================================================
+        //  BANNER → CATEGORY (Side banner gắn danh mục, nullable)
+        // ============================================================
+        builder.Entity<Banner>()
+            .HasOne(b => b.Category).WithMany()
+            .HasForeignKey(b => b.CategoryId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Banner>()
+            .HasIndex(b => b.CategoryId);
+
+        // ============================================================
         //  Chat, Review, v.v.
         // ============================================================
         // CustomerId nullable: user đã đăng nhập có FK, guest thì null

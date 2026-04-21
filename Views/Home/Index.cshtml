@@ -1,297 +1,350 @@
-@model HomeIndexViewModel
+@model HDKTech.ViewModels.HomeIndexViewModel
 @using HDKTech.Utils
 @{
     ViewData["Title"] = "HDKTech - Laptop, Linh kiện máy tính chính hãng";
 }
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
 
-@* ═══════════════════════════════════════════════════════════
-   1. HERO SECTION — Carousel 9:3 + 3 side banners
-   ═══════════════════════════════════════════════════════════ *@
-<div class="container-fluid px-3 px-lg-4">
-    <div class="hero-section">
+<div class="rog-page-wrapper">
 
-        @* — Main Carousel — *@
-        <div class="hero-main-carousel">
-            @if (Model.MainBanners.Any())
+    @* ═══════════════════════════════════════════════════════════════════
+   1. HERO SECTION — Full-width Carousel ROG Style
+      Map với Model.MainBanners (tối đa 5). Nếu thiếu ảnh → dùng ảnh mặc định.
+   ═══════════════════════════════════════════════════════════════════ *@
+    @{
+        const string defaultHeroImg = "/images/banners/b1.png";
+        var heroBanners = Model.MainBanners.Take(5).ToList();
+        // Nếu không có banner nào trong DB → dùng 1 slide mặc định
+        if (!heroBanners.Any())
+        {
+            heroBanners = new List<HDKTech.Areas.Admin.Models.Banner>
             {
-                <div id="heroBannerCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4800">
-                    <div class="carousel-inner">
-                        @for (int i = 0; i < Model.MainBanners.Count; i++)
-                        {
-                            var b = Model.MainBanners[i];
-                            <div class="carousel-item @(i == 0 ? "active" : "")">
-                                @if (!string.IsNullOrWhiteSpace(b.LinkUrl))
+                new HDKTech.Areas.Admin.Models.Banner
+                {
+                    Title    = "HDKTech - Chuyên Cung Cấp Máy Tính & Phụ Kiện Công Nghệ Cao",
+                    ImageUrl = defaultHeroImg,
+                    LinkUrl  = "/product"
+                }
+            };
+        }
+    }
+    <div class="rog-hero-section">
+        <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+            <div class="carousel-indicators">
+                @for (int i = 0; i < heroBanners.Count; i++)
+                {
+                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="@i"
+                            class="@(i == 0 ? "active" : "")"
+                            aria-label="Slide @(i + 1)"></button>
+                }
+            </div>
+            <div class="carousel-inner">
+                @for (int s = 0; s < heroBanners.Count; s++)
+                {
+                    var hb     = heroBanners[s];
+                    var hbImg  = !string.IsNullOrEmpty(hb.ImageUrl) ? hb.ImageUrl : defaultHeroImg;
+                    var hbLink = !string.IsNullOrEmpty(hb.LinkUrl)  ? hb.LinkUrl  : "/product";
+                    <div class="carousel-item @(s == 0 ? "active" : "")">
+                        <a href="@hbLink" onclick="window.trackBannerClick(@hb.Id)">
+                            <img src="@hbImg"
+                                 alt="@hb.Title"
+                                 class="rog-hero-img"
+                                 loading="@(s == 0 ? "eager" : "lazy")" />
+                        </a>
+                    </div>
+                }
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════════════════════
+    2. CATEGORY STRIP — ROG Style
+    ═══════════════════════════════════════════════════════════════════ *@
+    @if (Model.Categories.Any())
+    {
+        <div class="rog-section category-section-white">
+            <div class="rog-section-title-wrapper">
+                <h2 class="rog-section-title">KHÁM PHÁ SẢN PHẨM CỦA CHÚNG TÔI</h2>
+            </div>
+            <div class="category-strip">
+                <button class="cat-strip-nav cat-strip-nav--prev" id="catStripPrev" aria-label="Trước">&#8249;</button>
+                <div class="category-strip-inner" id="catStripInner">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <a asp-controller="Category" asp-action="Index" asp-route-id="@cat.Id" class="category-chip">
+                            <div class="category-chip-icon">
+                                @{
+                                    var catImgSrc = ImageHelper.GetCategoryImageUrl(cat.Name);
+                                }
+                                }
+                                @if (!string.IsNullOrEmpty(cat.BannerImageUrl))
                                 {
-                                    <a href="@b.LinkUrl" onclick="trackBannerClick(@b.Id); return true;">
-                                        <img src="@b.ImageUrl" alt="@b.Title"
-                                             loading="@(i == 0 ? "eager" : "lazy")" />
-                                    </a>
+                                    <img src="@cat.BannerImageUrl" alt="@cat.Name" />
+                                }
+                                else if (catImgSrc != null)
+                                {
+                                    <img src="@catImgSrc" alt="@cat.Name" />
                                 }
                                 else
                                 {
-                                    <img src="@b.ImageUrl" alt="@b.Title"
-                                         loading="@(i == 0 ? "eager" : "lazy")" />
+                                    <i class="bi @GetCategoryIcon(cat.Id)"></i>
                                 }
                             </div>
-                        }
-                    </div>
-                    @if (Model.MainBanners.Count > 1)
-                    {
-                        <button class="carousel-control-prev" type="button" data-bs-target="#heroBannerCarousel" data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon"></span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#heroBannerCarousel" data-bs-slide="next">
-                            <span class="carousel-control-next-icon"></span>
-                        </button>
-                        <div class="carousel-indicators">
-                            @for (int i = 0; i < Model.MainBanners.Count; i++)
-                            {
-                                <button type="button"
-                                        data-bs-target="#heroBannerCarousel"
-                                        data-bs-slide-to="@i"
-                                        class="@(i == 0 ? "active" : "")"
-                                        aria-current="@(i == 0 ? "true" : "false")"></button>
-                            }
-                        </div>
+                            <span class="category-chip-name">@cat.Name</span>
+                        </a>
                     }
                 </div>
-            }
-            else
-            {
-                <div style="height:420px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
-                    <i class="bi bi-image" style="font-size:48px;color:#f0a500;opacity:0.5;"></i>
-                    <p style="color:#888;font-size:14px;">Chưa có banner. <a href="/Admin/Banner" style="color:#f0a500;">Thêm banner ngay</a></p>
-                </div>
-            }
-        </div>
-
-        @* — Side Banners (3 stacked) — *@
-        <div class="hero-side-banners">
-            @if (Model.SideBanners.Any())
-            {
-                @foreach (var sb in Model.SideBanners.Take(3))
-                {
-                    <a href="@(sb.LinkUrl ?? "#")"
-                           class="hero-side-banner"
-                           onclick="trackBannerClick(@sb.Id); return true;">
-                        <img src="@sb.ImageUrl" alt="@sb.Title" loading="lazy" />
-                    </a>
-                }
-                @for (int i = Model.SideBanners.Take(3).Count(); i < 3; i++)
-                {
-                    <div class="hero-side-banner" style="background:#f5f5f5;"></div>
-                }
-            }
-            else
-            {
-                @for (int i = 0; i < 3; i++)
-                {
-                    <div class="hero-side-banner" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);"></div>
-                }
-            }
-        </div>
-    </div>
-</div>
-
-@* ═══════════════════════════════════════════════════════════
-   2. CATEGORY STRIP — Icon chips
-   ═══════════════════════════════════════════════════════════ *@
-@if (Model.Categories.Any())
-{
-    <div class="category-strip">
-        <div class="category-strip-inner px-3 px-lg-0">
-            @foreach (var cat in Model.Categories.Take(8))
-            {
-                <a asp-controller="Category" asp-action="Index" asp-route-id="@cat.Id" class="category-chip">
-                    <div class="category-chip-icon">
-                        @if (!string.IsNullOrEmpty(cat.BannerImageUrl))
-                        {
-                            <img src="@cat.BannerImageUrl" alt="@cat.Name" />
-                        }
-                        else
-                        {
-                            <i class="bi @GetCategoryIcon(cat.Id)"></i>
-                        }
-                    </div>
-                    <span class="category-chip-name">@cat.Name</span>
-                </a>
-            }
-        </div>
-    </div>
-}
-
-@* ═══════════════════════════════════════════════════════════
-   3. FLASH SALE SECTION — Dark theme with countdown
-   ═══════════════════════════════════════════════════════════ *@
-@if (Model.FlashSaleProducts.Any())
-{
-    <div class="flash-sale-section px-3 px-lg-0">
-        <div class="flash-sale-header">
-            <div class="flash-sale-title">
-                <div class="flash-title-text">
-                    <i class="bi bi-lightning-fill flash-icon-bolt"></i>
-                    FLASH SALE
-                </div>
-                <div class="countdown-block" id="flashCountdown" data-end-time="@ViewBag.FlashSaleEndTime">
-                    <div class="countdown-unit" id="cd-h">00</div>
-                    <span class="countdown-sep">:</span>
-                    <div class="countdown-unit" id="cd-m">00</div>
-                    <span class="countdown-sep">:</span>
-                    <div class="countdown-unit" id="cd-s">00</div>
-                </div>
-            </div>
-            <a asp-controller="Product" asp-action="FlashSale" class="flash-view-all">
-                Xem tất cả <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-
-        <div class="pc-grid">
-            @foreach (var p in Model.FlashSaleProducts.Take(5))
-            {
-                @await Html.PartialAsync("_ProductCard", p)
-            }
-        </div>
-        }
-    </div>
-}
-
-@* ═══════════════════════════════════════════════════════════
-   4. BOTTOM BANNER STRIP (after flash sale)
-   ═══════════════════════════════════════════════════════════ *@
-@if (Model.BottomBanners.Any())
-{
-    <div class="bottom-banner-strip px-3 px-lg-0">
-        @{
-            var bbCount = Model.BottomBanners.Count;
-            var gridClass = bbCount >= 3 ? "bottom-banner-grid-3" : "bottom-banner-grid-2";
-        }
-        <div class="@gridClass">
-            @foreach (var bb in Model.BottomBanners.Take(3))
-            {
-                <a href="@(bb.LinkUrl ?? "#")"
-                       class="bottom-banner-item"
-                       onclick="trackBannerClick(@bb.Id); return true;">
-                    <img src="@bb.ImageUrl" alt="@bb.Title" loading="lazy" />
-                </a>
-            }
-        </div>
-    </div>
-}
-
-@* Duyệt qua 12 danh mục chính để tạo các khối sản phẩm đồng bộ *@
-@{
-    var mainCategories = Model.Categories.Take(12).ToList();
-}
-
-@foreach (var cat in mainCategories)
-{
-    var catProducts = Model.AllProducts.Where(p => p.CategoryId == cat.Id).Take(12).ToList();
-    
-    @if (catProducts.Any())
-    {
-        <div class="container-fluid px-3 px-lg-4">
-            <div class="hdk-section">
-                <div class="section-header">
-                    <div class="section-header-left">
-                        <div class="section-label">
-                            <i class="bi @GetCategoryIcon(cat.Id)"></i> @cat.Name
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-module-main">
-                    <div class="module-side-banners-stack">
-                        @{
-                            // Lọc ra các banner SIDE có chứa từ khóa của danh mục hiện tại (ví dụ: "Laptop")
-                            // Cách này sẽ lấy đúng "Banner Laptop 1" và "Banner Laptop 2" từ Admin của bạn
-                            var currentSideBanners = Model.SideBanners
-                                        .Where(b => b.Title.Contains(cat.Name, StringComparison.OrdinalIgnoreCase))
-                                        .ToList();
-
-                            // 2. Nếu là danh mục "Laptop", ta phải lọc bỏ những cái có chữ "Gaming"
-                            // để nó không lấy nhầm banner của Laptop Gaming.
-                            if (cat.Name == "Laptop")
-                            {
-                                currentSideBanners = currentSideBanners.Where(b => !b.Title.Contains("Gaming")).ToList();
-                            }
-
-                            // 3. Lấy 2 cái cuối cùng sau khi lọc
-                            var finalBanners = currentSideBanners.OrderBy(b => b.Title).Take(2).ToList();
-
-                            // Nếu danh mục khác chưa có banner riêng, lấy 2 cái SIDE đầu tiên làm mặc định
-                            if (currentSideBanners.Count < 2)
-                            {
-                                currentSideBanners = Model.SideBanners.OrderBy(b => b.Id).Take(2).ToList();
-                            }
-                        }
-        
-                        @foreach (var sb in currentSideBanners)
-                        {
-                            <a href="@(sb.LinkUrl ?? "#")" class="side-banner-item">
-                                <img src="@sb.ImageUrl" alt="@sb.Title" loading="lazy" />
-                            </a>
-                        }
-                    </div>
-
-                    <div class="products-grid">
-                        @foreach (var p in catProducts)
-                        {
-                            @await Html.PartialAsync("_ProductCard", p)
-                        }
-                    </div>
-                </div>
+                <button class="cat-strip-nav cat-strip-nav--next" id="catStripNext" aria-label="Tiếp">&#8250;</button>
             </div>
         </div>
     }
-}
 
+    @* ═══════════════════════════════════════════════════════════════════
+   3. FLASH SALE SECTION — Black Gold Theme
+   ═══════════════════════════════════════════════════════════════════ *@
+    @if (Model.FlashSaleProducts.Any())
+    {
+        var fsEndIso   = Model.FlashSaleEndTime?.ToString("o")   ?? "";
+        var fsStartIso = Model.FlashSaleStartTime?.ToString("o") ?? "";
 
+        <div class="flash-sale-section"
+             data-end="@fsEndIso"
+             data-start="@fsStartIso">
 
-@* ═══════════════════════════════════════════════════════════
-   7. BOTTOM BANNER — second strip (if enough banners)
-   ═══════════════════════════════════════════════════════════ *@
-@{
-    var bottomBanners2 = Model.BottomBanners.Skip(3).Take(3).ToList();
-}
-@if (bottomBanners2.Any())
-{
-    <div class="bottom-banner-strip px-3 px-lg-4 mt-0">
-        <div class="bottom-banner-grid-@(bottomBanners2.Count >= 3 ? 3 : 2)">
-            @foreach (var bb in bottomBanners2)
-            {
-                <a href="@(bb.LinkUrl ?? "#")"
-                       class="bottom-banner-item"
-                       onclick="trackBannerClick(@bb.Id); return true;">
-                    <img src="@bb.ImageUrl" alt="@bb.Title" loading="lazy" />
+            @* ── Header: tiêu đề + đồng hồ + nút ── *@
+            <div class="flash-sale-header">
+                <div class="flash-sale-title">
+                    <div class="flash-title-text">
+                        <i class="bi bi-lightning-fill flash-icon-bolt"></i>
+                        FLASH SALE
+                    </div>
+                    <div class="countdown-block" id="flashCountdown">
+                        <div class="countdown-unit" id="cd-h">00</div>
+                        <span class="countdown-sep">:</span>
+                        <div class="countdown-unit" id="cd-m">00</div>
+                        <span class="countdown-sep">:</span>
+                        <div class="countdown-unit" id="cd-s">00</div>
+                    </div>
+                </div>
+                <a asp-controller="Product" asp-action="FlashSale" class="rog-btn-view-all">
+                    Xem tất cả <i class="bi bi-arrow-right"></i>
                 </a>
+            </div>
+
+            @* ── Progress bar: thời gian còn lại ── *@
+            <div class="flash-progress-wrap">
+                <div class="flash-progress-labels">
+                    <span class="flash-progress-label-left">
+                        <i class="bi bi-fire"></i> Đang diễn ra
+                    </span>
+                    <span class="flash-progress-label-right" id="flashProgressText">Đang tải...</span>
+                </div>
+                <div class="flash-progress-track">
+                    <div class="flash-progress-bar" id="flashProgressBar" style="width:100%"></div>
+                </div>
+            </div>
+
+            @* ── Product carousel: 12 sản phẩm, 6/slide, tự lướt mỗi 5s ── *@
+            @{
+                var fsProducts = Model.FlashSaleProducts.Take(12).ToList();
+                var fsSlides   = new List<List<HDKTech.Models.Product>>();
+                for (int fsi = 0; fsi < fsProducts.Count; fsi += 6)
+                    fsSlides.Add(fsProducts.Skip(fsi).Take(6).ToList());
             }
+            <div id="flashSaleCarousel"
+                 class="carousel slide flash-carousel"
+                 data-bs-ride="carousel"
+                 data-bs-interval="5000">
+
+                @* Indicators — chỉ hiện khi có > 1 slide *@
+                @if (fsSlides.Count > 1)
+                {
+                    <div class="flash-carousel-indicators">
+                        @for (int fsi = 0; fsi < fsSlides.Count; fsi++)
+                        {
+                            <button type="button"
+                                    data-bs-target="#flashSaleCarousel"
+                                    data-bs-slide-to="@fsi"
+                                    class="@(fsi == 0 ? "active" : "")"
+                                    aria-label="Nhóm @(fsi + 1)"></button>
+                        }
+                    </div>
+                }
+
+                <div class="carousel-inner">
+                    @for (int fsi = 0; fsi < fsSlides.Count; fsi++)
+                    {
+                        <div class="carousel-item @(fsi == 0 ? "active" : "")">
+                            <div class="pc-grid">
+                                @foreach (var p in fsSlides[fsi])
+                                {
+                                    var perEndTime = Model.FlashSaleEndTimeByProduct.TryGetValue(p.Id, out var pet)
+                                                     ? pet.ToString("o") : fsEndIso;
+                                    var cardVd = new ViewDataDictionary(ViewData);
+                                    cardVd["IsFlashSale"]      = true;
+                                    cardVd["FlashSaleEndTime"] = perEndTime;
+                                    @await Html.PartialAsync("_ProductCard", p, cardVd)
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Prev / Next — chỉ khi có > 1 slide *@
+                @if (fsSlides.Count > 1)
+                {
+                    <button class="carousel-control-prev flash-carousel-btn flash-carousel-btn--prev"
+                            type="button"
+                            data-bs-target="#flashSaleCarousel"
+                            data-bs-slide="prev"
+                            aria-label="Nhóm sản phẩm trước">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Trước</span>
+                    </button>
+                    <button class="carousel-control-next flash-carousel-btn flash-carousel-btn--next"
+                            type="button"
+                            data-bs-target="#flashSaleCarousel"
+                            data-bs-slide="next"
+                            aria-label="Nhóm sản phẩm tiếp theo">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Tiếp</span>
+                    </button>
+                }
+            </div>
         </div>
-    </div>
-}
+    }
 
+    @* ═══════════════════════════════════════════════════════════════════
+   3. CATEGORY PRODUCT SECTIONS
+      - Duyệt TẤT CẢ danh mục chính (không bỏ danh mục nào)
+      - Mỗi 4 danh mục chèn 1 Mid Banner (BottomBanners)
+      - Side banner: lấy đúng theo CategoryId (tối đa 2). Thiếu → dùng default
+      - Không có sản phẩm → vẫn giữ khối danh mục, hiện placeholder
+   ═══════════════════════════════════════════════════════════════════ *@
+    @{
+        var mainCategories   = Model.Categories.ToList();
+        var midBanners       = Model.BottomBanners.ToList();
+        const string defaultSideImg = "/images/banners/b1.png";
+        int midBannerIndex   = 0;
+    }
 
+    @for (int catIndex = 0; catIndex < mainCategories.Count; catIndex++)
+    {
+        var cat         = mainCategories[catIndex];
+        var catProducts = Model.AllProducts.Where(p => p.CategoryId == cat.Id).Take(12).ToList();
 
-@section Scripts {
-    <script src="~/js/pages/home.js"></script>
-}
+        <div class="rog-section">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="rog-section-title">
+                        <i class="bi @GetCategoryIcon(cat.Id)"></i> @cat.Name
+                    </div>
+                </div>
+                <a asp-controller="Category" asp-action="Index" asp-route-id="@cat.Id" class="rog-btn-view-all">
+                    Xem tất cả <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="category-module-main">
+                @* ── Side Banners: lấy đúng theo CategoryId, tối đa 2 ── *@
+                <div class="module-side-banners-stack">
+                    @{
+                        var sideBanners = Model.GetSideBannersForCategory(cat.Id);
+                    }
+                    @for (int si = 0; si < 2; si++)
+                    {
+                        if (si < sideBanners.Count)
+                        {
+                            var sb    = sideBanners[si];
+                            var sbImg = !string.IsNullOrEmpty(sb.ImageUrl) ? sb.ImageUrl : defaultSideImg;
+                            <a href="@(sb.LinkUrl ?? "#")" class="side-banner-item"
+                               onclick="window.trackBannerClick(@sb.Id)">
+                                <img src="@sbImg" alt="@sb.Title" loading="lazy" />
+                            </a>
+                        }
+                        else
+                        {
+                            @* Không có side banner → hiện ảnh mặc định *@
+                            <a href="/category/@cat.Id" class="side-banner-item">
+                                <img src="@defaultSideImg" alt="@cat.Name" loading="lazy" />
+                            </a>
+                        }
+                    }
+                </div>
+
+                @* ── Product Grid ── *@
+                <div class="products-grid">
+                    @if (catProducts.Any())
+                    {
+                        @foreach (var p in catProducts)
+                        {
+                            @if (Model.FlashSaleEndTimeByProduct.TryGetValue(p.Id, out var fsEnd))
+                            {
+                                var fsVd = new ViewDataDictionary(ViewData);
+                                fsVd["IsFlashSale"]      = true;
+                                fsVd["FlashSaleEndTime"] = fsEnd.ToString("o");
+                                @await Html.PartialAsync("_ProductCard", p, fsVd)
+                            }
+                            else
+                            {
+                                @await Html.PartialAsync("_ProductCard", p)
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="category-empty-placeholder">
+                            <i class="bi bi-box-seam"></i>
+                            <span>Đang cập nhật sản phẩm...</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Mid Banner: chèn sau mỗi 4 danh mục nếu còn banner ── *@
+        if ((catIndex + 1) % 3 == 0 && midBannerIndex < midBanners.Count)
+        {
+            var mb    = midBanners[midBannerIndex++];
+            var mbImg = !string.IsNullOrEmpty(mb.ImageUrl) ? mb.ImageUrl : defaultHeroImg;
+            <div class="mid-banner-section">
+                <a href="@(mb.LinkUrl ?? "#")" class="mid-banner-link"
+                   onclick="window.trackBannerClick(@mb.Id)">
+                    <img src="@mbImg" alt="@mb.Title" loading="lazy" />
+                </a>
+            </div>
+        }
+    }
+
+    <div class="rog-page-end"></div>
+
+    @section Scripts {
+        @* home.js xử lý: Flash Sale countdown + progress bar + card countdowns + filterProducts + trackBannerClick *@
+        <script src="~/js/pages/home.js" asp-append-version="true"></script>
+    }
 
 @functions {
-    string GetCategoryIcon(int id) => id switch
+    string GetCategoryIcon(int categoryId) => categoryId switch
     {
-        1 => "bi-laptop",
-        2 => "bi-pc-display-horizontal",
-        3 => "bi-keyboard",
-        4 => "bi-mouse3",
-        5 => "bi-cpu",
-        6 => "bi-memory",
-        7 => "bi-device-ssd",
-        8 => "bi-display",
-        9 => "bi-headphones",
-        10 => "bi-webcam",
-        11 => "bi-controller",
-        12 => "bi-phone",
-        _ => "bi-box-seam"
+        1  => "bi-laptop",
+        2  => "bi-cpu",
+        3  => "bi-mouse",
+        4  => "bi-keyboard",
+        5  => "bi-display",
+        6  => "bi-headphones",
+        7  => "bi-phone",
+        8  => "bi-controller",
+        _  => "bi-grid"
     };
 }
+

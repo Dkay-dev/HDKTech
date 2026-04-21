@@ -30,22 +30,26 @@ namespace HDKTech.Services
             var categories    = await _categoryRepo.GetAllAsync();
             var activeBanners = (await _bannerRepo.GetActiveBannersAsync()).ToList();
 
-            var flashSaleProducts = await _productRepo.GetFlashSaleProductsAsync(limit: 5);
+            var flashSaleProducts = await _productRepo.GetFlashSaleProductsAsync(limit: 12);
             var topSellerProducts = await _productRepo.GetTopSellerProductsAsync(limit: 8);
             var newProducts       = await _productRepo.GetNewProductsAsync(limit: 6);
 
-            // Performance fix: GetPagedAsync(12) thay vì GetAllWithImagesAsync()
-            var (pagedProducts, _) = await _productRepo.GetPagedAsync(page: 1, pageSize: 12);
+            // Load toàn bộ sản phẩm để hiển thị đúng cho tất cả danh mục trên trang chủ
+            var allProductsList = await _productRepo.GetAllWithImagesAsync();
 
-            var flashSaleEndTime = await _productService.GetFlashSaleEndTimeAsync();
+            var flashSaleEndTime          = await _productService.GetFlashSaleEndTimeAsync();
+            var flashSaleStartTime        = await _productService.GetFlashSaleStartTimeAsync();
+            var flashSaleEndTimeByProduct = await _productService.GetFlashSaleEndTimeByProductAsync();
 
             return new HomeIndexViewModel
             {
-                FlashSaleProducts = flashSaleProducts,
-                TopSellerProducts = topSellerProducts,
-                NewProducts       = newProducts,
-                AllProducts       = pagedProducts,
-                FlashSaleEndTime  = flashSaleEndTime,
+                FlashSaleProducts         = flashSaleProducts,
+                TopSellerProducts         = topSellerProducts,
+                NewProducts               = newProducts,
+                AllProducts               = allProductsList.ToList(),
+                FlashSaleEndTime          = flashSaleEndTime,
+                FlashSaleStartTime        = flashSaleStartTime,
+                FlashSaleEndTimeByProduct = flashSaleEndTimeByProduct,
 
                 Categories = categories
                     .Where(c => c.ParentCategoryId == null)
@@ -61,6 +65,15 @@ namespace HDKTech.Services
                     .Where(b => b.BannerType == "Side")
                     .OrderBy(b => b.DisplayOrder)
                     .ToList(),
+
+                // Nhóm side banner theo CategoryId để Index Home dễ map
+                // Mỗi danh mục tối đa 2 banner, sort theo DisplayOrder
+                SideBannersByCategory = activeBanners
+                    .Where(b => b.BannerType == "Side" && b.CategoryId.HasValue)
+                    .GroupBy(b => b.CategoryId!.Value)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.OrderBy(b => b.DisplayOrder).Take(2).ToList()),
 
                 BottomBanners = activeBanners
                     .Where(b => b.BannerType == "Bottom")
