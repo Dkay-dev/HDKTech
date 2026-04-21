@@ -8,6 +8,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
 <div class="p-3">
@@ -34,7 +35,7 @@
     </h5>
 
     <form asp-action="Edit" asp-controller="Category" asp-area="Admin"
-          method="post" asp-route-id="@Model?.Id">
+          method="post" enctype="multipart/form-data" asp-route-id="@Model?.Id">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 
@@ -76,38 +77,64 @@
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
-                        <!-- Banner URL -->
+                        <!-- Hình ảnh banner -->
                         <div class="mb-0">
-                            <label asp-for="BannerImageUrl" class="form-label fw-semibold">
-                                URL hình ảnh banner
+                            <label class="form-label fw-semibold">
+                                <i class="fa-solid fa-image text-info me-1"></i>Hình ảnh banner
                             </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white">
-                                    <i class="fa-solid fa-image text-muted fa-sm"></i>
-                                </span>
-                                <input asp-for="BannerImageUrl"
-                                       type="url"
-                                       class="form-control"
-                                       placeholder="https://..."
-                                       id="bannerUrlInput" />
-                            </div>
-                            <span asp-validation-for="BannerImageUrl" class="text-danger small"></span>
+
+                            <!-- Ảnh hiện tại -->
                             @if (!string.IsNullOrEmpty(Model?.BannerImageUrl))
                             {
-                                <div id="bannerPreview" class="mt-2">
-                                    <img id="previewImg" src="@Model.BannerImageUrl" alt="Banner preview"
-                                         class="img-fluid rounded border"
-                                         style="max-height:160px; object-fit:cover;" />
+                                <div class="current-image-wrap mb-3">
+                                    <p class="banner-label mb-2">Ảnh hiện tại:</p>
+                                    <div class="current-image-box">
+                                        <img src="@Model.BannerImageUrl"
+                                             alt="Ảnh hiện tại"
+                                             class="current-image-img"
+                                             onerror="this.style.display='none'" />
+                                        <span class="current-image-badge">Đang dùng</span>
+                                    </div>
                                 </div>
                             }
-                            else
-                            {
-                                <div id="bannerPreview" class="mt-2 d-none">
-                                    <img id="previewImg" src="" alt="Preview"
-                                         class="img-fluid rounded border"
-                                         style="max-height:160px; object-fit:cover;" />
+
+                            <!-- Dropzone để đổi ảnh mới -->
+                            <div class="banner-dropzone banner-dropzone-sm" id="imageDropZone">
+                                <div class="dropzone-inner">
+                                    <i class="bi bi-arrow-repeat dropzone-icon" style="font-size:1.8rem"></i>
+                                    <p class="dropzone-title">Click hoặc kéo thả để thay ảnh mới</p>
+                                    <p class="dropzone-hint">Để trống nếu muốn giữ ảnh hiện tại</p>
                                 </div>
-                            }
+                                <input type="file"
+                                       id="imageFile"
+                                       name="categoryImageFile"
+                                       class="d-none"
+                                       accept=".jpg,.jpeg,.png,.webp,.gif" />
+                            </div>
+
+                            <!-- Preview ảnh mới chọn -->
+                            <div id="uploadPreviewWrap" class="upload-preview-wrap d-none mt-2">
+                                <img id="uploadPreviewImg" src="" alt="Preview mới" class="upload-preview-img" />
+                                <button type="button" class="upload-remove-btn" id="removeUpload" title="Huỷ ảnh mới">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <div class="banner-field-divider"><span>hoặc nhập URL mới</span></div>
+
+                            <!-- URL thay thế -->
+                            <div class="banner-field">
+                                <div class="banner-input-group">
+                                    <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                    <input asp-for="BannerImageUrl"
+                                           id="imageUrlInput"
+                                           type="text"
+                                           class="banner-input banner-input-icon"
+                                           placeholder="Để trống để giữ ảnh hiện tại" />
+                                </div>
+                                <span class="banner-hint">Để trống nếu không muốn thay đổi URL ảnh.</span>
+                                <span asp-validation-for="BannerImageUrl" class="banner-error"></span>
+                            </div>
                         </div>
 
                     </div>
@@ -201,21 +228,5 @@
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-    <script>
-        // Preview banner khi thay đổi URL
-        const bannerInput = document.getElementById('bannerUrlInput');
-        const previewImg  = document.getElementById('previewImg');
-        const preview     = document.getElementById('bannerPreview');
-
-        bannerInput?.addEventListener('input', function () {
-            const val = this.value.trim();
-            if (val) {
-                previewImg.src = val;
-                preview?.classList.remove('d-none');
-                previewImg.onerror = () => preview?.classList.add('d-none');
-            } else {
-                preview?.classList.add('d-none');
-            }
-        });
-    </script>
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
 }

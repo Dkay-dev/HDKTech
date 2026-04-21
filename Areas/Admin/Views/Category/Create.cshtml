@@ -8,6 +8,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
 <div class="p-3">
@@ -30,7 +31,7 @@
     </h5>
 
     <form asp-action="Create" asp-controller="Category" asp-area="Admin"
-          method="post" id="createForm">
+          method="post" enctype="multipart/form-data" id="createForm">
         @Html.AntiForgeryToken()
 
         <div class="row g-4">
@@ -72,27 +73,48 @@
                             <div class="form-text">Tối đa 500 ký tự. Mô tả tốt giúp SEO hiệu quả hơn.</div>
                         </div>
 
-                        <!-- Banner URL -->
+                        <!-- Hình ảnh banner -->
                         <div class="mb-0">
-                            <label asp-for="BannerImageUrl" class="form-label fw-semibold">
-                                URL hình ảnh banner
+                            <label class="form-label fw-semibold">
+                                <i class="fa-solid fa-image text-info me-1"></i>Hình ảnh banner
                             </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white">
-                                    <i class="fa-solid fa-image text-muted fa-sm"></i>
-                                </span>
-                                <input asp-for="BannerImageUrl"
-                                       type="url"
-                                       class="form-control"
-                                       placeholder="https://..."
-                                       id="bannerUrlInput" />
+
+                            <!-- Dropzone (đồng bộ style với Banner) -->
+                            <div class="banner-dropzone" id="imageDropZone">
+                                <div class="dropzone-inner">
+                                    <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                                    <p class="dropzone-title">Kéo thả hoặc click để chọn ảnh</p>
+                                    <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB</p>
+                                    <p class="dropzone-hint">Khuyến nghị: 1200×400 px</p>
+                                </div>
+                                <input type="file"
+                                       id="imageFile"
+                                       name="categoryImageFile"
+                                       class="d-none"
+                                       accept=".jpg,.jpeg,.png,.webp,.gif" />
                             </div>
-                            <span asp-validation-for="BannerImageUrl" class="text-danger small"></span>
-                            <!-- Preview -->
-                            <div id="bannerPreview" class="mt-2 d-none">
-                                <img id="previewImg" src="" alt="Preview banner"
-                                     class="img-fluid rounded border"
-                                     style="max-height:160px; object-fit:cover;" />
+
+                            <!-- Preview ảnh upload -->
+                            <div id="uploadPreviewWrap" class="upload-preview-wrap d-none">
+                                <img id="uploadPreviewImg" src="" alt="Preview" class="upload-preview-img" />
+                                <button type="button" class="upload-remove-btn" id="removeUpload" title="Xoá ảnh đã chọn">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <div class="banner-field-divider"><span>hoặc nhập URL</span></div>
+
+                            <!-- URL nhập tay -->
+                            <div class="banner-field">
+                                <div class="banner-input-group">
+                                    <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                    <input asp-for="BannerImageUrl"
+                                           id="imageUrlInput"
+                                           type="text"
+                                           class="banner-input banner-input-icon"
+                                           placeholder="https://... hoặc /images/..." />
+                                </div>
+                                <span asp-validation-for="BannerImageUrl" class="banner-error"></span>
                             </div>
                         </div>
 
@@ -176,21 +198,5 @@
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-    <script>
-        // Preview banner khi nhập URL
-        const bannerInput = document.getElementById('bannerUrlInput');
-        const previewImg  = document.getElementById('previewImg');
-        const preview     = document.getElementById('bannerPreview');
-
-        bannerInput?.addEventListener('input', function () {
-            const val = this.value.trim();
-            if (val) {
-                previewImg.src = val;
-                preview.classList.remove('d-none');
-                previewImg.onerror = () => preview.classList.add('d-none');
-            } else {
-                preview.classList.add('d-none');
-            }
-        });
-    </script>
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
 }

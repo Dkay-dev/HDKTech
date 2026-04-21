@@ -7,6 +7,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
 }
 
 <!-- ========== PAGE HEADER ========== -->
@@ -31,8 +32,9 @@
             </div>
             <div class="card-body p-4">
 
-                <form asp-action="Edit" asp-controller="Brand" asp-area="Admin" method="post" novalidate>
+                <form asp-action="Edit" asp-controller="Brand" asp-area="Admin" method="post" enctype="multipart/form-data" novalidate>
                     <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="IsDeleted" />
 
                     <!-- Tên Thương Hiệu -->
                     <div class="mb-4">
@@ -43,6 +45,64 @@
                                class="form-control"
                                placeholder="VD: Apple, Samsung, Dell, HP..." />
                         <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Logo Thương Hiệu -->
+                    <div class="mb-4">
+                        <label class="form-label">Logo Thương Hiệu</label>
+
+                        <!-- Logo hiện tại -->
+                        @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                        {
+                            <div class="current-image-wrap mb-3">
+                                <p class="banner-label mb-2">Logo hiện tại:</p>
+                                <div class="current-image-box">
+                                    <img src="@Model.LogoUrl"
+                                         alt="@Model.Name"
+                                         class="current-image-img"
+                                         onerror="this.style.display='none'" />
+                                    <span class="current-image-badge">Đang dùng</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Dropzone để đổi logo mới -->
+                        <div class="banner-dropzone banner-dropzone-sm" id="imageDropZone">
+                            <div class="dropzone-inner">
+                                <i class="bi bi-arrow-repeat dropzone-icon" style="font-size:1.8rem"></i>
+                                <p class="dropzone-title">Click hoặc kéo thả để thay logo mới</p>
+                                <p class="dropzone-hint">Để trống nếu muốn giữ logo hiện tại</p>
+                            </div>
+                            <input type="file"
+                                   id="imageFile"
+                                   name="logoFile"
+                                   class="d-none"
+                                   accept=".jpg,.jpeg,.png,.webp,.gif,.svg" />
+                        </div>
+
+                        <!-- Preview ảnh mới chọn -->
+                        <div id="uploadPreviewWrap" class="upload-preview-wrap d-none mt-2">
+                            <img id="uploadPreviewImg" src="" alt="Preview mới" class="upload-preview-img" />
+                            <button type="button" class="upload-remove-btn" id="removeUpload" title="Huỷ logo mới">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="banner-field-divider"><span>hoặc nhập URL mới</span></div>
+
+                        <!-- URL thay thế -->
+                        <div class="banner-field">
+                            <div class="banner-input-group">
+                                <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                <input asp-for="LogoUrl"
+                                       id="imageUrlInput"
+                                       type="text"
+                                       class="banner-input banner-input-icon"
+                                       placeholder="Để trống để giữ logo hiện tại" />
+                            </div>
+                            <span class="banner-hint">Để trống nếu không muốn thay đổi URL logo.</span>
+                            <span asp-validation-for="LogoUrl" class="banner-error"></span>
+                        </div>
                     </div>
 
                     <!-- Mô Tả -->
@@ -122,4 +182,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
 }

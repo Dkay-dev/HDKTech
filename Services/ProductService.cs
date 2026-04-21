@@ -109,9 +109,53 @@ namespace HDKTech.Services
                 .Where(p => p.PromotionType == PromotionType.FlashSale
                          && p.IsActive
                          && p.StartDate <= now && p.EndDate >= now)
-                .OrderBy(p => p.EndDate)
+                .OrderByDescending(p => p.EndDate)
                 .Select(p => (DateTime?)p.EndDate)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<DateTime?> GetFlashSaleStartTimeAsync()
+        {
+            var now = DateTime.Now;
+            return await _context.Promotions
+                .Where(p => p.PromotionType == PromotionType.FlashSale
+                         && p.IsActive
+                         && p.StartDate <= now && p.EndDate >= now)
+                .OrderBy(p => p.EndDate)
+                .Select(p => (DateTime?)p.StartDate)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<Dictionary<int, DateTime>> GetFlashSaleEndTimeByProductAsync()
+        {
+            var now = DateTime.Now;
+
+            var productLevel = await _context.PromotionProducts
+                .Where(pp => pp.Promotion != null
+                          && pp.Promotion.PromotionType == PromotionType.FlashSale
+                          && pp.Promotion.IsActive
+                          && pp.Promotion.StartDate <= now
+                          && pp.Promotion.EndDate   >= now
+                          && !pp.IsExclusion
+                          && pp.ProductId.HasValue)
+                .Select(pp => new { ProductId = pp.ProductId!.Value, pp.Promotion!.EndDate })
+                .ToListAsync();
+
+            var variantLevel = await _context.PromotionProducts
+                .Where(pp => pp.Promotion != null
+                          && pp.Promotion.PromotionType == PromotionType.FlashSale
+                          && pp.Promotion.IsActive
+                          && pp.Promotion.StartDate <= now
+                          && pp.Promotion.EndDate   >= now
+                          && !pp.IsExclusion
+                          && pp.ProductVariantId.HasValue
+                          && pp.Variant != null)
+                .Select(pp => new { pp.Variant!.ProductId, pp.Promotion!.EndDate })
+                .ToListAsync();
+
+            return productLevel.Concat(variantLevel)
+                .GroupBy(x => x.ProductId)
+                .ToDictionary(g => g.Key, g => g.Min(x => x.EndDate));
         }
 
         // ── Build base query ───────────────────────────────────────

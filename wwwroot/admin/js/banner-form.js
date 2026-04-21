@@ -33,7 +33,10 @@
     // Form fields
     const titleInput = document.querySelector('[name="Title"]');
     const typeSelect = document.querySelector('[name="BannerType"]');
-    const isActiveChk = document.querySelector('[name="IsActive"]');
+    // BUG FIX: dùng selector rõ ràng để tránh chọn nhầm hidden input do asp-for tự generate
+    const isActiveChk = document.querySelector('input[type="checkbox"][name="IsActive"]');
+    // Category field wrapper (chỉ hiện khi BannerType = "Side")
+    const categoryFieldWrap = document.getElementById('categoryFieldWrap');
 
     // ── 1. DROPZONE: click to open file picker ─────────────────────
     if (dropZone && fileInput) {
@@ -68,7 +71,7 @@
     // ── 2. Handle file select: validate + preview ──────────────────
     function handleFileSelect(file) {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        const maxSize = 5 * 1024 * 1024; // 5 MB
+        const maxSize = 10 * 1024 * 1024; // 10 MB
 
         if (!allowedTypes.includes(file.type)) {
             alert('Định dạng không hợp lệ. Chỉ chấp nhận JPG, PNG, WebP, GIF.');
@@ -77,7 +80,7 @@
         }
 
         if (file.size > maxSize) {
-            alert('Kích thước ảnh vượt quá 5 MB. Vui lòng chọn ảnh nhỏ hơn.');
+            alert('Kích thước ảnh vượt quá 10 MB. Vui lòng chọn ảnh nhỏ hơn.');
             clearFileInput();
             return;
         }
@@ -198,7 +201,15 @@
     if (typeSelect) {
         typeSelect.addEventListener('change', () => {
             if (pvType) pvType.textContent = typeSelect.options[typeSelect.selectedIndex]?.text || '—';
+            // Hiện/ẩn trường "Gắn danh mục" tuỳ theo loại banner
+            if (categoryFieldWrap) {
+                categoryFieldWrap.style.display = typeSelect.value === 'Side' ? '' : 'none';
+            }
         });
+        // Chạy ngay khi load trang để đồng bộ trạng thái ban đầu
+        if (categoryFieldWrap) {
+            categoryFieldWrap.style.display = typeSelect.value === 'Side' ? '' : 'none';
+        }
     }
 
     if (isActiveChk && pvStatus) {

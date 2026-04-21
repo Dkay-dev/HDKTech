@@ -8,13 +8,14 @@
 
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
     <style>
-        .upload-zone { border: 2px dashed #dee2e6; border-radius: 8px; transition: border-color .2s, background .2s; cursor: pointer; }
-        .upload-zone:hover, .upload-zone.drag-over { border-color: #dc3545; background: rgba(220,53,69,.04); }
+        /* Preview grid cho multi-image (đặt bên dưới dropzone) */
         .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 10px; margin-top: 12px; }
-        .preview-item { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #dee2e6; }
+        .preview-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
         .preview-item img { width: 100%; height: 100%; object-fit: cover; }
-        .preview-item .rm { position: absolute; top: 4px; right: 4px; background: rgba(220,53,69,.85); border: none; border-radius: 50%; width: 22px; height: 22px; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .preview-item .rm { position: absolute; top: 4px; right: 4px; background: rgba(188,0,12,.9); border: none; border-radius: 50%; width: 24px; height: 24px; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .15s ease; }
+        .preview-item .rm:hover { transform: scale(1.1); }
     </style>
 }
 
@@ -145,11 +146,16 @@
                         <i class="fa-solid fa-images text-info me-2"></i>Hình ảnh sản phẩm
                     </div>
                     <div class="card-body">
-                        <div class="upload-zone p-4 text-center" id="uploadZone" onclick="document.getElementById('imageInput').click()">
-                            <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2 d-block"></i>
-                            <p class="mb-1 fw-semibold">Kéo thả ảnh hoặc <span class="text-danger">chọn file</span></p>
+                        <!-- Dropzone (đồng bộ style với Banner) -->
+                        <div class="banner-dropzone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+                            <div class="dropzone-inner">
+                                <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                                <p class="dropzone-title">Kéo thả hoặc click để chọn nhiều ảnh</p>
+                                <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB mỗi ảnh</p>
+                                <p class="dropzone-hint">Có thể chọn nhiều ảnh cùng lúc</p>
+                            </div>
+                            <input type="file" name="images" id="imageInput" multiple accept="image/*" class="d-none" />
                         </div>
-                        <input type="file" name="images" id="imageInput" multiple accept="image/*" class="d-none" />
                         <div class="preview-grid" id="previewGrid"></div>
                     </div>
                 </div>
@@ -182,17 +188,17 @@
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
     <script>
-        // Drag & Drop Preview logic giữ nguyên của Thịnh
+        // Drag & Drop multi-image uploader (đồng bộ UI dropzone với Banner)
         const zone = document.getElementById('uploadZone');
         const input = document.getElementById('imageInput');
         const grid = document.getElementById('previewGrid');
         let allFiles = new DataTransfer();
 
-        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
         zone.addEventListener('drop', e => {
             e.preventDefault();
-            zone.classList.remove('drag-over');
+            zone.classList.remove('dragover');
             addFiles(e.dataTransfer.files);
         });
         input.addEventListener('change', () => addFiles(input.files));
@@ -200,17 +206,36 @@
         function addFiles(fileList) {
             for (const f of fileList) {
                 if (!f.type.startsWith('image/')) continue;
+                const idx = allFiles.files.length;
                 allFiles.items.add(f);
                 const reader = new FileReader();
                 reader.onload = e => {
                     const div = document.createElement('div');
                     div.className = 'preview-item';
-                    div.innerHTML = `<img src="${e.target.result}" />`;
+                    div.dataset.idx = idx;
+                    div.innerHTML = `<img src="${e.target.result}" /><button type="button" class="rm" title="Xoá ảnh này">&times;</button>`;
+                    div.querySelector('.rm').addEventListener('click', ev => {
+                        ev.stopPropagation();
+                        removeFile(div);
+                    });
                     grid.appendChild(div);
                 };
                 reader.readAsDataURL(f);
             }
             input.files = allFiles.files;
+        }
+
+        function removeFile(itemEl) {
+            const idx = parseInt(itemEl.dataset.idx, 10);
+            const dt = new DataTransfer();
+            for (let i = 0; i < allFiles.files.length; i++) {
+                if (i !== idx) dt.items.add(allFiles.files[i]);
+            }
+            allFiles = dt;
+            input.files = allFiles.files;
+            // Rebuild previews' data-idx so subsequent removes match new indices
+            itemEl.remove();
+            [...grid.querySelectorAll('.preview-item')].forEach((el, i) => el.dataset.idx = i);
         }
 
         // Flash Sale toggle

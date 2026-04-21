@@ -177,12 +177,12 @@ namespace HDKTech.Controllers
             model.SoDienThoai      = SanitizeText(model.SoDienThoai, 20);
             model.GhiChu           = model.GhiChu != null ? SanitizeText(model.GhiChu, 500) : null;
 
-            // ─── Re-fetch giá từ DB ──────────────────────────────────
-            var variantIds = checkoutItems.Select(i => i.ProductVariantId).Distinct().ToList();
-            var variants   = await _checkoutService.GetVariantPricesAsync(variantIds);
+            // ─── Re-fetch giá từ DB (kèm kiểm tra Flash Sale server-side) ─
+            var variantIds      = checkoutItems.Select(i => i.ProductVariantId).Distinct().ToList();
+            var effectivePrices = await _checkoutService.GetVariantEffectivePricesAsync(variantIds);
 
             decimal subTotal    = checkoutItems.Sum(i =>
-                variants.TryGetValue(i.ProductVariantId, out var v) ? v.Price * i.Quantity : 0);
+                effectivePrices.TryGetValue(i.ProductVariantId, out var ep) ? ep * i.Quantity : 0);
             decimal shippingFee = CalculateShippingFee(subTotal);
             decimal discount    = 0;
 
@@ -231,7 +231,7 @@ namespace HDKTech.Controllers
                 SkuSnapshot      = i.SkuSnapshot,
                 SpecSnapshot     = i.SpecSnapshot,
                 ImageUrl         = i.ImageUrl,
-                UnitPrice        = variants.TryGetValue(i.ProductVariantId, out var v) ? v.Price : i.Price,
+                UnitPrice        = effectivePrices.TryGetValue(i.ProductVariantId, out var ep) ? ep : i.Price,
                 Quantity         = i.Quantity
             }).ToList();
 

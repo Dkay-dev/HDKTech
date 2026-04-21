@@ -17,5 +17,7 @@ namespace HDKTech.Services.Interfaces
         Task<List<Product>> GetRelatedAsync(int productId, int categoryId, int limit = 8);
         Task<List<Product>> GetFlashSaleAsync(int limit = 5);
         Task<DateTime?> GetFlashSaleEndTimeAsync();
+        Task<DateTime?> GetFlashSaleStartTimeAsync();
+        Task<Dictionary<int, DateTime>> GetFlashSaleEndTimeByProductAsync();
     }
 }

@@ -1,4 +1,5 @@
-﻿@model HDKTech.Areas.Admin.ViewModels.BannerIndexViewModel
+﻿@using HDKTech.Utils
+@model HDKTech.Areas.Admin.ViewModels.BannerIndexViewModel
 @{
     ViewData["Title"] = "Quản lý Banner";
     Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
@@ -57,7 +58,7 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-3" style="width:90px">Ảnh</th>
+                        <th class="ps-3" style="width:160px">Ảnh</th>
                         <th>Tiêu đề</th>
                         <th>Loại</th>
                         <th>Thứ tự</th>
@@ -75,14 +76,15 @@
                                 <td class="ps-3">
                                     @if (!string.IsNullOrEmpty(banner.ImageUrl))
                                     {
-                                        <img src="@banner.ImageUrl" alt="@banner.Title" class="banner-thumb"
-                                             onerror="this.src='/images/products/no-image.png'" />
+                                        <img src="@ImageHelper.GetImagePath(banner.ImageUrl)"
+                                             alt="@banner.Title"
+                                             class="banner-thumb"
+                                             onerror="this.onerror=null;this.src='/images/products/no-image.png';" />
                                     }
                                     else
                                     {
-                                        <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                                             style="width:72px;height:45px;">
-                                            <i class="bi bi-image text-muted"></i>
+                                        <div class="banner-thumb-placeholder">
+                                            <i class="bi bi-image"></i>
                                         </div>
                                     }
                                 </td>

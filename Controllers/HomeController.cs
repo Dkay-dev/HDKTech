@@ -19,7 +19,8 @@ namespace HDKTech.Controllers
         public async Task<IActionResult> Index()
         {
             var viewModel = await _homeService.GetHomePageDataAsync();
-            ViewBag.FlashSaleEndTime = viewModel.FlashSaleEndTime;
+            ViewBag.FlashSaleEndTime   = viewModel.FlashSaleEndTime;
+            ViewBag.FlashSaleStartTime = viewModel.FlashSaleStartTime;
             return View(viewModel);
         }
 

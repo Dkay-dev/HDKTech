@@ -58,16 +58,6 @@
                         <span asp-validation-for="Title" class="banner-error"></span>
                     </div>
 
-                    <!-- Mô tả -->
-                    <div class="banner-field">
-                        <label asp-for="Description" class="banner-label">Mô tả ngắn</label>
-                        <textarea asp-for="Description"
-                                  class="banner-input"
-                                  rows="2"
-                                  placeholder="Hiển thị dưới tiêu đề banner trên trang chủ..."></textarea>
-                        <span asp-validation-for="Description" class="banner-error"></span>
-                    </div>
-
                     <!-- Link URL — type="text" để NormalizeToRelativePath xử lý -->
                     <div class="banner-field">
                         <label asp-for="LinkUrl" class="banner-label">
@@ -105,7 +95,7 @@
                         <div class="dropzone-inner">
                             <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
                             <p class="dropzone-title">Kéo thả hoặc click để chọn ảnh</p>
-                            <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 5 MB</p>
+                            <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB</p>
                             <p class="dropzone-hint">Khuyến nghị: 1200×400 px cho Main Banner</p>
                         </div>
                         <input type="file"
@@ -170,6 +160,18 @@
                                    class="banner-input"
                                    placeholder="0" />
                             <span class="banner-hint">Số nhỏ hơn hiển thị trước.</span>
+                        </div>
+
+                        <!-- CategoryId — chỉ hiện khi chọn Side -->
+                        <div class="col-12" id="categoryFieldWrap" style="display:none">
+                            <label asp-for="CategoryId" class="banner-label">
+                                Gắn danh mục <span class="banner-hint-inline">(Side banner sẽ hiển thị bên cạnh danh mục này)</span>
+                            </label>
+                            <select asp-for="CategoryId"
+                                    asp-items="ViewBag.Categories"
+                                    class="banner-select">
+                                <option value="">— Chọn danh mục (tùy chọn) —</option>
+                            </select>
                         </div>
 
                         <div class="col-12">

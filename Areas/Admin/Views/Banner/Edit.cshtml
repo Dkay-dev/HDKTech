@@ -63,13 +63,6 @@
                         <span asp-validation-for="Title" class="banner-error"></span>
                     </div>
 
-                    <!-- Mô tả -->
-                    <div class="banner-field">
-                        <label asp-for="Description" class="banner-label">Mô tả ngắn</label>
-                        <textarea asp-for="Description" class="banner-input" rows="2"></textarea>
-                        <span asp-validation-for="Description" class="banner-error"></span>
-                    </div>
-
                     <!-- Link URL — type="text" -->
                     <div class="banner-field">
                         <label asp-for="LinkUrl" class="banner-label">
@@ -184,6 +177,18 @@
                             <span class="banner-hint">Số nhỏ hơn hiển thị trước.</span>
                         </div>
 
+                        <!-- CategoryId — chỉ hiện khi chọn Side -->
+                        <div class="col-12" id="categoryFieldWrap" style="@(Model?.BannerType == "Side" ? "" : "display:none")">
+                            <label asp-for="CategoryId" class="banner-label">
+                                Gắn danh mục <span class="banner-hint-inline">(Side banner sẽ hiển thị bên cạnh danh mục này)</span>
+                            </label>
+                            <select asp-for="CategoryId"
+                                    asp-items="ViewBag.Categories"
+                                    class="banner-select">
+                                <option value="">— Chọn danh mục (tùy chọn) —</option>
+                            </select>
+                        </div>
+
                         <div class="col-12">
                             <div class="banner-toggle-row">
                                 <div>
@@ -201,27 +206,29 @@
                 </div>
             </div>
 
-            <!-- ACTION BUTTONS — cùng một hàng, dùng d-flex gap-2 -->
-            <div class="d-flex gap-2 align-items-center">
-                <button type="submit" class="btn-banner-save" id="btnSubmit">
-                    <i class="bi bi-floppy me-2"></i>Lưu thay đổi
-                </button>
-                <a href="@Url.Action("Index")" class="btn-banner-back">
-                    <i class="bi bi-x me-1"></i>Huỷ
-                </a>
-                <!-- Nút xoá tách biệt, đặt cuối cùng -->
-                <form method="post"
-                      action="@Url.Action("Delete", new { id = Model?.Id })"
-                      class="ms-auto"
-                      onsubmit="return confirm('Xoá banner \'@Model?.Title\'? Không thể hoàn tác.');">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-banner-delete">
-                        <i class="bi bi-trash3 me-1"></i>Xoá
-                    </button>
-                </form>
-            </div>
-
         </form>
+        <!-- ↑ Form Edit kết thúc tại đây -->
+
+        <!-- ACTION BUTTONS — nằm ngoài form edit, dùng form="bannerEditForm" -->
+        <div class="d-flex gap-2 align-items-center mt-3">
+            <button type="submit" form="bannerEditForm" class="btn-banner-save" id="btnSubmit">
+                <i class="bi bi-floppy me-2"></i>Lưu thay đổi
+            </button>
+            <a href="@Url.Action("Index")" class="btn-banner-back">
+                <i class="bi bi-x me-1"></i>Huỷ
+            </a>
+            <!-- Form xóa độc lập (không còn lồng trong form edit) -->
+            <form id="deleteBannerForm"
+                  method="post"
+                  action="@Url.Action("Delete", new { id = Model?.Id })"
+                  class="ms-auto"
+                  onsubmit="return confirm('Xoá banner \'@Model?.Title\'? Không thể hoàn tác.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-banner-delete">
+                    <i class="bi bi-trash3 me-1"></i>Xoá
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- ─────────── CỘT PHẢI: Preview ─────────── -->

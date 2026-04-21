@@ -148,6 +148,7 @@
             <table class="table table-hover table-sm align-middle mb-0" style="font-size:13px;">
                 <thead class="table-light text-uppercase text-muted small">
                     <tr>
+                        <th style="width:40px;">#</th>
                         <th>Mã Đơn</th>
                         <th>Khách Hàng</th>
                         <th>Số ĐT</th>
@@ -160,6 +161,7 @@
                 <tbody>
                     @if (orders.Any())
                     {
+                        int rowIndex = (page - 1) * pageSize + 1;
                         @foreach (var o in orders)
                         {
                             var (badgeCls, statusLabel) = o.Status switch {
@@ -173,6 +175,7 @@
                                 _                                     => ("bg-light text-dark",   "Không rõ")
                             };
                             <tr>
+                                <td class="text-muted small">@rowIndex</td>
                                 <td>
                                     <a href="@Url.Action("Details","Order",new{area="Admin",id=o.Id})"
                                        class="text-danger fw-bold text-decoration-none small">
@@ -210,12 +213,13 @@
                                     </div>
                                 </td>
                             </tr>
+                            rowIndex++;
                         }
                     }
                     else
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="fa-regular fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
                                 Không có đơn hàng nào phù hợp.
                             </td>

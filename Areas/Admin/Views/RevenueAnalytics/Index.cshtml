@@ -597,105 +597,84 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 
-const API = {
-    revenue: '/api/analytics/revenue',
-    recentOrders: '/admin/order',
+const COLORS = ['#ef4444','#3b82f6','#10b981','#c9a84c','#8b5cf6','#f97316','#14b8a6','#ec4899','#6366f1'];
+const STATUS_MAP = {
+    'Delivered': {text:'Đã giao', cls:'ra-badge-green'},
+    'Shipping':  {text:'Đang giao', cls:'ra-badge-blue'},
+    'Confirmed': {text:'Đã xác nhận', cls:'ra-badge-blue'},
+    'Packing':   {text:'Đóng gói', cls:'ra-badge-yellow'},
+    'Pending':   {text:'Chờ xử lý', cls:'ra-badge-yellow'},
+    'Cancelled': {text:'Đã hủy', cls:'ra-badge-red'},
+    'Returned':  {text:'Hoàn trả', cls:'ra-badge-gray'},
 };
 
-const COLORS = {
-    red: '#ef4444', blue: '#3b82f6', green: '#10b981',
-    gold: '#c9a84c', purple: '#8b5cf6', orange: '#f97316',
-    teal: '#14b8a6', pink: '#ec4899', indigo: '#6366f1'
-};
-
-const fmt = v => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
-const fmtShort = v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v.toString();
+const fmt      = v => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
+const fmtShort = v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(v);
+const fmt_date = d => d.toISOString().slice(0,10);
 
 let revChart, catChart, payChart, wdChart, brandChart;
-let currentRange = '7d';
-
-function today() { return new Date(); }
-function fmt_date(d) { return d.toISOString().slice(0,10); }
 
 function setRange(range, btn) {
-    currentRange = range;
     document.querySelectorAll('.ra-header-controls .ra-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const end = today();
-    const start = new Date();
-    if (range === '7d') start.setDate(end.getDate()-6);
-    else if (range === '30d') start.setDate(end.getDate()-29);
-    else if (range === '90d') start.setDate(end.getDate()-89);
+    const end = new Date(), start = new Date();
+    if (range === '7d')   start.setDate(end.getDate()-6);
+    else if (range === '30d')  start.setDate(end.getDate()-29);
+    else if (range === '90d')  start.setDate(end.getDate()-89);
     else if (range === 'year') start.setFullYear(end.getFullYear(),0,1);
     document.getElementById('dateStart').value = fmt_date(start);
-    document.getElementById('dateEnd').value = fmt_date(end);
+    document.getElementById('dateEnd').value   = fmt_date(end);
     loadDashboard();
 }
 
-function generateMockData(days) {
-    const labels = [];
-    const revenue = [];
-    const orders = [];
-    const d = new Date(); d.setDate(d.getDate() - days + 1);
-    for (let i=0; i<days; i++) {
-        const date = new Date(d); date.setDate(d.getDate()+i);
-        const label = days <= 30
-            ? `${date.getDate()}/${date.getMonth()+1}`
-            : `T${date.getMonth()+1}/${date.getFullYear().toString().slice(2)}`;
-        if (!labels.includes(label)) { labels.push(label); revenue.push(0); orders.push(0); }
-        const idx = labels.indexOf(label);
-        const base = 15e6 + Math.random()*25e6;
-        const spike = (date.getDay() === 0 || date.getDay() === 6) ? 1.4 : 1;
-        revenue[idx] += base * spike;
-        orders[idx] += Math.floor(3 + Math.random()*8 * spike);
+async function loadDashboard() {
+    const start = document.getElementById('dateStart').value;
+    const end   = document.getElementById('dateEnd').value;
+
+    let data;
+    try {
+        const res = await fetch(`/api/analytics/revenue?start=${start}&end=${end}`);
+        if (!res.ok) throw new Error(res.status);
+        data = await res.json();
+    } catch (e) {
+        console.error('Analytics API error:', e);
+        return;
     }
-    return { labels, revenue, orders };
-}
 
-function loadDashboard() {
-    const startDate = document.getElementById('dateStart').value;
-    const endDate = document.getElementById('dateEnd').value;
-    const start = new Date(startDate), end = new Date(endDate);
-    const days = Math.max(1, Math.round((end - start) / 86400000) + 1);
-    const granularity = days <= 31 ? days : Math.ceil(days / 7);
-    const data = generateMockData(granularity);
+    const days = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
 
-    const totalRev = data.revenue.reduce((a,b)=>a+b,0);
-    const totalOrd = data.orders.reduce((a,b)=>a+b,0);
-    const aov = totalOrd > 0 ? totalRev / totalOrd : 0;
+    // ── KPI cards ────────────────────────────────────────────────
+    document.getElementById('kpi-revenue').textContent       = fmtShort(data.totalRevenue) + ' ₫';
+    document.getElementById('kpi-orders').textContent        = data.deliveredOrders.toLocaleString('vi-VN');
+    document.getElementById('kpi-orders-sub').textContent    = data.totalOrders.toLocaleString('vi-VN') + ' tổng đơn';
+    document.getElementById('kpi-aov').textContent           = fmtShort(data.aov) + ' ₫';
+    document.getElementById('kpi-customers').textContent     = data.newCustomers.toLocaleString('vi-VN');
+    document.getElementById('kpi-rate').textContent          = data.completionRate.toFixed(1) + '%';
+    document.getElementById('kpi-products').textContent      = data.totalProductsSold.toLocaleString('vi-VN');
+    document.getElementById('top-period-label').textContent  = `${days} ngày`;
 
-    document.getElementById('kpi-revenue').textContent = fmtShort(totalRev) + ' ₫';
-    document.getElementById('kpi-orders').textContent = totalOrd.toLocaleString('vi-VN');
-    document.getElementById('kpi-orders-sub').textContent = Math.round(totalOrd*1.18).toLocaleString('vi-VN') + ' tổng đơn';
-    document.getElementById('kpi-aov').textContent = fmtShort(aov) + ' ₫';
-    document.getElementById('kpi-customers').textContent = Math.floor(totalOrd * 0.65).toLocaleString('vi-VN');
-    document.getElementById('kpi-rate').textContent = (78 + Math.random()*12).toFixed(1) + '%';
-    document.getElementById('kpi-products').textContent = Math.floor(totalOrd * 1.7).toLocaleString('vi-VN');
-    document.getElementById('top-period-label').textContent = `${days} ngày`;
-
-    const growth = (10 + Math.random()*15).toFixed(1);
-    document.getElementById('kpi-rev-badge').innerHTML = `↑ ${growth}% so kỳ trước`;
-    document.getElementById('kpi-ord-badge').innerHTML = `↑ ${(8+Math.random()*10).toFixed(1)}%`;
-    document.getElementById('kpi-aov-badge').innerHTML = `↑ ${(3+Math.random()*8).toFixed(1)}%`;
-    document.getElementById('kpi-cust-badge').innerHTML = `↑ ${(12+Math.random()*15).toFixed(1)}%`;
+    document.getElementById('kpi-rev-badge').innerHTML  = `Đơn đã giao / tổng`;
+    document.getElementById('kpi-ord-badge').innerHTML  = `Tỷ lệ hoàn tất: ${data.completionRate.toFixed(1)}%`;
+    document.getElementById('kpi-aov-badge').innerHTML  = `Trung bình / đơn`;
+    document.getElementById('kpi-cust-badge').innerHTML = `Đăng ký trong kỳ`;
 
     buildSparkline('spark-rev', data.revenue);
     buildRevChart(data);
-    buildCategoryChart(totalRev);
-    buildPaymentChart(totalOrd);
-    buildWeekdayChart();
-    buildGoals(totalRev);
-    buildTopProducts(totalRev);
-    buildRecentOrders();
-    buildBrandChart(totalRev);
+    buildCategoryChart(data.categories, data.totalRevenue);
+    buildPaymentChart(data.payments);
+    buildWeekdayChart(data.weekdayRevenue);
+    buildGoals(data.totalRevenue, data.deliveredOrders, data.newCustomers);
+    buildTopProducts(data.topProducts);
+    buildRecentOrders(data.recentOrders);
+    buildBrandChart(data.brands);
 }
 
 function buildSparkline(id, values) {
     const el = document.getElementById(id);
-    if (!el) return;
-    const max = Math.max(...values);
-    el.innerHTML = values.slice(-12).map((v, i) =>
-        `<span style="height:${Math.max(20,Math.round(v/max*100))}%;background:#ef4444;opacity:${i === values.slice(-12).length-1?1:0.3+i/values.slice(-12).length*0.6}" class="${i===values.slice(-12).length-1?'peak':''}"></span>`
+    if (!el || !values.length) return;
+    const max = Math.max(...values, 1);
+    el.innerHTML = values.slice(-12).map((v, i, arr) =>
+        `<span style="height:${Math.max(20, Math.round(v/max*100))}%;background:#ef4444;opacity:${i===arr.length-1?1:0.3+i/arr.length*0.6}"></span>`
     ).join('');
 }
 
@@ -712,57 +691,32 @@ function buildRevChart(data) {
                     label: 'Doanh thu',
                     data: data.revenue,
                     backgroundColor: type === 'bar' ? 'rgba(239,68,68,0.8)' : 'rgba(239,68,68,0.1)',
-                    borderColor: '#ef4444',
-                    borderWidth: type === 'bar' ? 0 : 2,
-                    fill: type === 'area',
-                    tension: 0.4,
-                    yAxisID: 'y',
-                    pointRadius: type === 'bar' ? 0 : 3,
-                    pointHoverRadius: 5,
+                    borderColor: '#ef4444', borderWidth: type==='bar'?0:2,
+                    fill: type==='area', tension:0.4, yAxisID:'y',
+                    pointRadius: type==='bar'?0:3, pointHoverRadius:5,
                 },
                 {
                     label: 'Đơn hàng',
                     data: data.orders,
-                    backgroundColor: 'rgba(59,130,246,0.8)',
-                    borderColor: '#3b82f6',
-                    borderWidth: type === 'bar' ? 0 : 2,
-                    type: type === 'bar' ? 'bar' : 'line',
-                    tension: 0.4,
-                    fill: false,
-                    yAxisID: 'y1',
-                    pointRadius: type === 'bar' ? 0 : 3,
-                    pointHoverRadius: 5,
+                    backgroundColor: 'rgba(59,130,246,0.8)', borderColor:'#3b82f6',
+                    borderWidth: type==='bar'?0:2,
+                    type: type==='bar'?'bar':'line',
+                    tension:0.4, fill:false, yAxisID:'y1',
+                    pointRadius: type==='bar'?0:3, pointHoverRadius:5,
                 }
             ]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ctx.datasetIndex === 0
-                            ? ' ' + fmt(ctx.raw)
-                            : ' ' + ctx.raw + ' đơn'
-                    }
-                }
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{display:false},
+                tooltip:{callbacks:{label: ctx => ctx.datasetIndex===0 ? ' '+fmt(ctx.raw) : ' '+ctx.raw+' đơn'}}
             },
-            scales: {
-                x: { grid: { color: '#f3f4f6' }, ticks: { font:{size:11}, maxTicksLimit:12, autoSkip:true } },
-                y: {
-                    position: 'left',
-                    grid: { color: '#f3f4f6' },
-                    ticks: {
-                        font:{size:11},
-                        callback: v => fmtShort(v) + '₫'
-                    }
-                },
-                y1: {
-                    position: 'right',
-                    grid: { display: false },
-                    ticks: { font:{size:11}, callback: v => v + ' đơn' }
-                }
+            scales:{
+                x:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},maxTicksLimit:12,autoSkip:true}},
+                y:{position:'left',grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtShort(v)+'₫'}},
+                y1:{position:'right',grid:{display:false},ticks:{font:{size:11},callback:v=>v+' đơn'}}
             }
         }
     });
@@ -771,44 +725,36 @@ function buildRevChart(data) {
 function switchRevChart(type, btn) {
     document.querySelectorAll('.ra-tabs .ra-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const canvas = document.getElementById('chartRevenue');
-    canvas.dataset.chartType = type;
-    const startDate = document.getElementById('dateStart').value;
-    const endDate = document.getElementById('dateEnd').value;
-    const days = Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1);
-    const data = generateMockData(Math.min(days, 30));
-    buildRevChart(data);
+    document.getElementById('chartRevenue').dataset.chartType = type;
+    loadDashboard();
 }
 
-function buildCategoryChart(totalRev) {
+function buildCategoryChart(categories, totalRevenue) {
     const ctx = document.getElementById('chartCategory');
     if (catChart) catChart.destroy();
-    const cats = [
-        { name:'Laptop Gaming', pct:35 },
-        { name:'Laptop Văn Phòng', pct:22 },
-        { name:'Linh Kiện', pct:18 },
-        { name:'Màn Hình', pct:12 },
-        { name:'Phụ Kiện', pct:8 },
-        { name:'Khác', pct:5 },
-    ];
-    const clrs = ['#ef4444','#3b82f6','#10b981','#c9a84c','#8b5cf6','#6b7280'];
+    if (!categories || !categories.length) return;
+
+    const totalCatRev = categories.reduce((s, c) => s + c.revenue, 0);
+    const data = categories.map(c => ({
+        name: c.name,
+        pct: totalCatRev > 0 ? Math.round(c.revenue / totalCatRev * 100) : 0
+    }));
+
     catChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: cats.map(c=>c.name),
-            datasets: [{ data: cats.map(c=>c.pct), backgroundColor: clrs, borderWidth: 2, borderColor: '#fff' }]
+        type:'doughnut',
+        data:{
+            labels: data.map(c=>c.name),
+            datasets:[{data:data.map(c=>c.pct), backgroundColor:COLORS, borderWidth:2, borderColor:'#fff'}]
         },
-        options: {
-            responsive:true, maintainAspectRatio:false,
-            cutout: '65%',
-            plugins: { legend:{display:false}, tooltip:{callbacks:{label: ctx=>` ${ctx.label}: ${ctx.raw}%`}} }
+        options:{
+            responsive:true, maintainAspectRatio:false, cutout:'65%',
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}%`}}}
         }
     });
-    const leg = document.getElementById('category-legend');
-    leg.innerHTML = cats.map((c,i) =>
+    document.getElementById('category-legend').innerHTML = data.map((c,i) =>
         `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <span style="display:flex;align-items:center;gap:5px;font-size:0.75rem;color:#374151;">
-                <span style="width:8px;height:8px;border-radius:2px;background:${clrs[i]};flex-shrink:0;"></span>
+                <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]||'#ccc'};flex-shrink:0;"></span>
                 ${c.name}
             </span>
             <span style="font-size:0.75rem;font-weight:600;color:#111827;">${c.pct}%</span>
@@ -816,50 +762,50 @@ function buildCategoryChart(totalRev) {
     ).join('');
 }
 
-function buildPaymentChart(totalOrd) {
+function buildPaymentChart(payments) {
     const ctx = document.getElementById('chartPayment');
     if (payChart) payChart.destroy();
-    const methods = [
-        {name:'COD', pct:52}, {name:'VNPay', pct:28},
-        {name:'MoMo', pct:15}, {name:'Khác', pct:5}
-    ];
-    const clrs = ['#c9a84c','#3b82f6','#ec4899','#6b7280'];
+    if (!payments || !payments.length) return;
+
+    const total = payments.reduce((s, p) => s + p.count, 0);
+    const clrs  = ['#c9a84c','#3b82f6','#ec4899','#6b7280','#10b981'];
+    const data  = payments.map(p => ({ name: p.name, pct: total>0 ? Math.round(p.count/total*100) : 0 }));
+
     payChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: methods.map(m=>m.name),
-            datasets:[{data:methods.map(m=>m.pct), backgroundColor:clrs, borderWidth:2, borderColor:'#fff'}]
+        type:'doughnut',
+        data:{
+            labels: data.map(p=>p.name),
+            datasets:[{data:data.map(p=>p.pct), backgroundColor:clrs, borderWidth:2, borderColor:'#fff'}]
         },
         options:{
             responsive:true, maintainAspectRatio:false, cutout:'65%',
             plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}%`}}}
         }
     });
-    const leg = document.getElementById('payment-legend');
-    leg.innerHTML = methods.map((m,i)=>
+    document.getElementById('payment-legend').innerHTML = data.map((p,i) =>
         `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <span style="display:flex;align-items:center;gap:5px;font-size:0.75rem;color:#374151;">
-                <span style="width:8px;height:8px;border-radius:2px;background:${clrs[i]};flex-shrink:0;"></span>${m.name}</span>
-            <span style="font-size:0.75rem;font-weight:600;color:#111827;">${m.pct}%</span>
+                <span style="width:8px;height:8px;border-radius:2px;background:${clrs[i]||'#ccc'};flex-shrink:0;"></span>${p.name}</span>
+            <span style="font-size:0.75rem;font-weight:600;color:#111827;">${p.pct}%</span>
         </div>`
     ).join('');
 }
 
-function buildWeekdayChart() {
+function buildWeekdayChart(weekdayRevenue) {
     const ctx = document.getElementById('chartWeekday');
     if (wdChart) wdChart.destroy();
-    const days = ['CN','T2','T3','T4','T5','T6','T7'];
-    const vals = [38, 52, 61, 58, 69, 75, 47].map(v => v * 1e6 * (0.8 + Math.random()*0.4));
+    const dayLabels = ['CN','T2','T3','T4','T5','T6','T7'];
+    const vals      = weekdayRevenue || Array(7).fill(0);
+    const maxIdx    = vals.indexOf(Math.max(...vals));
     wdChart = new Chart(ctx, {
         type:'bar',
         data:{
-            labels:days,
+            labels: dayLabels,
             datasets:[{
                 label:'Doanh thu TB',
-                data:vals,
-                backgroundColor: vals.map((v,i) => i === 5 ? '#ef4444' : 'rgba(239,68,68,0.35)'),
-                borderRadius: 6,
-                borderSkipped: false,
+                data: vals,
+                backgroundColor: vals.map((_,i) => i===maxIdx ? '#ef4444' : 'rgba(239,68,68,0.35)'),
+                borderRadius:6, borderSkipped:false,
             }]
         },
         options:{
@@ -873,14 +819,14 @@ function buildWeekdayChart() {
     });
 }
 
-function buildGoals(totalRev) {
+function buildGoals(totalRevenue, deliveredOrders, newCustomers) {
     const goals = [
-        {label:'Doanh thu tháng',current:totalRev,target:2e9,color:'#ef4444'},
-        {label:'Đơn hàng tháng',current:Math.floor(totalRev/2.5e6),target:800,color:'#3b82f6'},
-        {label:'KH mới tháng',current:Math.floor(totalRev/4e6),target:200,color:'#10b981'},
+        {label:'Doanh thu tháng', current:totalRevenue, target:2e9, color:'#ef4444', isRev:true},
+        {label:'Đơn đã giao',     current:deliveredOrders, target:800, color:'#3b82f6', isRev:false},
+        {label:'KH mới trong kỳ', current:newCustomers, target:200, color:'#10b981', isRev:false},
     ];
     document.getElementById('goals-container').innerHTML = goals.map(g => {
-        const pct = Math.min(100, Math.round(g.current/g.target*100));
+        const pct = g.target > 0 ? Math.min(100, Math.round(g.current/g.target*100)) : 0;
         return `<div>
             <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
                 <span style="font-size:0.78rem;font-weight:500;color:#374151;">${g.label}</span>
@@ -890,78 +836,69 @@ function buildGoals(totalRev) {
                 <div class="ra-mini-bar-fill" style="width:${pct}%;background:${g.color};"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.72rem;color:#9ca3af;">
-                <span>${typeof g.current==='number'&&g.label.includes('thu')?fmtShort(g.current):g.current.toLocaleString('vi-VN')}</span>
-                <span>${typeof g.target==='number'&&g.label.includes('thu')?fmtShort(g.target):g.target.toLocaleString('vi-VN')}</span>
+                <span>${g.isRev ? fmtShort(g.current) : g.current.toLocaleString('vi-VN')}</span>
+                <span>${g.isRev ? fmtShort(g.target) : g.target.toLocaleString('vi-VN')}</span>
             </div>
         </div>`;
     }).join('');
 }
 
-function buildTopProducts(totalRev) {
-    const products = [
-        {name:'Laptop Gaming ASUS ROG',cat:'Laptop Gaming',rev:totalRev*0.18,qty:42},
-        {name:'MSI Raider GE78 HX',cat:'Laptop Gaming',rev:totalRev*0.14,qty:31},
-        {name:'Dell XPS 15 OLED',cat:'Laptop VP',rev:totalRev*0.11,qty:28},
-        {name:'RTX 4070 Ti Super',cat:'Linh Kiện',rev:totalRev*0.09,qty:55},
-        {name:'LG UltraGear 27"',cat:'Màn Hình',rev:totalRev*0.07,qty:63},
-    ];
-    const maxRev = products[0].rev;
-    document.getElementById('top-products-table').innerHTML = products.map((p,i) =>
+function buildTopProducts(topProducts) {
+    if (!topProducts || !topProducts.length) {
+        document.getElementById('top-products-table').innerHTML =
+            `<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:1rem;">Chưa có dữ liệu</td></tr>`;
+        return;
+    }
+    const maxRev = topProducts[0].revenue;
+    document.getElementById('top-products-table').innerHTML = topProducts.map((p, i) =>
         `<tr>
-            <td><span style="font-weight:600;color:${i<3?COLORS.red:COLORS.muted||'#9ca3af'};">${i+1}</span></td>
+            <td><span style="font-weight:600;color:${i<3?'#ef4444':'#9ca3af'};">${i+1}</span></td>
             <td>
                 <div style="font-weight:500;font-size:0.82rem;">${p.name}</div>
-                <div style="font-size:0.72rem;color:#9ca3af;">${p.cat}</div>
+                <div style="font-size:0.72rem;color:#9ca3af;">${p.category}</div>
             </td>
-            <td style="font-weight:600;color:#111827;">${fmtShort(p.rev)}₫</td>
+            <td style="font-weight:600;color:#111827;">${fmtShort(p.revenue)}₫</td>
             <td>${p.qty}</td>
             <td style="min-width:80px;">
                 <div class="ra-mini-bar" style="margin-bottom:3px;">
-                    <div class="ra-mini-bar-fill" style="width:${Math.round(p.rev/maxRev*100)}%;"></div>
+                    <div class="ra-mini-bar-fill" style="width:${maxRev>0?Math.round(p.revenue/maxRev*100):0}%;"></div>
                 </div>
-                <span style="font-size:0.7rem;color:#9ca3af;">${Math.round(p.rev/maxRev*100)}%</span>
+                <span style="font-size:0.7rem;color:#9ca3af;">${maxRev>0?Math.round(p.revenue/maxRev*100):0}%</span>
             </td>
         </tr>`
     ).join('');
 }
 
-function buildRecentOrders() {
-    const statuses = [
-        {text:'Đã giao',cls:'ra-badge-green'},
-        {text:'Đang giao',cls:'ra-badge-blue'},
-        {text:'Xử lý',cls:'ra-badge-yellow'},
-        {text:'Đã hủy',cls:'ra-badge-red'},
-    ];
-    const names = ['Nguyễn Văn A','Trần Thị B','Lê Minh C','Phạm Quang D','Hoàng Thị E'];
-    const rows = Array.from({length:6}, (_,i) => {
-        const st = statuses[Math.floor(Math.random()*3)];
-        const val = 5e6 + Math.random()*45e6;
+function buildRecentOrders(recentOrders) {
+    if (!recentOrders || !recentOrders.length) {
+        document.getElementById('recent-orders-table').innerHTML =
+            `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:1rem;">Chưa có đơn hàng</td></tr>`;
+        return;
+    }
+    document.getElementById('recent-orders-table').innerHTML = recentOrders.map(o => {
+        const st = STATUS_MAP[o.status] || {text: o.status, cls:'ra-badge-gray'};
         return `<tr>
-            <td style="font-size:0.78rem;font-weight:500;color:#ef4444;">HDK${Date.now().toString().slice(-6)}${i}</td>
-            <td style="font-size:0.78rem;">${names[i%names.length]}</td>
-            <td style="font-weight:600;font-size:0.78rem;">${fmtShort(val)}₫</td>
+            <td style="font-size:0.78rem;font-weight:500;color:#ef4444;">${o.code}</td>
+            <td style="font-size:0.78rem;">${o.customer}</td>
+            <td style="font-weight:600;font-size:0.78rem;">${fmtShort(o.amount)}₫</td>
             <td><span class="ra-badge ${st.cls}">${st.text}</span></td>
         </tr>`;
-    });
-    document.getElementById('recent-orders-table').innerHTML = rows.join('');
+    }).join('');
 }
 
-function buildBrandChart(totalRev) {
+function buildBrandChart(brands) {
     const ctx = document.getElementById('chartBrand');
     if (brandChart) brandChart.destroy();
-    const brands = ['ASUS','MSI','Dell','Lenovo','HP','Acer','Apple','LG','Samsung'];
-    const vals = [28,22,18,14,8,5,3,1,1].map(p => totalRev*p/100);
+    if (!brands || !brands.length) return;
     brandChart = new Chart(ctx, {
-        type: 'bar',
-        indexAxis: 'y',
-        data: {
-            labels: brands,
+        type:'bar', indexAxis:'y',
+        data:{
+            labels: brands.map(b=>b.name),
             datasets:[{
                 label:'Doanh thu',
-                data: vals,
-                backgroundColor: brands.map((_,i)=>i===0?'#ef4444':i===1?'#f97316':i===2?'#c9a84c':'rgba(239,68,68,'+(0.2+i*0.05)+')'),
-                borderRadius: 6,
-                borderSkipped: false,
+                data: brands.map(b=>b.revenue),
+                backgroundColor: brands.map((_,i)=>i===0?'#ef4444':i===1?'#f97316':i===2?'#c9a84c':`rgba(239,68,68,${0.2+i*0.05})`),
+                borderRadius:6, borderSkipped:false,
             }]
         },
         options:{
@@ -977,33 +914,23 @@ function buildBrandChart(totalRev) {
 
 function openCustomExport() {
     document.getElementById('exportStart').value = document.getElementById('dateStart').value;
-    document.getElementById('exportEnd').value = document.getElementById('dateEnd').value;
-    const m = document.getElementById('customExportModal');
-    m.style.display = 'flex';
+    document.getElementById('exportEnd').value   = document.getElementById('dateEnd').value;
+    document.getElementById('customExportModal').style.display = 'flex';
 }
-
-function closeModal() {
-    document.getElementById('customExportModal').style.display = 'none';
-}
-
+function closeModal() { document.getElementById('customExportModal').style.display = 'none'; }
 function doCustomExport() {
     const s = document.getElementById('exportStart').value;
     const e = document.getElementById('exportEnd').value;
-    if (s && e) {
-        window.location.href = `/admin/reports/revenue?start=${s}&end=${e}`;
-        closeModal();
-    }
+    if (s && e) { window.location.href = `/admin/reports/revenue?start=${s}&end=${e}`; closeModal(); }
 }
-
 function printDashboard() { window.print(); }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const end = new Date();
-    const start = new Date(); start.setDate(end.getDate()-6);
+    const end = new Date(), start = new Date();
+    start.setDate(end.getDate()-6);
     document.getElementById('dateStart').value = fmt_date(start);
-    document.getElementById('dateEnd').value = fmt_date(end);
+    document.getElementById('dateEnd').value   = fmt_date(end);
     loadDashboard();
-
     document.getElementById('dateStart').addEventListener('change', loadDashboard);
     document.getElementById('dateEnd').addEventListener('change', loadDashboard);
     document.getElementById('customExportModal').addEventListener('click', function(e) {

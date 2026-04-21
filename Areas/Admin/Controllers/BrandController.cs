@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
@@ -14,11 +14,23 @@ namespace HDKTech.Areas.Admin.Controllers
     {
         private readonly IBrandRepository _brandRepo;
         private readonly ILogger<BrandController> _logger;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public BrandController(IBrandRepository brandRepo, ILogger<BrandController> logger)
+        private static readonly HashSet<string> AllowedExtensions =
+            new(StringComparer.OrdinalIgnoreCase)
+            { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg" };
+
+        private const long MaxFileSizeBytes = 5 * 1024 * 1024;
+        private const string BrandLogoFolder = "images/brands";
+
+        public BrandController(
+            IBrandRepository brandRepo,
+            ILogger<BrandController> logger,
+            IWebHostEnvironment webHostEnvironment)
         {
             _brandRepo = brandRepo;
             _logger = logger;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // GET: /admin/brand
@@ -75,8 +87,21 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/brand/create
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Brand brand)
+        public async Task<IActionResult> Create(Brand brand, IFormFile? logoFile)
         {
+            ModelState.Remove(nameof(brand.LogoUrl));
+
+            if (logoFile is { Length: > 0 })
+            {
+                var (ok, msg, url) = await SaveBrandLogoAsync(logoFile);
+                if (!ok)
+                {
+                    ModelState.AddModelError("LogoUrl", msg);
+                    return View(brand);
+                }
+                brand.LogoUrl = url;
+            }
+
             if (!ModelState.IsValid) return View(brand);
             try
             {
@@ -108,9 +133,24 @@ namespace HDKTech.Areas.Admin.Controllers
         // POST: /admin/brand/edit/5
         [HttpPost("edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Brand brand)
+        public async Task<IActionResult> Edit(int id, Brand brand, IFormFile? logoFile)
         {
             if (id != brand.Id) return NotFound();
+
+            ModelState.Remove(nameof(brand.LogoUrl));
+
+            // Upload logo mới nếu có, không thì giữ giá trị cũ từ hidden field
+            if (logoFile is { Length: > 0 })
+            {
+                var (ok, msg, url) = await SaveBrandLogoAsync(logoFile);
+                if (!ok)
+                {
+                    ModelState.AddModelError("LogoUrl", msg);
+                    return View(brand);
+                }
+                brand.LogoUrl = url;
+            }
+
             if (!ModelState.IsValid) return View(brand);
             try
             {
@@ -168,6 +208,40 @@ namespace HDKTech.Areas.Admin.Controllers
                 csv += $"{b.Id},\"{b.Name}\",\"{b.Description?.Replace("\"", "\"\"") ?? ""}\",{b.Products?.Count ?? 0}\n";
             return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"brands_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
+
+        // ============================================================
+        // PRIVATE HELPERS
+        // ============================================================
+        private async Task<(bool ok, string msg, string url)> SaveBrandLogoAsync(IFormFile file)
+        {
+            var ext = Path.GetExtension(file.FileName);
+
+            if (!AllowedExtensions.Contains(ext))
+                return (false,
+                    $"Định dạng '{ext}' không được hỗ trợ. Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG.",
+                    null);
+
+            if (file.Length > MaxFileSizeBytes)
+                return (false, "Kích thước logo vượt quá 5 MB.", null);
+
+            var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, BrandLogoFolder);
+            Directory.CreateDirectory(uploadPath);
+
+            var safeFile = $"brand_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}{ext.ToLowerInvariant()}";
+            var physicalPath = Path.Combine(uploadPath, safeFile);
+
+            try
+            {
+                await using var fs = new FileStream(physicalPath, FileMode.Create, FileAccess.Write);
+                await file.CopyToAsync(fs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save brand logo {Name}", safeFile);
+                return (false, "Lỗi hệ thống khi lưu file. Vui lòng thử lại.", null);
+            }
+
+            return (true, null, $"/{BrandLogoFolder}/{safeFile}");
+        }
     }
 }
-

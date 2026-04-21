@@ -239,29 +239,4 @@
     </div>
 </article>
 
-@if (isFlashSale && !string.IsNullOrEmpty(endTimeIso))
-{
-    <script>
-        (function () {
-            var card    = document.currentScript.previousElementSibling?.closest('.pc--flash') ||
-                          document.querySelector('.pc--flash[data-product-id="@Model.Id"]');
-            if (!card) return;
-            var cdEl    = card.querySelector('.pc__countdown');
-            if (!cdEl) return;
-            var endTime = new Date('@endTimeIso');
-            if (isNaN(endTime)) return;
-
-            function pad(n) { return n < 10 ? '0' + n : '' + n; }
-
-            function tick() {
-                var diff = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                if (diff === 0) { cdEl.textContent = 'Đã kết thúc'; return; }
-                cdEl.querySelector('[data-unit="h"]').textContent = pad(Math.floor(diff / 3600));
-                cdEl.querySelector('[data-unit="m"]').textContent = pad(Math.floor((diff % 3600) / 60));
-                cdEl.querySelector('[data-unit="s"]').textContent = pad(diff % 60);
-                setTimeout(tick, 1000);
-            }
-            tick();
-        })();
-    </script>
-}
+@* Countdown được khởi động bởi home.js (initFlashSale) — không cần inline script *@

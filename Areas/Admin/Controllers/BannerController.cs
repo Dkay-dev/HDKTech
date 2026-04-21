@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using HDKTech.Areas.Admin.Models;
 using HDKTech.Areas.Admin.Repositories;
 using HDKTech.Areas.Admin.ViewModels;
+using HDKTech.Repositories.Interfaces;
 using HDKTech.Services;
 
 namespace HDKTech.Areas.Admin.Controllers
@@ -13,6 +15,7 @@ namespace HDKTech.Areas.Admin.Controllers
     public class BannerController : Controller
     {
         private readonly BannerRepository _bannerRepository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<BannerController> _logger;
         private readonly ISystemLogService _logService;
@@ -21,19 +24,30 @@ namespace HDKTech.Areas.Admin.Controllers
             new(StringComparer.OrdinalIgnoreCase)
             { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
-        private const long MaxFileSizeBytes = 5 * 1024 * 1024;
+        private const long MaxFileSizeBytes = 10 * 1024 * 1024;
         private const string BannerImageFolder = "images/banners";
 
         public BannerController(
             BannerRepository bannerRepository,
+            ICategoryRepository categoryRepository,
             IWebHostEnvironment webHostEnvironment,
             ILogger<BannerController> logger,
             ISystemLogService logService)
         {
             _bannerRepository = bannerRepository;
+            _categoryRepository = categoryRepository;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
             _logService = logService;
+        }
+
+        /// <summary>Đổ danh sách danh mục cha vào ViewBag để dùng trong dropdown.</summary>
+        private async Task PopulateCategoriesViewBagAsync(int? selectedId = null)
+        {
+            var categories = await _categoryRepository.GetParentCategoriesAsync();
+            ViewBag.Categories = new SelectList(
+                categories.OrderBy(c => c.Name),
+                "Id", "Name", selectedId);
         }
 
         // ============================================================
@@ -62,8 +76,11 @@ namespace HDKTech.Areas.Admin.Controllers
         // CREATE
         // ============================================================
         [HttpGet("Create")]
-        public IActionResult Create()
-            => View(new Banner { IsActive = true, DisplayOrder = 0 });
+        public async Task<IActionResult> Create()
+        {
+            await PopulateCategoriesViewBagAsync();
+            return View(new Banner { IsActive = true, DisplayOrder = 0 });
+        }
 
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
@@ -71,6 +88,7 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             // Xóa lỗi validation mặc định của các navigation property
             ModelState.Remove(nameof(banner.ImageUrl));
+            ModelState.Remove(nameof(banner.Category));
 
             // [1] Upload file → ưu tiên hơn URL ─────────────────────
             if (imageFile is { Length: > 0 })
@@ -96,10 +114,15 @@ namespace HDKTech.Areas.Admin.Controllers
             banner.LinkUrl = NormalizeToRelativePath(banner.LinkUrl);
 
             if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesViewBagAsync(banner.CategoryId);
                 return View(banner);
+            }
 
             try
             {
+                // CategoryId chỉ có ý nghĩa với Side banner
+                if (banner.BannerType != "Side") banner.CategoryId = null;
                 banner.CreatedAt = DateTime.Now;
                 await _bannerRepository.CreateBannerAsync(banner);
                 _logger.LogInformation("Banner '{Title}' created", banner.Title);
@@ -133,6 +156,7 @@ namespace HDKTech.Areas.Admin.Controllers
         {
             var banner = await _bannerRepository.GetBannerByIdAsync(id);
             if (banner == null) return NotFound();
+            await PopulateCategoriesViewBagAsync(banner.CategoryId);
             return View(banner);
         }
 
@@ -144,6 +168,7 @@ namespace HDKTech.Areas.Admin.Controllers
 
             // Xóa lỗi validation mặc định trước
             ModelState.Remove(nameof(banner.ImageUrl));
+            ModelState.Remove(nameof(banner.Category));
 
             // [1] Lấy bản ghi hiện tại ────────────────────────────────
             var existing = await _bannerRepository.GetBannerByIdAsync(id);
@@ -176,7 +201,10 @@ namespace HDKTech.Areas.Admin.Controllers
             banner.LinkUrl = NormalizeToRelativePath(banner.LinkUrl);
 
             if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesViewBagAsync(banner.CategoryId);
                 return View(banner);
+            }
 
             try
             {
@@ -191,6 +219,8 @@ namespace HDKTech.Areas.Admin.Controllers
                 existing.IsActive = banner.IsActive;
                 existing.StartDate = banner.StartDate;
                 existing.EndDate = banner.EndDate;
+                // CategoryId chỉ có ý nghĩa với Side banner
+                existing.CategoryId = (banner.BannerType == "Side") ? banner.CategoryId : null;
                 existing.UpdatedAt = DateTime.Now;
 
                 await _bannerRepository.UpdateBannerAsync(existing);
@@ -316,7 +346,7 @@ namespace HDKTech.Areas.Admin.Controllers
                     null);
 
             if (file.Length > MaxFileSizeBytes)
-                return (false, "Kích thước ảnh vượt quá 5 MB.", null);
+                return (false, "Kích thước ảnh vượt quá 10 MB.", null);
 
             var uploadPath = Path.Combine(_webHostEnvironment.WebRootPath, BannerImageFolder);
             Directory.CreateDirectory(uploadPath);

@@ -8,6 +8,9 @@ namespace HDKTech.Services.Interfaces
         // Re-fetch giá variants từ DB (server-side price validation)
         Task<Dictionary<int, ProductVariant>> GetVariantPricesAsync(List<int> variantIds);
 
+        // Re-fetch giá thực tế (ưu tiên Flash Sale nếu đang active)
+        Task<Dictionary<int, decimal>> GetVariantEffectivePricesAsync(List<int> variantIds);
+
         // Tạo PendingCheckout và lưu DB
         Task<PendingCheckout> CreatePendingCheckoutAsync(PendingCheckout pending);
 

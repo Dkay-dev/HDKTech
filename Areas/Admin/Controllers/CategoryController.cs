@@ -2,7 +2,7 @@
 using HDKTech.Data;
 using HDKTech.Models;
 using HDKTech.Repositories.Interfaces;
-using HDKTech.Services; // Thêm để dùng ICategoryCacheService
+using HDKTech.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,16 +21,45 @@ namespace HDKTech.Areas.Admin.Controllers
     {
         private readonly ICategoryRepository _categoryRepo;
         private readonly ILogger<CategoryController> _logger;
-        private readonly ICategoryCacheService _categoryCache; // Thêm khai báo cache
+        private readonly ICategoryCacheService _categoryCache;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+
+        private static readonly HashSet<string> AllowedImageExts =
+            new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        private const long MaxImageBytes = 10 * 1024 * 1024; // 10 MB
+        private const string CategoryImageFolder = "images/categories";
 
         public CategoryController(
             ICategoryRepository categoryRepo,
             ILogger<CategoryController> logger,
-            ICategoryCacheService categoryCache) // Inject thêm cache service
+            ICategoryCacheService categoryCache,
+            IWebHostEnvironment webHostEnvironment)
         {
-            _categoryRepo = categoryRepo;
-            _logger = logger;
-            _categoryCache = categoryCache;
+            _categoryRepo        = categoryRepo;
+            _logger              = logger;
+            _categoryCache       = categoryCache;
+            _webHostEnvironment  = webHostEnvironment;
+        }
+
+        private async Task<(bool Ok, string Message, string? Url)> SaveCategoryImageAsync(IFormFile file)
+        {
+            if (file.Length > MaxImageBytes)
+                return (false, "Ảnh vượt quá 10MB.", null);
+
+            var ext = Path.GetExtension(file.FileName);
+            if (!AllowedImageExts.Contains(ext))
+                return (false, "Chỉ chấp nhận JPG, PNG, WEBP, GIF.", null);
+
+            var folder   = Path.Combine(_webHostEnvironment.WebRootPath, CategoryImageFolder);
+            Directory.CreateDirectory(folder);
+
+            var fileName = $"cat_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}{ext}";
+            var filePath = Path.Combine(folder, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return (true, string.Empty, $"/{CategoryImageFolder}/{fileName}");
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -123,10 +152,25 @@ namespace HDKTech.Areas.Admin.Controllers
 
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Category category)
+        public async Task<IActionResult> Create(Category category, IFormFile? categoryImageFile)
         {
             try
             {
+                // Upload ảnh → ưu tiên hơn URL nhập tay
+                if (categoryImageFile is { Length: > 0 })
+                {
+                    var (ok, msg, url) = await SaveCategoryImageAsync(categoryImageFile);
+                    if (!ok)
+                    {
+                        ModelState.AddModelError("BannerImageUrl", msg);
+                        ViewBag.ParentCategories = await _categoryRepo.GetParentCategoriesAsync();
+                        return View(category);
+                    }
+                    category.BannerImageUrl = url;
+                }
+
+                ModelState.Remove(nameof(category.BannerImageUrl));
+
                 if (!ModelState.IsValid)
                 {
                     ViewBag.ParentCategories = await _categoryRepo.GetParentCategoriesAsync();
@@ -184,11 +228,26 @@ namespace HDKTech.Areas.Admin.Controllers
 
         [HttpPost("edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Category category)
+        public async Task<IActionResult> Edit(int id, Category category, IFormFile? categoryImageFile)
         {
             try
             {
                 if (id != category.Id) return NotFound();
+
+                // Upload ảnh mới → ghi đè URL cũ
+                if (categoryImageFile is { Length: > 0 })
+                {
+                    var (ok, msg, url) = await SaveCategoryImageAsync(categoryImageFile);
+                    if (!ok)
+                    {
+                        ModelState.AddModelError("BannerImageUrl", msg);
+                        ViewBag.ParentCategories = await _categoryRepo.GetParentCategoriesAsync(excludeId: id);
+                        return View(category);
+                    }
+                    category.BannerImageUrl = url;
+                }
+
+                ModelState.Remove(nameof(category.BannerImageUrl));
 
                 if (!ModelState.IsValid)
                 {
