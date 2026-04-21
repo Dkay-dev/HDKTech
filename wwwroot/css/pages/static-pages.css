@@ -1,0 +1,35 @@
+/* Static Pages - About, Privacy, Hotline */
+
+:root {
+    --hdk-red: #ef4444;
+    --hdk-dark: #212529;
+    --hdk-gray: #f8f9fa;
+}
+
+/* ===== ABOUT PAGE ===== */
+
+.about-hero-combined {
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.95) 0%, rgba(42, 82, 152, 0.9) 100%), url('/images/banners/about-hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 120px 0 250px 0 !important;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 4px solid var(--hdk-red);
+}
+
+.banner-main-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.stats-in-banner {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    width: 100%;
+    max-width: 1140px;
+}

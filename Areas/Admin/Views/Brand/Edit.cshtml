@@ -1,0 +1,186 @@
+﻿@model HDKTech.Models.Brand
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Thương Hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-building text-danger me-2"></i>Chỉnh sửa Thương Hiệu</h1>
+        <p>Cập nhật thông tin thương hiệu</p>
+    </div>
+    <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ========== MAIN FORM ========== -->
+<div class="row g-4">
+
+    <!-- CỘT TRÁI: Form chính (8/12) -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-pencil-square me-2"></i>Thông tin Thương Hiệu
+            </div>
+            <div class="card-body p-4">
+
+                <form asp-action="Edit" asp-controller="Brand" asp-area="Admin" method="post" enctype="multipart/form-data" novalidate>
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="IsDeleted" />
+
+                    <!-- Tên Thương Hiệu -->
+                    <div class="mb-4">
+                        <label asp-for="Name" class="form-label">
+                            Tên Thương Hiệu <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Name"
+                               class="form-control"
+                               placeholder="VD: Apple, Samsung, Dell, HP..." />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Logo Thương Hiệu -->
+                    <div class="mb-4">
+                        <label class="form-label">Logo Thương Hiệu</label>
+
+                        <!-- Logo hiện tại -->
+                        @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                        {
+                            <div class="current-image-wrap mb-3">
+                                <p class="banner-label mb-2">Logo hiện tại:</p>
+                                <div class="current-image-box">
+                                    <img src="@Model.LogoUrl"
+                                         alt="@Model.Name"
+                                         class="current-image-img"
+                                         onerror="this.style.display='none'" />
+                                    <span class="current-image-badge">Đang dùng</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Dropzone để đổi logo mới -->
+                        <div class="banner-dropzone banner-dropzone-sm" id="imageDropZone">
+                            <div class="dropzone-inner">
+                                <i class="bi bi-arrow-repeat dropzone-icon" style="font-size:1.8rem"></i>
+                                <p class="dropzone-title">Click hoặc kéo thả để thay logo mới</p>
+                                <p class="dropzone-hint">Để trống nếu muốn giữ logo hiện tại</p>
+                            </div>
+                            <input type="file"
+                                   id="imageFile"
+                                   name="logoFile"
+                                   class="d-none"
+                                   accept=".jpg,.jpeg,.png,.webp,.gif,.svg" />
+                        </div>
+
+                        <!-- Preview ảnh mới chọn -->
+                        <div id="uploadPreviewWrap" class="upload-preview-wrap d-none mt-2">
+                            <img id="uploadPreviewImg" src="" alt="Preview mới" class="upload-preview-img" />
+                            <button type="button" class="upload-remove-btn" id="removeUpload" title="Huỷ logo mới">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="banner-field-divider"><span>hoặc nhập URL mới</span></div>
+
+                        <!-- URL thay thế -->
+                        <div class="banner-field">
+                            <div class="banner-input-group">
+                                <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                <input asp-for="LogoUrl"
+                                       id="imageUrlInput"
+                                       type="text"
+                                       class="banner-input banner-input-icon"
+                                       placeholder="Để trống để giữ logo hiện tại" />
+                            </div>
+                            <span class="banner-hint">Để trống nếu không muốn thay đổi URL logo.</span>
+                            <span asp-validation-for="LogoUrl" class="banner-error"></span>
+                        </div>
+                    </div>
+
+                    <!-- Mô Tả -->
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label">Mô Tả</label>
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Mô tả chi tiết về thương hiệu..."></textarea>
+                        <div class="form-text">Tùy chọn. Giúp khách hàng hiểu rõ về thương hiệu.</div>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Nút action -->
+                    <div class="d-flex gap-2 align-items-center pt-3 border-top">
+                        <button type="submit" class="btn btn-save px-4">
+                            <i class="bi bi-check-circle me-2"></i>Cập nhật
+                        </button>
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x me-1"></i>Hủy
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: Thông tin (4/12) -->
+    <div class="col-lg-4">
+        <div class="hdk-preview-container">
+            <div class="hdk-preview-card">
+                <div class="hdk-preview-card-header">
+                    <i class="bi bi-info-circle me-1"></i>Thông tin
+                </div>
+                <div class="hdk-preview-info">
+
+                    <!-- Brand ID -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Mã Thương Hiệu</div>
+                        <div class="hdk-preview-info-value fw-bold">#@Model.Id</div>
+                    </div>
+
+                    <!-- Brand Name Preview -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Tên</div>
+                        <div class="hdk-preview-info-value fw-bold">@(Model.Name ?? "-")</div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="hdk-preview-info-row">
+                        <div class="hdk-preview-info-label">Trạng thái</div>
+                        <div class="hdk-preview-info-value">
+                            <span class="badge badge-success">
+                                <i class="bi bi-check-circle me-1"></i>Hoạt động
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel mt-4">
+                <h3>
+                    <i class="bi bi-lightbulb text-gold"></i>Hướng dẫn
+                </h3>
+
+                <p>
+                    <strong>💡 Tip:</strong> Cập nhật bất kỳ thông tin nào về thương hiệu từ đây để giữ dữ liệu luôn cập nhật.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
+}

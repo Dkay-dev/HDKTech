@@ -1,0 +1,353 @@
+@model List<HDKTech.Areas.Admin.Controllers.UserListViewModel>
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+
+    int    page       = ViewBag.Page;
+    int    totalPages = ViewBag.TotalPages;
+    int    totalCount = ViewBag.TotalCount;
+    string search     = ViewBag.Search ?? "";
+    var    allRoles   = ViewBag.AllRoles as List<string> ?? new List<string>();
+}
+
+<div class="container-fluid px-4">
+
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-people-fill text-primary me-2"></i>Quản lý người dùng
+            </h4>
+            <small class="text-muted">Tổng: @totalCount người dùng</small>
+        </div>
+    </div>
+
+    <!-- ── Search bar ─────────────────────────────────────────────────── -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-2">
+            <form method="get" action="" class="d-flex gap-2 align-items-center">
+                <div class="input-group" style="max-width:360px">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Tìm theo tên hoặc email..."
+                           value="@search" />
+                </div>
+                <button class="btn btn-primary btn-sm" type="submit">Tìm</button>
+                @if (!string.IsNullOrEmpty(search))
+                {
+                    <a href="/admin/users" class="btn btn-outline-secondary btn-sm">Xoá lọc</a>
+                }
+            </form>
+        </div>
+    </div>
+
+    <!-- ── Table ─────────────────────────────────────────────────────── -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-end">Tổng chi tiêu</th>
+                            <th class="text-center">VIP</th>
+                            <th>Ngày tạo</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-4 d-block mb-2"></i>Không có người dùng nào.
+                                </td>
+                            </tr>
+                        }
+                        @{int rowNum = ((page - 1) * (int)ViewBag.PageSize) + 1;}
+                        @foreach (var u in Model)
+                        {
+                            <tr id="row-@u.Id">
+                                <td class="text-muted small">@(rowNum++)</td>
+                                <td>
+                                    <div class="fw-semibold">@u.FullName</div>
+                                </td>
+                                <td class="text-muted small">@u.Email</td>
+                                <td>
+                                    @{
+                                        var roleBadge = u.Role switch {
+                                            "Admin"   => "danger",
+                                            "Manager" => "warning text-dark",
+                                            _         => "secondary"
+                                        };
+                                    }
+                                    <span class="badge bg-@roleBadge" id="role-badge-@u.Id">@u.Role</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (u.IsLocked)
+                                    {
+                                        <span class="badge bg-danger" id="status-badge-@u.Id">
+                                            <i class="bi bi-lock-fill me-1"></i>Đã khoá
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success" id="status-badge-@u.Id">
+                                            <i class="bi bi-unlock-fill me-1"></i>Hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end fw-semibold">
+                                    @u.TotalSpent.ToString("N0") ₫
+                                </td>
+                                <td class="text-center">
+                                    @if (u.IsVip)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-star-fill me-1"></i>VIP
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+
+                                        <!-- Sửa Role -->
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-primary btn-sm dropdown-toggle"
+                                                    type="button"
+                                                    data-bs-toggle="dropdown"
+                                                    title="Sửa role">
+                                                <i class="bi bi-shield-lock"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li><h6 class="dropdown-header small">Chọn role mới</h6></li>
+                                                @foreach (var role in allRoles)
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item small @(role == u.Role ? "active" : "")"
+                                                           href="#"
+                                                           onclick="updateRole('@u.Id', '@role', '@u.FullName'); return false;">
+                                                            @role @(role == u.Role ? "✓" : "")
+                                                        </a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+
+                                        <!-- Khoá / Mở khoá -->
+                                        @if (u.IsLocked)
+                                        {
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    title="Mở khoá"
+                                                    onclick="confirmUnlock('@u.Id', '@u.FullName')">
+                                                <i class="bi bi-unlock"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-danger btn-sm"
+                                                    title="Khoá tài khoản"
+                                                    onclick="confirmLock('@u.Id', '@u.FullName')">
+                                                <i class="bi bi-lock"></i>
+                                            </button>
+                                        }
+
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    Trang @(page) / @totalPages
+                </small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(page <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="?search=@search&page=@(page-1)">‹</a>
+                        </li>
+                        @for (int i = Math.Max(1, page - 2); i <= Math.Min(totalPages, page + 2); i++)
+                        {
+                            <li class="page-item @(i == page ? "active" : "")">
+                                <a class="page-link" href="?search=@search&page=@i">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="?search=@search&page=@(page+1)">›</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ── Toast container ─────────────────────────────────────────────────── -->
+<div id="toast-container"
+     style="position:fixed;top:1.25rem;right:1.25rem;z-index:9999;min-width:300px"></div>
+
+@section Scripts {
+<script>
+    // ── AntiForgery token ─────────────────────────────────────────────────
+    const TOKEN = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)[1];
+
+    // ── Toast helper ──────────────────────────────────────────────────────
+    function showToast(msg, type = 'success') {
+        const id  = 'toast-' + Date.now();
+        const cls = type === 'success' ? 'bg-success' : 'bg-danger';
+        const html = `
+            <div id="${id}" class="toast align-items-center text-white ${cls} border-0 show mb-2 shadow"
+                 role="alert" aria-live="assertive">
+              <div class="d-flex">
+                <div class="toast-body fw-semibold">${msg}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        onclick="document.getElementById('${id}').remove()"></button>
+              </div>
+            </div>`;
+        document.getElementById('toast-container').insertAdjacentHTML('beforeend', html);
+        setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 4000);
+    }
+
+    // ── Cập nhật Role ─────────────────────────────────────────────────────
+    function updateRole(userId, newRole, fullName) {
+        Swal.fire({
+            title: 'Xác nhận thay đổi Role',
+            html : `Bạn muốn đặt role <b>${newRole}</b> cho <b>${fullName}</b>?<br>
+                    <small class="text-warning">Người dùng sẽ bị đăng xuất ngay lập tức.</small>`,
+            icon : 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor : '#6c757d',
+            confirmButtonText : 'Xác nhận',
+            cancelButtonText  : 'Huỷ',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            const fd = new FormData();
+            fd.append('userId',  userId);
+            fd.append('newRole', newRole);
+            fd.append('__RequestVerificationToken', TOKEN);
+
+            fetch('/admin/users/update-role', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        // Update badge in-place
+                        const badge = document.getElementById('role-badge-' + userId);
+                        if (badge) {
+                            badge.textContent = newRole;
+                            badge.className = 'badge bg-' + roleBadgeClass(newRole);
+                        }
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                })
+                .catch(() => showToast('Lỗi kết nối máy chủ.', 'error'));
+        });
+    }
+
+    function roleBadgeClass(role) {
+        if (role === 'Admin')   return 'danger';
+        if (role === 'Manager') return 'warning text-dark';
+        return 'secondary';
+    }
+
+    // ── Khoá tài khoản ────────────────────────────────────────────────────
+    function confirmLock(userId, fullName) {
+        Swal.fire({
+            title: 'Khoá tài khoản?',
+            html : `Bạn có chắc muốn khoá tài khoản của <b>${fullName}</b>?<br>
+                    <small class="text-muted">Người dùng sẽ không thể đăng nhập cho đến khi mở khoá.</small>`,
+            icon : 'warning',
+            showCancelButton : true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor : '#6c757d',
+            confirmButtonText : '<i class="bi bi-lock-fill me-1"></i>Khoá ngay',
+            cancelButtonText  : 'Huỷ',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            postAction('/admin/users/lock', userId, fullName, 'lock');
+        });
+    }
+
+    // ── Mở khoá tài khoản ────────────────────────────────────────────────
+    function confirmUnlock(userId, fullName) {
+        Swal.fire({
+            title: 'Mở khoá tài khoản?',
+            html : `Mở khoá tài khoản của <b>${fullName}</b>?`,
+            icon : 'question',
+            showCancelButton : true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor : '#6c757d',
+            confirmButtonText : '<i class="bi bi-unlock-fill me-1"></i>Mở khoá',
+            cancelButtonText  : 'Huỷ',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            postAction('/admin/users/unlock', userId, fullName, 'unlock');
+        });
+    }
+
+    // ── POST helper (lock / unlock) ────────────────────────────────────────
+    function postAction(url, userId, fullName, action) {
+        const fd = new FormData();
+        fd.append('userId', userId);
+        fd.append('__RequestVerificationToken', TOKEN);
+
+        fetch(url, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Swap badge & button in-place
+                    const badge = document.getElementById('status-badge-' + userId);
+                    if (badge) {
+                        if (action === 'lock') {
+                            badge.className   = 'badge bg-danger';
+                            badge.innerHTML   = '<i class="bi bi-lock-fill me-1"></i>Đã khoá';
+                            // Swap button: lock → unlock
+                            badge.closest('tr').querySelector('[onclick*="confirmLock"]')
+                                ?.setAttribute('onclick', `confirmUnlock('${userId}','${fullName}')`);
+                            const btn = badge.closest('tr').querySelector('.btn-outline-danger');
+                            if (btn) {
+                                btn.classList.replace('btn-outline-danger','btn-outline-success');
+                                btn.title     = 'Mở khoá';
+                                btn.innerHTML = '<i class="bi bi-unlock"></i>';
+                                btn.setAttribute('onclick', `confirmUnlock('${userId}','${fullName}')`);
+                            }
+                        } else {
+                            badge.className   = 'badge bg-success';
+                            badge.innerHTML   = '<i class="bi bi-unlock-fill me-1"></i>Hoạt động';
+                            const btn = badge.closest('tr').querySelector('.btn-outline-success');
+                            if (btn) {
+                                btn.classList.replace('btn-outline-success','btn-outline-danger');
+                                btn.title     = 'Khoá tài khoản';
+                                btn.innerHTML = '<i class="bi bi-lock"></i>';
+                                btn.setAttribute('onclick', `confirmLock('${userId}','${fullName}')`);
+                            }
+                        }
+                    }
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(() => showToast('Lỗi kết nối máy chủ.', 'error'));
+    }
+</script>
+}

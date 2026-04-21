@@ -1,0 +1,133 @@
+﻿@model IEnumerable<HDKTech.Models.Order>
+
+@{
+    ViewData["Title"] = "Đơn Hàng Của Tôi";
+}
+
+@*───────────────────────────────────────────────────────────────
+ MyOrders — MERGED Huy 3f92de9 → Khoa schema
+  • Route param giờ khớp với OrderController: asp-route-maOrder
+    (OrderController dùng [HttpGet("Order/Details/{maOrder}")]).
+  • Vẫn pass OrderCode (string duy nhất) để tra cứu.
+  • Dùng OrderStatus enum thay cho int cũ.
+  • Số tiền format "N0" cho sạch, không cần .Replace("₫",...).
+───────────────────────────────────────────────────────────────*@
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="bi bi-bag-check"></i> Đơn Hàng Của Tôi
+            </h1>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Chưa có đơn hàng nào.</strong>
+                    <a asp-controller="Home" asp-action="Index" class="alert-link">Tiếp tục mua sắm</a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã Đơn Hàng</th>
+                                <th>Ngày Đặt</th>
+                                <th>Trạng Thái</th>
+                                <th>Tổng Tiền</th>
+                                <th class="text-end">Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@order.OrderCode</strong>
+                                    </td>
+                                    <td>
+                                        @order.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td>
+                                        @switch (order.Status)
+                                        {
+                                            case HDKTech.Models.OrderStatus.Pending:
+                                                <span class="badge bg-warning text-dark">Chờ Xác Nhận</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Confirmed:
+                                                <span class="badge bg-info">Đã Xác Nhận</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Packing:
+                                                <span class="badge bg-info">Đang Đóng Gói</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Shipping:
+                                                <span class="badge bg-primary">Đang Giao</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Delivered:
+                                                <span class="badge bg-success">Đã Giao</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Cancelled:
+                                                <span class="badge bg-danger">Đã Hủy</span>
+                                                break;
+                                            case HDKTech.Models.OrderStatus.Returned:
+                                                <span class="badge bg-dark">Trả Hàng</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">Không Xác Định</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger">
+                                            @order.TotalAmount.ToString("N0")₫
+                                        </strong>
+                                    </td>
+                                    <td class="text-end">
+                                        @* ✅ LOGIC QUAN TRỌNG: "Hủy đơn phải đi kèm xem chi tiết"
+                                           → chỉ có nút "Xem Chi Tiết" ở đây, không có nút Cancel trực tiếp.
+                                             User bắt buộc phải mở Details → mới bấm hủy được. *@
+                                        <a asp-action="Details"
+                                               asp-route-maOrder="@order.OrderCode"
+                                               class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Xem Chi Tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="mt-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay Lại Trang Chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>

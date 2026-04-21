@@ -1,0 +1,941 @@
+﻿@{
+    ViewData["Title"] = "Thống kê Doanh thu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    :root {
+        --r-red: #ef4444;
+        --r-red-light: #fef2f2;
+        --r-red-dark: #b91c1c;
+        --r-gold: #c9a84c;  
+        --r-gold-light: #fefce8;
+        --r-dark: #1a1a2e;
+        --r-surface: #ffffff;
+        --r-surface2: #f8fafc;
+        --r-border: #e5e7eb;
+        --r-text: #111827;
+        --r-muted: #6b7280;
+        --r-green: #10b981;
+        --r-blue: #3b82f6;
+        --r-purple: #8b5cf6;
+        --r-orange: #f97316;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    .ra-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .ra-header-left h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--r-text);
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+    }
+
+    .ra-header-left p {
+        font-size: 0.85rem;
+        color: var(--r-muted);
+        margin: 0;
+    }
+
+    .ra-header-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .ra-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid var(--r-border);
+        background: white;
+        color: var(--r-text);
+        transition: all 0.18s ease;
+    }
+
+    .ra-btn:hover { border-color: var(--r-red); color: var(--r-red); }
+    .ra-btn.active { background: var(--r-red); color: white; border-color: var(--r-red); }
+
+    .ra-btn-primary {
+        background: var(--r-red);
+        color: white;
+        border-color: var(--r-red);
+    }
+
+    .ra-btn-primary:hover { background: var(--r-red-dark); border-color: var(--r-red-dark); color: white; }
+
+    .ra-date-range {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1.5px solid var(--r-border);
+        border-radius: 8px;
+        background: white;
+    }
+
+    .ra-date-range input[type="date"] {
+        border: none;
+        outline: none;
+        font-size: 0.82rem;
+        color: var(--r-text);
+        background: transparent;
+    }
+
+    .ra-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .ra-kpi {
+        background: var(--r-surface);
+        border: 1px solid var(--r-border);
+        border-radius: 12px;
+        padding: 1.2rem 1.4rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ra-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+    .ra-kpi::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 4px;
+        height: 100%;
+        border-radius: 12px 0 0 12px;
+    }
+
+    .ra-kpi.red::before { background: var(--r-red); }
+    .ra-kpi.green::before { background: var(--r-green); }
+    .ra-kpi.blue::before { background: var(--r-blue); }
+    .ra-kpi.gold::before { background: var(--r-gold); }
+    .ra-kpi.purple::before { background: var(--r-purple); }
+    .ra-kpi.orange::before { background: var(--r-orange); }
+
+    .ra-kpi-icon {
+        width: 36px; height: 36px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    .ra-kpi.red .ra-kpi-icon { background: #fef2f2; color: var(--r-red); }
+    .ra-kpi.green .ra-kpi-icon { background: #ecfdf5; color: var(--r-green); }
+    .ra-kpi.blue .ra-kpi-icon { background: #eff6ff; color: var(--r-blue); }
+    .ra-kpi.gold .ra-kpi-icon { background: #fefce8; color: var(--r-gold); }
+    .ra-kpi.purple .ra-kpi-icon { background: #f5f3ff; color: var(--r-purple); }
+    .ra-kpi.orange .ra-kpi-icon { background: #fff7ed; color: var(--r-orange); }
+
+    .ra-kpi-label { font-size: 0.78rem; color: var(--r-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .ra-kpi-value { font-size: 1.55rem; font-weight: 700; color: var(--r-text); letter-spacing: -0.02em; line-height: 1.1; }
+    .ra-kpi-sub { font-size: 0.75rem; color: var(--r-muted); margin-top: 4px; }
+
+    .ra-kpi-badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        font-size: 0.72rem; font-weight: 600;
+        padding: 2px 7px; border-radius: 20px;
+        margin-top: 6px;
+    }
+
+    .ra-kpi-badge.up { background: #ecfdf5; color: #065f46; }
+    .ra-kpi-badge.down { background: #fef2f2; color: #991b1b; }
+
+    .ra-charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .ra-charts-row-3 {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .ra-charts-row-full {
+        margin-bottom: 1rem;
+    }
+
+    .ra-card {
+        background: var(--r-surface);
+        border: 1px solid var(--r-border);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .ra-card-header {
+        padding: 1rem 1.25rem 0.75rem;
+        border-bottom: 1px solid var(--r-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .ra-card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--r-text);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ra-card-title i { color: var(--r-red); font-size: 14px; }
+
+    .ra-card-body { padding: 1.25rem; }
+
+    .ra-chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+        font-size: 0.76rem;
+        color: var(--r-muted);
+    }
+
+    .ra-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .ra-legend-dot {
+        width: 10px; height: 10px;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    .ra-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    .ra-table th {
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: 500;
+        color: var(--r-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid var(--r-border);
+    }
+    .ra-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        color: var(--r-text);
+    }
+    .ra-table tr:last-child td { border-bottom: none; }
+    .ra-table tr:hover td { background: var(--r-surface2); }
+
+    .ra-badge {
+        display: inline-flex; align-items: center;
+        padding: 3px 8px; border-radius: 20px;
+        font-size: 0.72rem; font-weight: 500;
+    }
+
+    .ra-badge-green { background: #ecfdf5; color: #065f46; }
+    .ra-badge-red { background: #fef2f2; color: #991b1b; }
+    .ra-badge-blue { background: #eff6ff; color: #1e40af; }
+    .ra-badge-yellow { background: #fefce8; color: #854d0e; }
+    .ra-badge-gray { background: #f3f4f6; color: #374151; }
+
+    .ra-mini-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #f3f4f6;
+        overflow: hidden;
+    }
+
+    .ra-mini-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: var(--r-red);
+        transition: width 0.8s ease;
+    }
+
+    .ra-progress-ring {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ra-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        background: var(--r-surface2);
+        border-radius: 8px;
+    }
+
+    .ra-tab {
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--r-muted);
+        transition: all 0.15s ease;
+    }
+
+    .ra-tab.active {
+        background: white;
+        color: var(--r-text);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .ra-divider { height: 1px; background: var(--r-border); margin: 0 1.25rem; }
+
+    .export-section {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .export-section h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 600; }
+    .export-section p { margin: 0; font-size: 0.82rem; opacity: 0.7; }
+
+    .export-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .export-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+        transition: all 0.18s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .export-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); color: white; }
+    .export-btn.primary-export { background: var(--r-gold); border-color: var(--r-gold); color: #1a1a2e; }
+    .export-btn.primary-export:hover { background: #d4a853; color: #1a1a2e; }
+
+    .ra-sparkline { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+    .ra-sparkline span { flex: 1; border-radius: 2px; background: var(--r-red); opacity: 0.3; transition: all 0.3s ease; }
+    .ra-sparkline span.peak { opacity: 1; }
+
+    @@media (max-width: 768px) {
+        .ra-charts-row, .ra-charts-row-3 { grid-template-columns: 1fr; }
+        .ra-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+}
+
+<div style="padding: 0 0 2rem;">
+
+    <div class="ra-header">
+        <div class="ra-header-left">
+            <h1><i class="bi bi-graph-up-arrow" style="color: var(--r-red); margin-right: 8px; font-size: 1.4rem;"></i>Thống kê Doanh thu</h1>
+            <p>Tổng quan toàn diện hiệu quả kinh doanh theo thời gian thực</p>
+        </div>
+        <div class="ra-header-controls">
+            <div class="ra-date-range">
+                <i class="bi bi-calendar3" style="color: var(--r-muted); font-size: 13px;"></i>
+                <input type="date" id="dateStart" />
+                <span style="color: var(--r-muted); font-size: 12px;">→</span>
+                <input type="date" id="dateEnd" />
+            </div>
+            <button class="ra-btn active" onclick="setRange('7d', this)">7 ngày</button>
+            <button class="ra-btn" onclick="setRange('30d', this)">30 ngày</button>
+            <button class="ra-btn" onclick="setRange('90d', this)">3 tháng</button>
+            <button class="ra-btn" onclick="setRange('year', this)">Năm nay</button>
+        </div>
+    </div>
+
+    <div class="ra-kpi-grid">
+        <div class="ra-kpi red">
+            <div class="ra-kpi-icon"><i class="bi bi-currency-exchange"></i></div>
+            <div class="ra-kpi-label">Tổng Doanh Thu</div>
+            <div class="ra-kpi-value" id="kpi-revenue">--</div>
+            <div class="ra-sparkline" id="spark-rev"></div>
+            <span class="ra-kpi-badge up" id="kpi-rev-badge">↑ --</span>
+        </div>
+        <div class="ra-kpi green">
+            <div class="ra-kpi-icon"><i class="bi bi-bag-check"></i></div>
+            <div class="ra-kpi-label">Đơn Đã Giao</div>
+            <div class="ra-kpi-value" id="kpi-orders">--</div>
+            <div class="ra-kpi-sub" id="kpi-orders-sub">-- tổng đơn</div>
+            <span class="ra-kpi-badge up" id="kpi-ord-badge">↑ --</span>
+        </div>
+        <div class="ra-kpi blue">
+            <div class="ra-kpi-icon"><i class="bi bi-receipt-cutoff"></i></div>
+            <div class="ra-kpi-label">Giá Trị Đơn TB</div>
+            <div class="ra-kpi-value" id="kpi-aov">--</div>
+            <div class="ra-kpi-sub">Trung bình / đơn hàng</div>
+            <span class="ra-kpi-badge up" id="kpi-aov-badge">↑ --</span>
+        </div>
+        <div class="ra-kpi gold">
+            <div class="ra-kpi-icon"><i class="bi bi-people"></i></div>
+            <div class="ra-kpi-label">Khách Hàng Mới</div>
+            <div class="ra-kpi-value" id="kpi-customers">--</div>
+            <div class="ra-kpi-sub">Trong kỳ chọn</div>
+            <span class="ra-kpi-badge up" id="kpi-cust-badge">↑ --</span>
+        </div>
+        <div class="ra-kpi purple">
+            <div class="ra-kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+            <div class="ra-kpi-label">Tỷ Lệ Hoàn Tất</div>
+            <div class="ra-kpi-value" id="kpi-rate">--</div>
+            <div class="ra-kpi-sub">Đã giao / tổng đơn</div>
+        </div>
+        <div class="ra-kpi orange">
+            <div class="ra-kpi-icon"><i class="bi bi-box-seam"></i></div>
+            <div class="ra-kpi-label">Sản Phẩm Bán</div>
+            <div class="ra-kpi-value" id="kpi-products">--</div>
+            <div class="ra-kpi-sub">Đơn vị trong kỳ</div>
+        </div>
+    </div>
+
+    <div class="ra-charts-row-full ra-card">
+        <div class="ra-card-header">
+            <h3 class="ra-card-title"><i class="bi bi-bar-chart-line"></i>Xu Hướng Doanh Thu & Đơn Hàng</h3>
+            <div class="ra-tabs">
+                <button class="ra-tab active" onclick="switchRevChart('bar', this)">Cột</button>
+                <button class="ra-tab" onclick="switchRevChart('line', this)">Đường</button>
+                <button class="ra-tab" onclick="switchRevChart('area', this)">Vùng</button>
+            </div>
+        </div>
+        <div class="ra-card-body">
+            <div class="ra-chart-legend">
+                <span class="ra-legend-item"><span class="ra-legend-dot" style="background:#ef4444;"></span>Doanh thu (VNĐ)</span>
+                <span class="ra-legend-item"><span class="ra-legend-dot" style="background:#3b82f6;"></span>Số đơn hàng</span>
+            </div>
+            <div style="position:relative;width:100%;height:280px;">
+                <canvas id="chartRevenue" role="img" aria-label="Biểu đồ doanh thu và đơn hàng theo thời gian">Dữ liệu doanh thu và đơn hàng theo thời gian.</canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="ra-charts-row">
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-pie-chart"></i>Doanh Thu Theo Danh Mục</h3>
+            </div>
+            <div class="ra-card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
+                    <div style="position:relative;height:200px;">
+                        <canvas id="chartCategory" role="img" aria-label="Biểu đồ tròn doanh thu theo danh mục">Phân bổ doanh thu theo danh mục sản phẩm.</canvas>
+                    </div>
+                    <div id="category-legend" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-diagram-3"></i>Phương Thức Thanh Toán</h3>
+            </div>
+            <div class="ra-card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
+                    <div style="position:relative;height:200px;">
+                        <canvas id="chartPayment" role="img" aria-label="Biểu đồ phân bổ phương thức thanh toán">Phương thức thanh toán khách hàng sử dụng.</canvas>
+                    </div>
+                    <div id="payment-legend" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ra-charts-row-3">
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-calendar-week"></i>Doanh Thu Theo Ngày Trong Tuần</h3>
+            </div>
+            <div class="ra-card-body">
+                <div style="position:relative;width:100%;height:200px;">
+                    <canvas id="chartWeekday" role="img" aria-label="Doanh thu trung bình theo ngày trong tuần">Doanh thu theo ngày trong tuần.</canvas>
+                </div>
+            </div>
+        </div>
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-speedometer2"></i>Mục Tiêu</h3>
+            </div>
+            <div class="ra-card-body">
+                <div style="display:flex;flex-direction:column;gap:14px;" id="goals-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ra-charts-row">
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-trophy"></i>Top Sản Phẩm Bán Chạy</h3>
+                <span style="font-size:0.75rem;color:var(--r-muted);" id="top-period-label"></span>
+            </div>
+            <div class="ra-card-body" style="padding-top:0.5rem;">
+                <table class="ra-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sản phẩm</th>
+                            <th>Doanh thu</th>
+                            <th>SL</th>
+                            <th>Tỷ trọng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-products-table"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="ra-card">
+            <div class="ra-card-header">
+                <h3 class="ra-card-title"><i class="bi bi-clock-history"></i>Đơn Hàng Gần Đây</h3>
+            </div>
+            <div class="ra-card-body" style="padding-top:0.5rem;">
+                <table class="ra-table">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Giá trị</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-orders-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="ra-card ra-charts-row-full">
+        <div class="ra-card-header">
+            <h3 class="ra-card-title"><i class="bi bi-building"></i>Doanh Thu Theo Thương Hiệu</h3>
+        </div>
+        <div class="ra-card-body">
+            <div style="position:relative;width:100%;height:220px;">
+                <canvas id="chartBrand" role="img" aria-label="Doanh thu theo từng thương hiệu sản phẩm">Doanh thu so sánh giữa các thương hiệu.</canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="export-section">
+        <div>
+            <h3><i class="bi bi-file-earmark-arrow-down" style="margin-right:8px;"></i>Xuất Báo Cáo</h3>
+            <p>Tải xuống dữ liệu doanh thu và tồn kho dưới dạng file Excel chuyên nghiệp</p>
+        </div>
+        <div class="export-btns">
+            <a href="/admin/reports/revenue?start=@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")&end=@DateTime.Now.ToString("yyyy-MM-dd")" class="export-btn primary-export">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                Excel Doanh Thu (30 ngày)
+            </a>
+            <button class="export-btn" onclick="openCustomExport()">
+                <i class="bi bi-calendar-range"></i>
+                Tùy chọn kỳ
+            </button>
+            <a href="/admin/reports/inventory" class="export-btn">
+                <i class="bi bi-boxes"></i>
+                Xuất Tồn Kho
+            </a>
+            <button class="export-btn" onclick="printDashboard()">
+                <i class="bi bi-printer"></i>
+                In báo cáo
+            </button>
+        </div>
+    </div>
+
+    <div id="customExportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;padding:1.5rem;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h4 style="margin:0 0 1rem;font-weight:600;">Xuất báo cáo tùy chọn</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+                <div>
+                    <label style="font-size:0.8rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">Từ ngày</label>
+                    <input type="date" id="exportStart" style="width:100%;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.85rem;" />
+                </div>
+                <div>
+                    <label style="font-size:0.8rem;color:#6b7280;font-weight:500;display:block;margin-bottom:4px;">Đến ngày</label>
+                    <input type="date" id="exportEnd" style="width:100%;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.85rem;" />
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="closeModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e5e7eb;background:white;cursor:pointer;font-size:0.85rem;">Hủy</button>
+                <button onclick="doCustomExport()" style="padding:8px 20px;border-radius:8px;border:none;background:#ef4444;color:white;cursor:pointer;font-size:0.85rem;font-weight:500;">Xuất Excel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+
+const COLORS = ['#ef4444','#3b82f6','#10b981','#c9a84c','#8b5cf6','#f97316','#14b8a6','#ec4899','#6366f1'];
+const STATUS_MAP = {
+    'Delivered': {text:'Đã giao', cls:'ra-badge-green'},
+    'Shipping':  {text:'Đang giao', cls:'ra-badge-blue'},
+    'Confirmed': {text:'Đã xác nhận', cls:'ra-badge-blue'},
+    'Packing':   {text:'Đóng gói', cls:'ra-badge-yellow'},
+    'Pending':   {text:'Chờ xử lý', cls:'ra-badge-yellow'},
+    'Cancelled': {text:'Đã hủy', cls:'ra-badge-red'},
+    'Returned':  {text:'Hoàn trả', cls:'ra-badge-gray'},
+};
+
+const fmt      = v => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND',maximumFractionDigits:0}).format(v);
+const fmtShort = v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : String(v);
+const fmt_date = d => d.toISOString().slice(0,10);
+
+let revChart, catChart, payChart, wdChart, brandChart;
+
+function setRange(range, btn) {
+    document.querySelectorAll('.ra-header-controls .ra-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const end = new Date(), start = new Date();
+    if (range === '7d')   start.setDate(end.getDate()-6);
+    else if (range === '30d')  start.setDate(end.getDate()-29);
+    else if (range === '90d')  start.setDate(end.getDate()-89);
+    else if (range === 'year') start.setFullYear(end.getFullYear(),0,1);
+    document.getElementById('dateStart').value = fmt_date(start);
+    document.getElementById('dateEnd').value   = fmt_date(end);
+    loadDashboard();
+}
+
+async function loadDashboard() {
+    const start = document.getElementById('dateStart').value;
+    const end   = document.getElementById('dateEnd').value;
+
+    let data;
+    try {
+        const res = await fetch(`/api/analytics/revenue?start=${start}&end=${end}`);
+        if (!res.ok) throw new Error(res.status);
+        data = await res.json();
+    } catch (e) {
+        console.error('Analytics API error:', e);
+        return;
+    }
+
+    const days = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+
+    // ── KPI cards ────────────────────────────────────────────────
+    document.getElementById('kpi-revenue').textContent       = fmtShort(data.totalRevenue) + ' ₫';
+    document.getElementById('kpi-orders').textContent        = data.deliveredOrders.toLocaleString('vi-VN');
+    document.getElementById('kpi-orders-sub').textContent    = data.totalOrders.toLocaleString('vi-VN') + ' tổng đơn';
+    document.getElementById('kpi-aov').textContent           = fmtShort(data.aov) + ' ₫';
+    document.getElementById('kpi-customers').textContent     = data.newCustomers.toLocaleString('vi-VN');
+    document.getElementById('kpi-rate').textContent          = data.completionRate.toFixed(1) + '%';
+    document.getElementById('kpi-products').textContent      = data.totalProductsSold.toLocaleString('vi-VN');
+    document.getElementById('top-period-label').textContent  = `${days} ngày`;
+
+    document.getElementById('kpi-rev-badge').innerHTML  = `Đơn đã giao / tổng`;
+    document.getElementById('kpi-ord-badge').innerHTML  = `Tỷ lệ hoàn tất: ${data.completionRate.toFixed(1)}%`;
+    document.getElementById('kpi-aov-badge').innerHTML  = `Trung bình / đơn`;
+    document.getElementById('kpi-cust-badge').innerHTML = `Đăng ký trong kỳ`;
+
+    buildSparkline('spark-rev', data.revenue);
+    buildRevChart(data);
+    buildCategoryChart(data.categories, data.totalRevenue);
+    buildPaymentChart(data.payments);
+    buildWeekdayChart(data.weekdayRevenue);
+    buildGoals(data.totalRevenue, data.deliveredOrders, data.newCustomers);
+    buildTopProducts(data.topProducts);
+    buildRecentOrders(data.recentOrders);
+    buildBrandChart(data.brands);
+}
+
+function buildSparkline(id, values) {
+    const el = document.getElementById(id);
+    if (!el || !values.length) return;
+    const max = Math.max(...values, 1);
+    el.innerHTML = values.slice(-12).map((v, i, arr) =>
+        `<span style="height:${Math.max(20, Math.round(v/max*100))}%;background:#ef4444;opacity:${i===arr.length-1?1:0.3+i/arr.length*0.6}"></span>`
+    ).join('');
+}
+
+function buildRevChart(data) {
+    const ctx = document.getElementById('chartRevenue');
+    if (revChart) revChart.destroy();
+    const type = ctx.dataset.chartType || 'bar';
+    revChart = new Chart(ctx, {
+        type: type === 'area' ? 'line' : type,
+        data: {
+            labels: data.labels,
+            datasets: [
+                {
+                    label: 'Doanh thu',
+                    data: data.revenue,
+                    backgroundColor: type === 'bar' ? 'rgba(239,68,68,0.8)' : 'rgba(239,68,68,0.1)',
+                    borderColor: '#ef4444', borderWidth: type==='bar'?0:2,
+                    fill: type==='area', tension:0.4, yAxisID:'y',
+                    pointRadius: type==='bar'?0:3, pointHoverRadius:5,
+                },
+                {
+                    label: 'Đơn hàng',
+                    data: data.orders,
+                    backgroundColor: 'rgba(59,130,246,0.8)', borderColor:'#3b82f6',
+                    borderWidth: type==='bar'?0:2,
+                    type: type==='bar'?'bar':'line',
+                    tension:0.4, fill:false, yAxisID:'y1',
+                    pointRadius: type==='bar'?0:3, pointHoverRadius:5,
+                }
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{display:false},
+                tooltip:{callbacks:{label: ctx => ctx.datasetIndex===0 ? ' '+fmt(ctx.raw) : ' '+ctx.raw+' đơn'}}
+            },
+            scales:{
+                x:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},maxTicksLimit:12,autoSkip:true}},
+                y:{position:'left',grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtShort(v)+'₫'}},
+                y1:{position:'right',grid:{display:false},ticks:{font:{size:11},callback:v=>v+' đơn'}}
+            }
+        }
+    });
+}
+
+function switchRevChart(type, btn) {
+    document.querySelectorAll('.ra-tabs .ra-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('chartRevenue').dataset.chartType = type;
+    loadDashboard();
+}
+
+function buildCategoryChart(categories, totalRevenue) {
+    const ctx = document.getElementById('chartCategory');
+    if (catChart) catChart.destroy();
+    if (!categories || !categories.length) return;
+
+    const totalCatRev = categories.reduce((s, c) => s + c.revenue, 0);
+    const data = categories.map(c => ({
+        name: c.name,
+        pct: totalCatRev > 0 ? Math.round(c.revenue / totalCatRev * 100) : 0
+    }));
+
+    catChart = new Chart(ctx, {
+        type:'doughnut',
+        data:{
+            labels: data.map(c=>c.name),
+            datasets:[{data:data.map(c=>c.pct), backgroundColor:COLORS, borderWidth:2, borderColor:'#fff'}]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false, cutout:'65%',
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}%`}}}
+        }
+    });
+    document.getElementById('category-legend').innerHTML = data.map((c,i) =>
+        `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:0.75rem;color:#374151;">
+                <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]||'#ccc'};flex-shrink:0;"></span>
+                ${c.name}
+            </span>
+            <span style="font-size:0.75rem;font-weight:600;color:#111827;">${c.pct}%</span>
+        </div>`
+    ).join('');
+}
+
+function buildPaymentChart(payments) {
+    const ctx = document.getElementById('chartPayment');
+    if (payChart) payChart.destroy();
+    if (!payments || !payments.length) return;
+
+    const total = payments.reduce((s, p) => s + p.count, 0);
+    const clrs  = ['#c9a84c','#3b82f6','#ec4899','#6b7280','#10b981'];
+    const data  = payments.map(p => ({ name: p.name, pct: total>0 ? Math.round(p.count/total*100) : 0 }));
+
+    payChart = new Chart(ctx, {
+        type:'doughnut',
+        data:{
+            labels: data.map(p=>p.name),
+            datasets:[{data:data.map(p=>p.pct), backgroundColor:clrs, borderWidth:2, borderColor:'#fff'}]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false, cutout:'65%',
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}%`}}}
+        }
+    });
+    document.getElementById('payment-legend').innerHTML = data.map((p,i) =>
+        `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:0.75rem;color:#374151;">
+                <span style="width:8px;height:8px;border-radius:2px;background:${clrs[i]||'#ccc'};flex-shrink:0;"></span>${p.name}</span>
+            <span style="font-size:0.75rem;font-weight:600;color:#111827;">${p.pct}%</span>
+        </div>`
+    ).join('');
+}
+
+function buildWeekdayChart(weekdayRevenue) {
+    const ctx = document.getElementById('chartWeekday');
+    if (wdChart) wdChart.destroy();
+    const dayLabels = ['CN','T2','T3','T4','T5','T6','T7'];
+    const vals      = weekdayRevenue || Array(7).fill(0);
+    const maxIdx    = vals.indexOf(Math.max(...vals));
+    wdChart = new Chart(ctx, {
+        type:'bar',
+        data:{
+            labels: dayLabels,
+            datasets:[{
+                label:'Doanh thu TB',
+                data: vals,
+                backgroundColor: vals.map((_,i) => i===maxIdx ? '#ef4444' : 'rgba(239,68,68,0.35)'),
+                borderRadius:6, borderSkipped:false,
+            }]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)}}},
+            scales:{
+                x:{grid:{display:false},ticks:{font:{size:11}}},
+                y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtShort(v)+'₫'}}
+            }
+        }
+    });
+}
+
+function buildGoals(totalRevenue, deliveredOrders, newCustomers) {
+    const goals = [
+        {label:'Doanh thu tháng', current:totalRevenue, target:2e9, color:'#ef4444', isRev:true},
+        {label:'Đơn đã giao',     current:deliveredOrders, target:800, color:'#3b82f6', isRev:false},
+        {label:'KH mới trong kỳ', current:newCustomers, target:200, color:'#10b981', isRev:false},
+    ];
+    document.getElementById('goals-container').innerHTML = goals.map(g => {
+        const pct = g.target > 0 ? Math.min(100, Math.round(g.current/g.target*100)) : 0;
+        return `<div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:0.78rem;font-weight:500;color:#374151;">${g.label}</span>
+                <span style="font-size:0.78rem;font-weight:600;color:${g.color};">${pct}%</span>
+            </div>
+            <div class="ra-mini-bar">
+                <div class="ra-mini-bar-fill" style="width:${pct}%;background:${g.color};"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.72rem;color:#9ca3af;">
+                <span>${g.isRev ? fmtShort(g.current) : g.current.toLocaleString('vi-VN')}</span>
+                <span>${g.isRev ? fmtShort(g.target) : g.target.toLocaleString('vi-VN')}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function buildTopProducts(topProducts) {
+    if (!topProducts || !topProducts.length) {
+        document.getElementById('top-products-table').innerHTML =
+            `<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:1rem;">Chưa có dữ liệu</td></tr>`;
+        return;
+    }
+    const maxRev = topProducts[0].revenue;
+    document.getElementById('top-products-table').innerHTML = topProducts.map((p, i) =>
+        `<tr>
+            <td><span style="font-weight:600;color:${i<3?'#ef4444':'#9ca3af'};">${i+1}</span></td>
+            <td>
+                <div style="font-weight:500;font-size:0.82rem;">${p.name}</div>
+                <div style="font-size:0.72rem;color:#9ca3af;">${p.category}</div>
+            </td>
+            <td style="font-weight:600;color:#111827;">${fmtShort(p.revenue)}₫</td>
+            <td>${p.qty}</td>
+            <td style="min-width:80px;">
+                <div class="ra-mini-bar" style="margin-bottom:3px;">
+                    <div class="ra-mini-bar-fill" style="width:${maxRev>0?Math.round(p.revenue/maxRev*100):0}%;"></div>
+                </div>
+                <span style="font-size:0.7rem;color:#9ca3af;">${maxRev>0?Math.round(p.revenue/maxRev*100):0}%</span>
+            </td>
+        </tr>`
+    ).join('');
+}
+
+function buildRecentOrders(recentOrders) {
+    if (!recentOrders || !recentOrders.length) {
+        document.getElementById('recent-orders-table').innerHTML =
+            `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:1rem;">Chưa có đơn hàng</td></tr>`;
+        return;
+    }
+    document.getElementById('recent-orders-table').innerHTML = recentOrders.map(o => {
+        const st = STATUS_MAP[o.status] || {text: o.status, cls:'ra-badge-gray'};
+        return `<tr>
+            <td style="font-size:0.78rem;font-weight:500;color:#ef4444;">${o.code}</td>
+            <td style="font-size:0.78rem;">${o.customer}</td>
+            <td style="font-weight:600;font-size:0.78rem;">${fmtShort(o.amount)}₫</td>
+            <td><span class="ra-badge ${st.cls}">${st.text}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function buildBrandChart(brands) {
+    const ctx = document.getElementById('chartBrand');
+    if (brandChart) brandChart.destroy();
+    if (!brands || !brands.length) return;
+    brandChart = new Chart(ctx, {
+        type:'bar', indexAxis:'y',
+        data:{
+            labels: brands.map(b=>b.name),
+            datasets:[{
+                label:'Doanh thu',
+                data: brands.map(b=>b.revenue),
+                backgroundColor: brands.map((_,i)=>i===0?'#ef4444':i===1?'#f97316':i===2?'#c9a84c':`rgba(239,68,68,${0.2+i*0.05})`),
+                borderRadius:6, borderSkipped:false,
+            }]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)}}},
+            scales:{
+                x:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},callback:v=>fmtShort(v)+'₫'}},
+                y:{grid:{display:false},ticks:{font:{size:11}}}
+            }
+        }
+    });
+}
+
+function openCustomExport() {
+    document.getElementById('exportStart').value = document.getElementById('dateStart').value;
+    document.getElementById('exportEnd').value   = document.getElementById('dateEnd').value;
+    document.getElementById('customExportModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('customExportModal').style.display = 'none'; }
+function doCustomExport() {
+    const s = document.getElementById('exportStart').value;
+    const e = document.getElementById('exportEnd').value;
+    if (s && e) { window.location.href = `/admin/reports/revenue?start=${s}&end=${e}`; closeModal(); }
+}
+function printDashboard() { window.print(); }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const end = new Date(), start = new Date();
+    start.setDate(end.getDate()-6);
+    document.getElementById('dateStart').value = fmt_date(start);
+    document.getElementById('dateEnd').value   = fmt_date(end);
+    loadDashboard();
+    document.getElementById('dateStart').addEventListener('change', loadDashboard);
+    document.getElementById('dateEnd').addEventListener('change', loadDashboard);
+    document.getElementById('customExportModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+});
+</script>
+}

@@ -1,0 +1,261 @@
+@model HDKTech.Models.Product
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm mới";
+    var categories = ViewBag.Categories as List<HDKTech.Models.Category> ?? new();
+    var brands     = ViewBag.Brands as List<HDKTech.Models.Brand> ?? new();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+    <style>
+        /* Preview grid cho multi-image (đặt bên dưới dropzone) */
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 10px; margin-top: 12px; }
+        .preview-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-item .rm { position: absolute; top: 4px; right: 4px; background: rgba(188,0,12,.9); border: none; border-radius: 50%; width: 24px; height: 24px; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .15s ease; }
+        .preview-item .rm:hover { transform: scale(1.1); }
+    </style>
+}
+
+<div class="p-3">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index","Product",new{area="Admin"})" class="text-decoration-none"><i class="fa-solid fa-box-open me-1"></i>Sản phẩm</a></li>
+            <li class="breadcrumb-item active">Thêm mới</li>
+        </ol>
+    </nav>
+
+    <h5 class="fw-bold mb-4"><i class="fa-solid fa-circle-plus text-danger me-2"></i>Thêm Sản Phẩm Mới</h5>
+
+    <form asp-action="Create" asp-controller="Product" asp-area="Admin"
+          method="post" enctype="multipart/form-data" id="createForm">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>Thông tin cơ bản
+                    </div>
+                    <div class="card-body row g-3">
+                        <div class="col-12">
+                            <label asp-for="Name" class="form-label fw-semibold">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Nhập tên sản phẩm..." />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="CategoryId" class="form-label fw-semibold">Danh mục <span class="text-danger">*</span></label>
+                            <select asp-for="CategoryId" class="form-select">
+                                <option value="">-- Chọn danh mục --</option>
+                                @foreach (var c in categories) { <option value="@c.Id">@c.Name</option> }
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="BrandId" class="form-label fw-semibold">Thương hiệu <span class="text-danger">*</span></label>
+                            <select asp-for="BrandId" class="form-select">
+                                <option value="">-- Chọn thương hiệu --</option>
+                                @foreach (var b in brands) { <option value="@b.Id">@b.Name</option> }
+                            </select>
+                            <span asp-validation-for="BrandId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-tags text-success me-2"></i>Giá & Phiên bản mặc định
+                    </div>
+                    <div class="card-body row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Giá bán (₫) <span class="text-danger">*</span></label>
+                            <input type="number" name="DefaultVariant.Price" class="form-control" placeholder="0" required />
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Giá niêm yết (₫)</label>
+                            <input type="number" name="DefaultVariant.ListPrice" class="form-control" placeholder="0" />
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Mã SKU</label>
+                            <input type="text" name="DefaultVariant.Sku" class="form-control" placeholder="VD: LPT-DELL-01" />
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Số lượng nhập kho</label>
+                            <input type="number" name="InitialStock" class="form-control" value="0" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-align-left text-secondary me-2"></i>Mô tả & Thông số
+                    </div>
+                    <div class="card-body row g-3">
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label fw-semibold">Mô tả sản phẩm</label>
+                            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Specifications" class="form-label fw-semibold">Thông số kỹ thuật</label>
+                            <textarea asp-for="Specifications" class="form-control" rows="5" placeholder="CPU: Intel i7..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-bolt text-danger me-2"></i>Flash Sale
+                        <small class="text-muted fw-normal ms-2">Tùy chọn</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="isFlashSaleToggle" name="IsFlashSale" value="true"
+                                       style="width:48px;height:24px;cursor:pointer;" />
+                                <label class="form-check-label fw-semibold ms-1" for="isFlashSaleToggle">
+                                    Bật Flash Sale ngay sau khi tạo
+                                </label>
+                            </div>
+                        </div>
+                        <div id="flashSaleFields" style="display:none;" class="row g-3 p-3 rounded" style="background:rgba(220,53,69,0.04);border:1.5px dashed #dc3545;">
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Giá Flash Sale (₫) <span class="text-danger">*</span></label>
+                                <input type="number" name="FlashSalePrice" step="1000" class="form-control"
+                                       placeholder="Giá sale đặc biệt" />
+                                <small class="text-muted">Giá bán cố định trong thời Flash Sale</small>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Bắt đầu</label>
+                                <input type="datetime-local" name="FlashSaleStart" class="form-control" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold text-danger">Kết thúc</label>
+                                <input type="datetime-local" name="FlashSaleEnd" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-images text-info me-2"></i>Hình ảnh sản phẩm
+                    </div>
+                    <div class="card-body">
+                        <!-- Dropzone (đồng bộ style với Banner) -->
+                        <div class="banner-dropzone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+                            <div class="dropzone-inner">
+                                <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                                <p class="dropzone-title">Kéo thả hoặc click để chọn nhiều ảnh</p>
+                                <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB mỗi ảnh</p>
+                                <p class="dropzone-hint">Có thể chọn nhiều ảnh cùng lúc</p>
+                            </div>
+                            <input type="file" name="images" id="imageInput" multiple accept="image/*" class="d-none" />
+                        </div>
+                        <div class="preview-grid" id="previewGrid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 80px;">
+                    <div class="card-body d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Lưu sản phẩm
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+                        </a>
+                        <hr />
+                        <div class="small text-muted">
+                            <p class="fw-bold text-dark mb-1"><i class="fa-solid fa-lightbulb text-warning me-1"></i>Lưu ý</p>
+                            <ul class="ps-3 mb-0">
+                                <li>Dữ liệu giá sẽ được lưu vào phiên bản mặc định của sản phẩm.</li>
+                                <li>Bạn có thể thêm nhiều cấu hình khác sau khi tạo sản phẩm thành công.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        // Drag & Drop multi-image uploader (đồng bộ UI dropzone với Banner)
+        const zone = document.getElementById('uploadZone');
+        const input = document.getElementById('imageInput');
+        const grid = document.getElementById('previewGrid');
+        let allFiles = new DataTransfer();
+
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            addFiles(e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => addFiles(input.files));
+
+        function addFiles(fileList) {
+            for (const f of fileList) {
+                if (!f.type.startsWith('image/')) continue;
+                const idx = allFiles.files.length;
+                allFiles.items.add(f);
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const div = document.createElement('div');
+                    div.className = 'preview-item';
+                    div.dataset.idx = idx;
+                    div.innerHTML = `<img src="${e.target.result}" /><button type="button" class="rm" title="Xoá ảnh này">&times;</button>`;
+                    div.querySelector('.rm').addEventListener('click', ev => {
+                        ev.stopPropagation();
+                        removeFile(div);
+                    });
+                    grid.appendChild(div);
+                };
+                reader.readAsDataURL(f);
+            }
+            input.files = allFiles.files;
+        }
+
+        function removeFile(itemEl) {
+            const idx = parseInt(itemEl.dataset.idx, 10);
+            const dt = new DataTransfer();
+            for (let i = 0; i < allFiles.files.length; i++) {
+                if (i !== idx) dt.items.add(allFiles.files[i]);
+            }
+            allFiles = dt;
+            input.files = allFiles.files;
+            // Rebuild previews' data-idx so subsequent removes match new indices
+            itemEl.remove();
+            [...grid.querySelectorAll('.preview-item')].forEach((el, i) => el.dataset.idx = i);
+        }
+
+        // Flash Sale toggle
+        const flashToggle = document.getElementById('isFlashSaleToggle');
+        const flashFields = document.getElementById('flashSaleFields');
+        if (flashToggle && flashFields) {
+            flashToggle.addEventListener('change', function() {
+                flashFields.style.display = this.checked ? 'flex' : 'none';
+                if (this.checked) {
+                    const startInput = flashFields.querySelector('[name="FlashSaleStart"]');
+                    const endInput   = flashFields.querySelector('[name="FlashSaleEnd"]');
+                    if (startInput && !startInput.value) {
+                        const now = new Date();
+                        startInput.value = now.toISOString().slice(0, 16);
+                    }
+                    if (endInput && !endInput.value) {
+                        endInput.value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+                    }
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,194 @@
+@*
+  _SidebarFilter.cshtml
+  ─────────────────────────────────────────────────────────────────────
+  Usage:
+    @await Html.PartialAsync("_SidebarFilter")
+
+  Expects in ViewBag:
+    CategoryId       int?
+    SelectedBrandIds List<int>
+    AvailableBrands  List<string>  (brand names — JS also reads data-id)
+    CpuLines         List<string>
+    MinPrice         decimal?
+    MaxPrice         decimal?
+    CpuLine          string?
+    VgaLine          string?
+    RamType          string?
+    CurrentSort      string
+    Keyword          string?
+  ─────────────────────────────────────────────────────────────────────
+*@
+
+@{
+    var categoryId       = ViewBag.CategoryId as int?;
+    var selectedBrandIds = ViewBag.SelectedBrandIds as List<int> ?? new List<int>();
+    var availableBrands  = ViewBag.AvailableBrands as List<string> ?? new List<string>();
+    var cpuLines         = ViewBag.CpuLines as List<string> ?? new List<string>();
+    var minPrice         = ViewBag.MinPrice as decimal?;
+    var maxPrice         = ViewBag.MaxPrice as decimal?;
+    var activeCpuLine    = ViewBag.CpuLine as string ?? "";
+    var activeVgaLine    = ViewBag.VgaLine as string ?? "";
+    var activeRamType    = ViewBag.RamType as string ?? "";
+    var keyword          = ViewBag.Keyword as string ?? "";
+    var currentSort      = ViewBag.CurrentSort as string ?? "featured";
+    var brandIdsRaw      = ViewBag.BrandIds as string ?? "";
+}
+
+<link rel="stylesheet" href="~/css/components/sidebar-filter.css" asp-append-version="true" />
+
+
+<aside class="fsb" id="filterSidebar">
+
+    <!-- HEADER -->
+    <div class="fsb__head">
+        <span class="fsb__head-title">
+            <i class="bi bi-sliders"></i> Bộ lọc
+        </span>
+        <button class="fsb__reset" id="fsbResetAll" type="button">
+            Xóa tất cả
+        </button>
+    </div>
+
+    <!-- ACTIVE FILTERS BADGES -->
+    <div class="fsb__active-filters" id="fsbActiveBadges" style="display:none;"></div>
+
+    <!-- SORT ORDER -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-sort-down-alt"></i> Sắp xếp
+        </div>
+        <select class="fsb__sort-select" id="fsbSort" data-param="sortBy">
+            <option value="featured" selected="@(currentSort=="featured")">Nổi bật</option>
+            <option value="new" selected="@(currentSort=="new")">Mới nhất</option>
+            <option value="price_asc" selected="@(currentSort=="price_asc")">Giá tăng dần</option>
+            <option value="price_desc" selected="@(currentSort=="price_desc")">Giá giảm dần</option>
+            <option value="name_asc" selected="@(currentSort=="name_asc")">Tên A → Z</option>
+        </select>
+    </div>
+
+    <!-- BRANDS -->
+    @if (availableBrands.Any())
+    {
+        <div class="fsb__section">
+            <div class="fsb__section-label">
+                <i class="bi bi-building"></i> Thương hiệu
+            </div>
+            @foreach (var brand in availableBrands)
+            {
+                <label class="fsb__check-row">
+                    <input type="checkbox"
+                           class="fsb-brand-cb"
+                           value="@brand"
+                           @(selectedBrandIds.Any() && selectedBrandIds.Contains(brand.GetHashCode()) ? "checked" : "") />
+                    <span class="fsb__check-label">@brand</span>
+                </label>
+            }
+        </div>
+    }
+
+    <!-- PRICE RANGE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-tag"></i> Khoảng giá
+        </div>
+        <div class="fsb__price-group">
+            <input type="number"
+                   class="fsb__price-input"
+                   id="fsbMinPrice"
+                   placeholder="Từ"
+                   min="0"
+                   step="500000"
+                   value="@(minPrice.HasValue ? minPrice.Value.ToString("0") : "")" />
+            <span class="fsb__price-sep">–</span>
+            <input type="number"
+                   class="fsb__price-input"
+                   id="fsbMaxPrice"
+                   placeholder="Đến"
+                   min="0"
+                   step="500000"
+                   value="@(maxPrice.HasValue ? maxPrice.Value.ToString("0") : "")" />
+        </div>
+        <div class="fsb__price-shortcuts">
+            <button type="button" class="fsb__price-preset" data-min="0"        data-max="5000000">Dưới 5tr</button>
+            <button type="button" class="fsb__price-preset" data-min="5000000"  data-max="10000000">5–10tr</button>
+            <button type="button" class="fsb__price-preset" data-min="10000000" data-max="20000000">10–20tr</button>
+            <button type="button" class="fsb__price-preset" data-min="20000000" data-max="">Trên 20tr</button>
+        </div>
+    </div>
+
+    <!-- CPU LINE -->
+    @if (cpuLines.Any())
+    {
+        <div class="fsb__section">
+            <div class="fsb__section-label">
+                <i class="bi bi-cpu"></i> Dòng CPU
+            </div>
+            <div class="fsb__chip-group">
+                @foreach (var cpu in cpuLines)
+                {
+                    <span class="fsb__chip fsb-spec-chip @(activeCpuLine==cpu?"active":"")"
+                          data-param="cpuLine"
+                          data-value="@cpu">@cpu</span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- VGA LINE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-gpu-card"></i> Dòng VGA
+        </div>
+        <div class="fsb__chip-group">
+            @foreach (var vga in new[] { "RTX 4050","RTX 4060","RTX 4070","RTX 4080","RTX 4090" })
+            {
+                <span class="fsb__chip fsb-spec-chip @(activeVgaLine==vga?"active":"")"
+                      data-param="vgaLine"
+                      data-value="@vga">@vga</span>
+            }
+        </div>
+    </div>
+
+    <!-- RAM TYPE -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-memory"></i> Loại RAM
+        </div>
+        <div class="fsb__chip-group">
+            @foreach (var ram in new[] { "DDR4", "DDR5" })
+            {
+                <span class="fsb__chip fsb-spec-chip @(activeRamType==ram?"active":"")"
+                      data-param="ramType"
+                      data-value="@ram">@ram</span>
+            }
+        </div>
+    </div>
+
+    <!-- STOCK STATUS -->
+    <div class="fsb__section">
+        <div class="fsb__section-label">
+            <i class="bi bi-check-circle"></i> Tình trạng
+        </div>
+        <div class="fsb__chip-group">
+            <span class="fsb__chip fsb-spec-chip" data-param="status" data-value="1">Còn hàng</span>
+            <span class="fsb__chip fsb-spec-chip" data-param="status" data-value="0">Hết hàng</span>
+        </div>
+    </div>
+
+    <!-- FOOTER: APPLY / CLEAR -->
+    <div class="fsb__footer">
+        <button type="button" class="fsb__clear-btn" id="fsbClearBtn">
+            <i class="bi bi-x-circle me-1"></i>Xóa
+        </button>
+        <button type="button" class="fsb__apply-btn" id="fsbApplyBtn">
+            <i class="bi bi-check2 me-1"></i>Áp dụng
+        </button>
+    </div>
+</aside>
+
+<!-- Hidden anchor for category context -->
+<input type="hidden" id="fsbCategoryId" value="@(categoryId?.ToString() ?? "")" />
+<input type="hidden" id="fsbKeyword"    value="@keyword" />
+<input type="hidden" id="fsbInitBrands" value="@brandIdsRaw" />
+
+<script src="~/js/filter-handler.js" defer></script>

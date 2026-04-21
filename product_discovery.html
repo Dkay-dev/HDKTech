@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Product Discovery – Flash Sale</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #ffffff;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  /* ── OUTER WRAPPER ── */
+  .section-wrapper {
+    width: 100%;
+    max-width: 1280px;
+    background: #ffffff;
+    position: relative;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #b8a06a;
+    margin-bottom: 8px;
+  }
+  .section-heading {
+    text-align: center;
+    font-size: 34px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+    margin-bottom: 40px;
+  }
+  .section-heading span {
+    color: #c9a84c;
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 72px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── FLASH SALE HEADER BAR ── */
+  .flash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 2px solid #c9a84c;
+    border-radius: 12px;
+    padding: 14px 24px;
+    box-shadow: 0 2px 20px rgba(201,168,76,0.12);
+  }
+
+  .flash-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .flash-badge {
+    background: linear-gradient(135deg, #c9a84c 0%, #e8c96b 50%, #c9a84c 100%);
+    border-radius: 8px;
+    padding: 6px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    box-shadow: 0 2px 10px rgba(201,168,76,0.35);
+  }
+  .flash-badge .fl-line1 {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+  }
+  .flash-badge .fl-line2 {
+    font-size: 20px;
+    font-weight: 900;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .flash-icon {
+    font-size: 26px;
+    animation: flicker 1.6s ease-in-out infinite alternate;
+  }
+  @keyframes flicker {
+    0%  { opacity: 1; transform: scale(1); }
+    100%{ opacity: 0.75; transform: scale(1.08); }
+  }
+
+  .flash-label {
+    display: flex;
+    flex-direction: column;
+  }
+  .flash-label .fl-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #c9a84c;
+    text-transform: uppercase;
+  }
+  .flash-label .fl-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+  }
+
+  /* ── GLOBAL COUNTDOWN ── */
+  .global-countdown {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .global-countdown .gc-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #888;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .cd-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #1a1a1a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-width: 44px;
+  }
+  .cd-block .cd-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #c9a84c;
+    line-height: 1;
+  }
+  .cd-block .cd-unit {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #777;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .cd-sep {
+    font-size: 20px;
+    font-weight: 700;
+    color: #c9a84c;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  /* ── PRODUCT CARDS ROW ── */
+  .cards-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  /* ── SINGLE PRODUCT CARD ── */
+  .prod-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.05),
+      0 12px 32px rgba(0,0,0,0.08),
+      0 2px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .prod-card:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      0 8px 16px rgba(0,0,0,0.07),
+      0 24px 48px rgba(0,0,0,0.12),
+      0 4px 8px rgba(201,168,76,0.08);
+  }
+
+  /* discount ribbon */
+  .disc-ribbon {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 10;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border: 1.5px solid #c9a84c;
+    border-radius: 6px;
+    padding: 4px 9px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .disc-ribbon .dr-pct {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: #c9a84c;
+    letter-spacing: -0.5px;
+  }
+  .disc-ribbon .dr-off {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #e8c96b;
+    text-transform: uppercase;
+  }
+
+  /* wishlist btn */
+  .wish-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #e5e5e5;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s;
+  }
+  .wish-btn:hover { background: #fff8ec; border-color: #c9a84c; }
+
+  /* image area */
+  .card-img-wrap {
+    width: 100%;
+    height: 200px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-img-wrap::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(255,255,255,0.6), transparent);
+  }
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+    transition: transform 0.3s ease;
+  }
+  .prod-card:hover .card-img-wrap img {
+    transform: scale(1.05);
+  }
+
+  /* card body */
+  .card-body {
+    padding: 16px 18px 18px;
+  }
+
+  .card-brand {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    margin-bottom: 4px;
+  }
+
+  .card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.35;
+    margin-bottom: 6px;
+  }
+
+  .card-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .spec-pill {
+    background: #f4f4f4;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.3px;
+  }
+
+  /* star rating */
+  .card-stars {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .stars-row { display: flex; gap: 2px; }
+  .stars-row svg { width: 12px; height: 12px; }
+  .rating-val { font-size: 11px; font-weight: 700; color: #333; }
+  .rating-count { font-size: 10px; color: #999; }
+
+  /* pricing */
+  .card-pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .price-now {
+    font-size: 22px;
+    font-weight: 900;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+  }
+  .price-old {
+    font-size: 13px;
+    font-weight: 500;
+    color: #aaa;
+    text-decoration: line-through;
+  }
+
+  /* stock bar */
+  .stock-bar-wrap {
+    margin-bottom: 12px;
+  }
+  .stock-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .stock-info span {
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+  }
+  .stock-info .stock-hot { color: #e05c00; }
+  .stock-track {
+    height: 5px;
+    background: #f0f0f0;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .stock-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #c9a84c 0%, #e8c96b 100%);
+    transition: width 1s ease;
+  }
+
+  /* ending in (inner card) */
+  .ending-in {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+  }
+  .ei-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #c9a84c;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ei-blocks {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .ei-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e8c96b;
+    background: #2d2d2d;
+    border-radius: 4px;
+    padding: 2px 6px;
+    min-width: 26px;
+    text-align: center;
+  }
+  .ei-sep { color: #555; font-size: 12px; font-weight: 700; }
+
+  /* add to cart btn */
+  .add-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #c9a84c 0%, #e8c96b 50%, #c9a84c 100%);
+    background-size: 200% 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 11px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: background-position 0.4s ease, box-shadow 0.2s;
+    box-shadow: 0 2px 10px rgba(201,168,76,0.3);
+  }
+  .add-btn:hover {
+    background-position: right center;
+    box-shadow: 0 4px 16px rgba(201,168,76,0.45);
+  }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 6px;
+  }
+  .promo-tags {
+    display: flex;
+    gap: 10px;
+  }
+  .promo-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+  }
+  .promo-tag .pt-icon { color: #c9a84c; font-size: 13px; }
+
+  .xem-btn {
+    background: transparent;
+    border: 1.5px solid #c9a84c;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #c9a84c;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .xem-btn:hover {
+    background: #c9a84c;
+    color: #1a1a1a;
+    box-shadow: 0 4px 14px rgba(201,168,76,0.35);
+  }
+
+  /* ── RIGHT PANEL – TIKTOK DECO ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    padding-top: 10px;
+  }
+
+  /* TikTok logo line-art */
+  .tt-logo-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .tt-logo-wrap svg {
+    filter: drop-shadow(0 0 8px rgba(201,168,76,0.35));
+    transition: filter 0.3s;
+  }
+  .tt-logo-wrap svg:hover {
+    filter: drop-shadow(0 0 14px rgba(201,168,76,0.65));
+  }
+  .tt-text {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #c9a84c;
+    text-transform: uppercase;
+  }
+
+  /* Pixel cart icon */
+  .pixel-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+  .pixel-cart canvas {
+    image-rendering: pixelated;
+    width: 54px;
+    height: 54px;
+  }
+  .pixel-cart-text {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #c9a84c;
+    text-transform: uppercase;
+  }
+
+  /* vertical divider line */
+  .v-divider {
+    width: 1px;
+    flex: 1;
+    background: linear-gradient(to bottom, transparent, #e8c96b55, transparent);
+    min-height: 60px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 860px) {
+    .cards-row { grid-template-columns: 1fr 1fr; }
+    .main-grid { grid-template-columns: 1fr; }
+    .right-panel { flex-direction: row; justify-content: center; padding-top: 0; }
+    .v-divider { display: none; }
+  }
+  @media (max-width: 560px) {
+    .cards-row { grid-template-columns: 1fr; }
+    .flash-header { flex-direction: column; gap: 14px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="section-wrapper">
+
+  <!-- Section heading -->
+  <p class="section-title">✦ Limited Time Offers ✦</p>
+  <h2 class="section-heading">Our Product <span>Discovery</span></h2>
+
+  <div class="main-grid">
+    <!-- ── LEFT PANEL ── -->
+    <div class="left-panel">
+
+      <!-- Flash Sale Header Bar -->
+      <div class="flash-header">
+        <div class="flash-left">
+          <div class="flash-badge">
+            <span class="fl-line1">⚡ Deal</span>
+            <span class="fl-line2">FLASH</span>
+          </div>
+          <span class="flash-icon">🔥</span>
+          <div class="flash-label">
+            <span class="fl-tag">Today Only</span>
+            <span class="fl-title">FLASH SALE</span>
+          </div>
+        </div>
+
+        <!-- Global Countdown -->
+        <div class="global-countdown">
+          <span class="gc-label">Ends in</span>
+          <div class="cd-block">
+            <span class="cd-num" id="gh">02</span>
+            <span class="cd-unit">hrs</span>
+          </div>
+          <span class="cd-sep">:</span>
+          <div class="cd-block">
+            <span class="cd-num" id="gm">47</span>
+            <span class="cd-unit">min</span>
+          </div>
+          <span class="cd-sep">:</span>
+          <div class="cd-block">
+            <span class="cd-num" id="gs">33</span>
+            <span class="cd-unit">sec</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards Row -->
+      <div class="cards-row">
+
+        <!-- ── CARD 1: ASUS ── -->
+        <div class="prod-card">
+          <div class="disc-ribbon">
+            <span class="dr-pct">-18%</span>
+            <span class="dr-off">OFF</span>
+          </div>
+          <div class="wish-btn">♡</div>
+          <div class="card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=90&auto=format&fit=crop"
+                 alt="ASUS ROG Laptop"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/600x300/f2f2f2/999?text=ASUS+ROG'">
+          </div>
+          <div class="card-body">
+            <p class="card-brand">ASUS ROG</p>
+            <p class="card-name">ROG Zephyrus G16<br>2024 Edition</p>
+            <div class="card-specs">
+              <span class="spec-pill">RTX 4070</span>
+              <span class="spec-pill">Intel i9</span>
+              <span class="spec-pill">32GB RAM</span>
+              <span class="spec-pill">1TB SSD</span>
+            </div>
+            <div class="card-stars">
+              <div class="stars-row">
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#ddd"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <span class="rating-val">4.8</span>
+              <span class="rating-count">(312)</span>
+            </div>
+            <div class="card-pricing">
+              <span class="price-now">$1,459</span>
+              <span class="price-old">$1,779</span>
+            </div>
+            <div class="stock-bar-wrap">
+              <div class="stock-info">
+                <span>Stock: 12 left</span>
+                <span class="stock-hot">🔥 Hot item</span>
+              </div>
+              <div class="stock-track"><div class="stock-fill" style="width:82%"></div></div>
+            </div>
+            <div class="ending-in">
+              <span class="ei-label">Ending In</span>
+              <div class="ei-blocks">
+                <span class="ei-num" id="ah">02</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="am">47</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="as">33</span>
+              </div>
+            </div>
+            <button class="add-btn">🛒 Add to Cart</button>
+          </div>
+        </div>
+
+        <!-- ── CARD 2: LENOVO ── -->
+        <div class="prod-card">
+          <div class="disc-ribbon">
+            <span class="dr-pct">-22%</span>
+            <span class="dr-off">OFF</span>
+          </div>
+          <div class="wish-btn">♡</div>
+          <div class="card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=90&auto=format&fit=crop"
+                 alt="Lenovo ThinkPad Laptop"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/600x300/f2f2f2/999?text=Lenovo+ThinkPad'">
+          </div>
+          <div class="card-body">
+            <p class="card-brand">LENOVO</p>
+            <p class="card-name">ThinkPad X1 Carbon<br>Gen 12 Ultra</p>
+            <div class="card-specs">
+              <span class="spec-pill">Intel Ultra 7</span>
+              <span class="spec-pill">16GB RAM</span>
+              <span class="spec-pill">512GB SSD</span>
+              <span class="spec-pill">OLED</span>
+            </div>
+            <div class="card-stars">
+              <div class="stars-row">
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <span class="rating-val">5.0</span>
+              <span class="rating-count">(204)</span>
+            </div>
+            <div class="card-pricing">
+              <span class="price-now">$1,249</span>
+              <span class="price-old">$1,599</span>
+            </div>
+            <div class="stock-bar-wrap">
+              <div class="stock-info">
+                <span>Stock: 7 left</span>
+                <span class="stock-hot">🔥 Almost gone</span>
+              </div>
+              <div class="stock-track"><div class="stock-fill" style="width:93%"></div></div>
+            </div>
+            <div class="ending-in">
+              <span class="ei-label">Ending In</span>
+              <div class="ei-blocks">
+                <span class="ei-num" id="bh">02</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="bm">47</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="bs">33</span>
+              </div>
+            </div>
+            <button class="add-btn">🛒 Add to Cart</button>
+          </div>
+        </div>
+
+        <!-- ── CARD 3: MSI ── -->
+        <div class="prod-card">
+          <div class="disc-ribbon">
+            <span class="dr-pct">-15%</span>
+            <span class="dr-off">OFF</span>
+          </div>
+          <div class="wish-btn">♡</div>
+          <div class="card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=600&q=90&auto=format&fit=crop"
+                 alt="MSI Gaming Laptop"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/600x300/f2f2f2/999?text=MSI+Gaming'">
+          </div>
+          <div class="card-body">
+            <p class="card-brand">MSI GAMING</p>
+            <p class="card-name">Titan GT77 HX<br>13VI Phantom Pro</p>
+            <div class="card-specs">
+              <span class="spec-pill">RTX 4090</span>
+              <span class="spec-pill">i9-13980HX</span>
+              <span class="spec-pill">64GB DDR5</span>
+              <span class="spec-pill">4K OLED</span>
+            </div>
+            <div class="card-stars">
+              <div class="stars-row">
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg viewBox="0 0 24 24" fill="#c9a84c" style="clip-path:inset(0 40% 0 0)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <span class="rating-val">4.6</span>
+              <span class="rating-count">(189)</span>
+            </div>
+            <div class="card-pricing">
+              <span class="price-now">$2,799</span>
+              <span class="price-old">$3,299</span>
+            </div>
+            <div class="stock-bar-wrap">
+              <div class="stock-info">
+                <span>Stock: 5 left</span>
+                <span class="stock-hot">🔥 Last units</span>
+              </div>
+              <div class="stock-track"><div class="stock-fill" style="width:97%"></div></div>
+            </div>
+            <div class="ending-in">
+              <span class="ei-label">Ending In</span>
+              <div class="ei-blocks">
+                <span class="ei-num" id="ch">02</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="cm">47</span>
+                <span class="ei-sep">:</span>
+                <span class="ei-num" id="cs">33</span>
+              </div>
+            </div>
+            <button class="add-btn">🛒 Add to Cart</button>
+          </div>
+        </div>
+
+      </div><!-- /cards-row -->
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <div class="promo-tags">
+          <span class="promo-tag"><span class="pt-icon">🚚</span> Free Shipping</span>
+          <span class="promo-tag"><span class="pt-icon">🔒</span> Secure Payment</span>
+          <span class="promo-tag"><span class="pt-icon">↩</span> 30-Day Returns</span>
+        </div>
+        <button class="xem-btn">Xem tất cả →</button>
+      </div>
+
+    </div><!-- /left-panel -->
+
+    <!-- ── RIGHT PANEL ── -->
+    <div class="right-panel">
+
+      <!-- TikTok Logo Line Art #1 (large) -->
+      <div class="tt-logo-wrap">
+        <svg width="52" height="60" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- TikTok music note shape, gold line-art -->
+          <path d="M38 4 C38 4 40 14 50 16 L50 26 C44 25 39 22 36 18 L36 40 C36 51 27 58 18 56 C9 54 4 46 6 38 C8 30 17 25 26 27 L26 37 C22 36 18 38 17 42 C16 46 19 50 23 51 C27 52 31 49 32 45 L32 4 Z"
+                stroke="#c9a84c" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+          <!-- shadow note -->
+          <path d="M35 5 C35 5 37 15 47 17 L47 27 C41 26 36 23 33 19 L33 41 C33 52 24 59 15 57"
+                stroke="#e8c96b" stroke-width="1" fill="none" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+        </svg>
+        <span class="tt-text">TikTok</span>
+        <span class="tt-text">Shop</span>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <!-- Pixel Cart Icon (drawn on canvas) -->
+      <div class="pixel-cart" id="pixelCartWrap">
+        <canvas id="pixelCartCanvas" width="18" height="18" style="width:54px;height:54px;image-rendering:pixelated;"></canvas>
+        <span class="pixel-cart-text">Cart</span>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <!-- TikTok Logo #2 (smaller, slightly faded) -->
+      <div class="tt-logo-wrap" style="opacity:0.55; transform:scale(0.8)">
+        <svg width="52" height="60" viewBox="0 0 52 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M38 4 C38 4 40 14 50 16 L50 26 C44 25 39 22 36 18 L36 40 C36 51 27 58 18 56 C9 54 4 46 6 38 C8 30 17 25 26 27 L26 37 C22 36 18 38 17 42 C16 46 19 50 23 51 C27 52 31 49 32 45 L32 4 Z"
+                stroke="#c9a84c" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+        <span class="tt-text">TikTok</span>
+      </div>
+
+      <div class="v-divider"></div>
+
+      <!-- Second pixel cart (smaller) -->
+      <div class="pixel-cart" style="opacity:0.6; transform:scale(0.8)">
+        <canvas id="pixelCartCanvas2" width="18" height="18" style="width:40px;height:40px;image-rendering:pixelated;"></canvas>
+        <span class="pixel-cart-text">Shop</span>
+      </div>
+
+    </div><!-- /right-panel -->
+  </div><!-- /main-grid -->
+
+</div><!-- /section-wrapper -->
+
+<script>
+/* ── PIXEL CART DRAW ── */
+function drawPixelCart(canvasId, baseColor, highlightColor) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = 18, H = 18;
+  // grid: 1 pixel = 1 unit
+  // Cart pixel art pattern
+  const gold = baseColor || '#c9a84c';
+  const light = highlightColor || '#e8c96b';
+  const dark = '#1a1a1a';
+  const bg = 'rgba(0,0,0,0)';
+
+  // clear
+  ctx.clearRect(0, 0, W, H);
+
+  // helper
+  function px(x, y, col) {
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  // Handle
+  px(1,1,gold); px(2,0,gold); px(3,0,gold); px(4,1,gold);
+
+  // Body outline
+  for(let x=1;x<=12;x++) px(x,2,gold);
+  for(let y=2;y<=10;y++) { px(1,y,gold); px(12,y,gold); }
+  for(let x=1;x<=12;x++) px(x,10,gold);
+
+  // Interior highlight (top-left)
+  px(2,3,light); px(3,3,light); px(2,4,light);
+
+  // Shelf lines
+  for(let x=2;x<=11;x++) px(x,6,gold);
+
+  // Items in cart (pixel blocks)
+  px(3,4,light); px(4,4,light); px(3,5,light); px(4,5,light);
+  px(7,4,gold);  px(8,4,gold);  px(7,5,gold);  px(8,5,gold);
+  px(10,4,light);px(10,5,light);
+
+  px(3,7,gold);  px(4,7,gold);  px(5,7,gold);
+  px(3,8,gold);  px(4,8,gold);  px(5,8,gold);
+  px(8,7,light); px(9,7,light); px(10,7,light);
+  px(8,8,light); px(9,8,light); px(10,8,light);
+
+  // Wheels
+  px(3,12,gold); px(3,13,gold); px(4,12,gold); px(4,13,gold);
+  px(10,12,gold);px(10,13,gold);px(11,12,gold);px(11,13,gold);
+
+  // Wheel highlight
+  px(3,11,light); px(11,11,light);
+
+  // Axle
+  for(let x=4;x<=10;x++) px(x,11,dark);
+
+  // Shadow under body
+  for(let x=2;x<=11;x++) {
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(x,10,1,1);
+  }
+}
+
+drawPixelCart('pixelCartCanvas', '#c9a84c', '#e8c96b');
+drawPixelCart('pixelCartCanvas2', '#c9a84c', '#e8c96b');
+
+/* ── COUNTDOWN TIMER ── */
+// set end time: 2h 47m 33s from now
+const endTime = Date.now() + (2*3600 + 47*60 + 33) * 1000;
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function tick() {
+  const diff = Math.max(0, endTime - Date.now());
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const hp = pad(h), mp = pad(m), sp = pad(s);
+
+  // global
+  document.getElementById('gh').textContent = hp;
+  document.getElementById('gm').textContent = mp;
+  document.getElementById('gs').textContent = sp;
+
+  // card A
+  document.getElementById('ah').textContent = hp;
+  document.getElementById('am').textContent = mp;
+  document.getElementById('as').textContent = sp;
+
+  // card B
+  document.getElementById('bh').textContent = hp;
+  document.getElementById('bm').textContent = mp;
+  document.getElementById('bs').textContent = sp;
+
+  // card C
+  document.getElementById('ch').textContent = hp;
+  document.getElementById('cm').textContent = mp;
+  document.getElementById('cs').textContent = sp;
+}
+
+tick();
+setInterval(tick, 1000);
+
+/* ── WISHLIST TOGGLE ── */
+document.querySelectorAll('.wish-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.textContent = btn.textContent === '♡' ? '♥' : '♡';
+    btn.style.color = btn.textContent === '♥' ? '#e05c00' : '';
+    btn.style.borderColor = btn.textContent === '♥' ? '#e05c00' : '';
+  });
+});
+</script>
+</body>
+</html>

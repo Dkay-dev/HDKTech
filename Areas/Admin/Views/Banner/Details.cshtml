@@ -1,0 +1,182 @@
+﻿@using HDKTech.Areas.Admin.Models
+@model Banner
+
+@{
+    ViewData["Title"] = $"Chi tiết - {Model.Title}";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-image-fill text-danger me-2"></i>@Model.Title</h1>
+        <p>Chi tiết và quản lý banner này</p>
+    </div>
+    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ========== MAIN CONTENT GRID ========== -->
+<div class="row g-4">
+
+    <!-- CỘT TRÁI: Hình ảnh và thông tin chi tiết (8/12) -->
+    <div class="col-lg-8">
+
+        <!-- CARD: Hình ảnh Banner -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-image me-2"></i>Hình ảnh Banner
+            </div>
+            <div class="card-body p-0">
+                <div style="background: #f5f5f5; min-height: 300px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <img src="@Model.ImageUrl" alt="@Model.Title" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD: Thông tin chi tiết -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Thông tin chi tiết
+            </div>
+            <div class="card-body">
+
+                <!-- Tên Banner -->
+                <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                    <div class="hdk-preview-info-label">Tên Banner</div>
+                    <div class="hdk-preview-info-value fw-bold">@Model.Title</div>
+                </div>
+
+                <!-- Mô tả -->
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Mô tả</div>
+                        <div class="hdk-preview-info-value">@Model.Description</div>
+                    </div>
+                }
+
+                <!-- URL hình ảnh -->
+                <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                    <div class="hdk-preview-info-label">URL Hình ảnh</div>
+                    <div class="hdk-preview-info-value font-monospace" style="word-break: break-all;">@Model.ImageUrl</div>
+                </div>
+
+                <!-- Link Banner -->
+                @if (!string.IsNullOrEmpty(Model.LinkUrl))
+                {
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Link khi Click</div>
+                        <div class="hdk-preview-info-value">
+                            <a href="@Model.LinkUrl" target="_blank" class="text-decoration-none" style="color: #bc000c;">
+                                @Model.LinkUrl <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                <!-- Loại Banner -->
+                <div class="row g-3 mb-3 pb-3 border-bottom">
+                    <div class="col-md-6">
+                        <div class="hdk-preview-info-label">Loại Banner</div>
+                        <div class="hdk-preview-info-value">
+                            @switch (Model.BannerType)
+                            {
+                                case "Main":
+                                    <span class="badge badge-primary">Trang Chủ</span>
+                                    break;
+                                case "Side":
+                                    <span class="badge badge-info">Sidebar</span>
+                                    break;
+                                case "Bottom":
+                                    <span class="badge badge-success">Footer</span>
+                                    break;
+                                default:
+                                    <span class="badge badge-secondary">@Model.BannerType</span>
+                                    break;
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="hdk-preview-info-label">Thứ tự hiển thị</div>
+                        <div class="hdk-preview-info-value fw-bold">@Model.DisplayOrder</div>
+                    </div>
+                </div>
+
+                <!-- Trạng thái -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="hdk-preview-info-label">Trạng thái</div>
+                        <div class="hdk-preview-info-value">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge badge-success">
+                                    <i class="bi bi-check-circle me-1"></i>Kích hoạt
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">
+                                    <i class="bi bi-x-circle me-1"></i>Vô hiệu hóa
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="hdk-preview-info-label">Ngày tạo</div>
+                        <div class="hdk-preview-info-value">@(Model.StartDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                    </div>
+                </div>
+
+                <!-- Ngày cập nhật -->
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <div class="mt-3 pt-3 border-top">
+                        <div class="hdk-preview-info-label">Lần cập nhật gần nhất</div>
+                        <div class="hdk-preview-info-value">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CỘT PHẢI: Actions (sticky) (4/12) -->
+    <div class="col-lg-4">
+        <div class="hdk-preview-container">
+            <div class="hdk-preview-card">
+                <div class="hdk-preview-card-header">
+                    <i class="bi bi-tools me-1"></i>Quản lý Banner
+                </div>
+                <div class="card-body">
+
+                    <!-- Edit Button -->
+                    <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-save w-100 mb-2">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa
+                    </a>
+
+                    <!-- Delete Button -->
+                    <form method="post" action="@Url.Action("Delete", new { id = Model.Id })" class="mb-2" onsubmit="return confirm('Bạn chắc chắn muốn xóa banner này? Hành động này không thể hoàn tác.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash3 me-2"></i>Xóa Banner
+                        </button>
+                    </form>
+
+                    <!-- Back Button -->
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left me-2"></i>Quay lại Danh sách
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

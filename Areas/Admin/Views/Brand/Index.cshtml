@@ -1,0 +1,255 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Thương Hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+
+    var brands = (List<HDKTech.Models.Brand>)ViewBag.Brands;
+    var totalCount = (int)ViewBag.TotalCount;
+    var pageNumber = (int)ViewBag.PageNumber;
+    var pageSize = (int)ViewBag.PageSize;
+    var totalPages = (int)ViewBag.TotalPages;
+    var searchTerm = (string)ViewBag.SearchTerm ?? "";
+
+    var totalBrands = (int)ViewBag.TotalBrands;
+    var totalProducts = (int)ViewBag.TotalProducts;
+    var brandsWithoutProducts = (int)ViewBag.BrandsWithoutProducts;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-building text-danger me-2"></i>Quản lý Thương Hiệu</h1>
+        <p>Quản lý các thương hiệu sản phẩm trong hệ thống HDKTech</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Export", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary">
+            <i class="bi bi-download me-1"></i>Xuất CSV
+        </a>
+        <a href="@Url.Action("Create", "Brand", new { area = "Admin" })" class="btn btn-save">
+            <i class="bi bi-plus-lg me-1"></i>Thêm Thương Hiệu
+        </a>
+    </div>
+</div>
+
+
+    <!-- ========== QUICK STATS CARDS ========== -->
+    <div class="row g-3 mb-4">
+        <!-- Total Brands -->
+        <div class="col-12 col-md-4">
+            <div class="card brand-card border-0 shadow-sm">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-danger bg-opacity-10 p-2 rounded text-danger">
+                        <i class="bi bi-building"></i>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1">Tổng thương hiệu</p>
+                <h3 class="h4 fw-bold mb-0">@totalBrands</h3>
+            </div>
+        </div>
+
+        <!-- Total Products -->
+        <div class="col-12 col-md-4">
+            <div class="card brand-card border-0 shadow-sm">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-light p-2 rounded text-muted">
+                        <i class="bi bi-bag"></i>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1">Tổng sản phẩm</p>
+                <h3 class="h4 fw-bold mb-0">@totalProducts</h3>
+            </div>
+        </div>
+
+        <!-- Brands Without Products -->
+        <div class="col-12 col-md-4">
+            <div class="card brand-card border-0 shadow-sm">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="bg-warning bg-opacity-10 p-2 rounded text-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <span class="badge bg-warning text-dark small">⚠️ @brandsWithoutProducts</span>
+                </div>
+                <p class="text-muted small mb-1">Thương hiệu trống</p>
+                <h3 class="h4 fw-bold mb-0">@brandsWithoutProducts</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== SEARCH SECTION ========== -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Index", "Brand", new { area = "Admin" })" class="d-flex gap-2">
+                <div class="flex-grow-1 position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" name="searchTerm" value="@searchTerm" placeholder="Tìm kiếm tên thương hiệu..." class="form-control search-box ps-5" />
+                </div>
+                <button type="submit" class="btn btn-save d-flex align-items-center gap-2">
+                    <i class="bi bi-search"></i>
+                    Tìm kiếm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========== BRANDS TABLE ========== -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách Thương Hiệu</h5>
+                <span class="text-muted small">Tổng: <strong>@totalCount</strong> thương hiệu</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>Tên Thương Hiệu</th>
+                        <th>Mô Tả</th>
+                        <th class="text-center" style="width: 80px;">Sản Phẩm</th>
+                        <th class="text-end pe-3" style="width: 120px;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (brands != null && brands.Count > 0)
+                    {
+                        int rowIndex = (pageNumber - 1) * pageSize + 1;
+                        @foreach (var brand in brands)
+                        {
+                            var productCount = brand.Products?.Count ?? 0;
+
+                            <tr>
+                                <td class="text-muted small">@rowIndex</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(brand.LogoUrl))
+                                        {
+                                            <img src="@brand.LogoUrl" alt="@brand.Name"
+                                                 class="brand-logo-thumb"
+                                                 onerror="this.onerror=null;this.src='/images/products/no-image.png';" />
+                                        }
+                                        else
+                                        {
+                                            <div class="brand-logo-placeholder">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                        }
+                                        <div>
+                                            <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.Id })" class="text-danger fw-bold text-decoration-none">
+                                                @brand.Name
+                                            </a>
+                                            <div class="text-muted small">ID: @brand.Id</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted" title="@(brand.Description ?? "")">@((brand.Description?.Length > 50 ? brand.Description.Substring(0, 50) + "..." : brand.Description) ?? "-")</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @(productCount > 0 ? "badge-info" : "badge badge-light text-muted border")">
+                                        @productCount
+                                    </span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", "Brand", new { area = "Admin", id = brand.Id })" class="btn btn-outline-secondary" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.Id })" class="btn btn-outline-secondary" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger delete-btn" data-brand-id="@brand.Id" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            rowIndex++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="d-flex flex-column align-items-center gap-2">
+                                    <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.4;"></i>
+                                    <p class="fw-medium">Không có thương hiệu nào</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer bg-light d-flex align-items-center justify-content-between border-top">
+                <div class="small text-muted">
+                    Hiển thị <strong>@((pageNumber - 1) * pageSize + 1)</strong> đến <strong>@Math.Min(pageNumber * pageSize, totalCount)</strong> trong <strong>@totalCount</strong> thương hiệu
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    @if (pageNumber > 1)
+                    {
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = pageNumber - 1, searchTerm })" class="btn btn-outline-secondary" title="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
+                    {
+                        @if (i == pageNumber)
+                        {
+                            <button type="button" class="btn btn-danger">@i</button>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = i, searchTerm })" class="btn btn-outline-secondary">@i</a>
+                        }
+                    }
+
+                    @if (pageNumber < totalPages)
+                    {
+                        <a href="@Url.Action("Index", "Brand", new { area = "Admin", pageNumber = pageNumber + 1, searchTerm })" class="btn btn-outline-secondary" title="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const brandId = this.dataset.brandId;
+                if (confirm('Bạn có chắc muốn xóa thương hiệu này?')) {
+                    fetch('@Url.Action("Delete", "Brand", new { area = "Admin" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ brandId: brandId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    </script>
+}

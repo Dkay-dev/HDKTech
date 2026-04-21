@@ -1,0 +1,232 @@
+﻿@model HDKTech.Models.Category
+
+@{
+    ViewData["Title"] = $"Chỉnh sửa: {Model?.Name}";
+    var parentCategories = ViewBag.ParentCategories as List<HDKTech.Models.Category>
+                           ?? new List<HDKTech.Models.Category>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+}
+
+<div class="p-3">
+
+    <!-- ── Breadcrumb ──────────────────────────────────────────────── -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="@Url.Action("Index", "Category", new { area = "Admin" })" class="text-decoration-none">
+                    <i class="fa-solid fa-tags me-1"></i>Danh mục
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="@Url.Action("Details", "Category", new { area = "Admin", id = Model?.Id })"
+                   class="text-decoration-none">@Model?.Name</a>
+            </li>
+            <li class="breadcrumb-item active">Chỉnh sửa</li>
+        </ol>
+    </nav>
+
+    <h5 class="fw-bold mb-4">
+        <i class="fa-solid fa-pen-to-square text-primary me-2"></i>
+        Chỉnh sửa Danh Mục
+    </h5>
+
+    <form asp-action="Edit" asp-controller="Category" asp-area="Admin"
+          method="post" enctype="multipart/form-data" asp-route-id="@Model?.Id">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row g-4">
+
+            <!-- ── Cột trái: Form nhập liệu ──────────────────────── -->
+            <div class="col-lg-8">
+
+                <!-- Card: Thông tin cơ bản -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>Thông tin danh mục
+                    </div>
+                    <div class="card-body">
+
+                        <!-- Tên danh mục -->
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">
+                                Tên danh mục <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-tag text-muted fa-sm"></i>
+                                </span>
+                                <input asp-for="Name"
+                                       class="form-control"
+                                       placeholder="Tên danh mục..." />
+                            </div>
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Mô tả -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
+                            <textarea asp-for="Description"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="Mô tả chi tiết..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Hình ảnh banner -->
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">
+                                <i class="fa-solid fa-image text-info me-1"></i>Hình ảnh banner
+                            </label>
+
+                            <!-- Ảnh hiện tại -->
+                            @if (!string.IsNullOrEmpty(Model?.BannerImageUrl))
+                            {
+                                <div class="current-image-wrap mb-3">
+                                    <p class="banner-label mb-2">Ảnh hiện tại:</p>
+                                    <div class="current-image-box">
+                                        <img src="@Model.BannerImageUrl"
+                                             alt="Ảnh hiện tại"
+                                             class="current-image-img"
+                                             onerror="this.style.display='none'" />
+                                        <span class="current-image-badge">Đang dùng</span>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Dropzone để đổi ảnh mới -->
+                            <div class="banner-dropzone banner-dropzone-sm" id="imageDropZone">
+                                <div class="dropzone-inner">
+                                    <i class="bi bi-arrow-repeat dropzone-icon" style="font-size:1.8rem"></i>
+                                    <p class="dropzone-title">Click hoặc kéo thả để thay ảnh mới</p>
+                                    <p class="dropzone-hint">Để trống nếu muốn giữ ảnh hiện tại</p>
+                                </div>
+                                <input type="file"
+                                       id="imageFile"
+                                       name="categoryImageFile"
+                                       class="d-none"
+                                       accept=".jpg,.jpeg,.png,.webp,.gif" />
+                            </div>
+
+                            <!-- Preview ảnh mới chọn -->
+                            <div id="uploadPreviewWrap" class="upload-preview-wrap d-none mt-2">
+                                <img id="uploadPreviewImg" src="" alt="Preview mới" class="upload-preview-img" />
+                                <button type="button" class="upload-remove-btn" id="removeUpload" title="Huỷ ảnh mới">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <div class="banner-field-divider"><span>hoặc nhập URL mới</span></div>
+
+                            <!-- URL thay thế -->
+                            <div class="banner-field">
+                                <div class="banner-input-group">
+                                    <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                                    <input asp-for="BannerImageUrl"
+                                           id="imageUrlInput"
+                                           type="text"
+                                           class="banner-input banner-input-icon"
+                                           placeholder="Để trống để giữ ảnh hiện tại" />
+                                </div>
+                                <span class="banner-hint">Để trống nếu không muốn thay đổi URL ảnh.</span>
+                                <span asp-validation-for="BannerImageUrl" class="banner-error"></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Card: Phân cấp -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-sitemap text-warning me-2"></i>Phân cấp danh mục
+                    </div>
+                    <div class="card-body">
+                        <label asp-for="ParentCategoryId" class="form-label fw-semibold">
+                            Danh mục cha
+                        </label>
+                        <select asp-for="ParentCategoryId" class="form-select">
+                            <option value="">-- Không chọn (Đây là danh mục gốc) --</option>
+                            @foreach (var parent in parentCategories)
+                            {
+                                <option value="@parent.Id"
+                                        selected="@(Model?.ParentCategoryId == parent.Id)">
+                                    @parent.Name
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="ParentCategoryId" class="text-danger small"></span>
+                        <div class="form-text">
+                            <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+                            Không thể chọn chính danh mục này làm cha.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Cột phải: Actions + Thông tin ────────────────── -->
+            <div class="col-lg-4">
+
+                <!-- Card: Hành động -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Lưu thay đổi
+                            </button>
+                            <a href="@Url.Action("Details", "Category", new { area = "Admin", id = Model?.Id })"
+                               class="btn btn-outline-secondary">
+                                <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
+                            </a>
+                            <a href="@Url.Action("Index", "Category", new { area = "Admin" })"
+                               class="btn btn-outline-secondary">
+                                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Thông tin meta -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold border-bottom">
+                        <i class="fa-solid fa-circle-info text-secondary me-2"></i>Thông tin
+                    </div>
+                    <div class="card-body">
+                        <dl class="row small mb-0">
+                            <dt class="col-5 text-muted">Mã</dt>
+                            <dd class="col-7 fw-semibold">#@Model?.Id</dd>
+
+                            <dt class="col-5 text-muted">Trạng thái</dt>
+                            <dd class="col-7">
+                                <span class="badge bg-success bg-opacity-75">Hoạt động</span>
+                            </dd>
+
+                            @if (Model?.ParentCategory != null)
+                            {
+                                <dt class="col-5 text-muted">Danh mục cha</dt>
+                                <dd class="col-7">@Model.ParentCategory.Name</dd>
+                            }
+
+                            <dt class="col-5 text-muted">Sản phẩm</dt>
+                            <dd class="col-7">@(Model?.Products?.Count ?? 0)</dd>
+
+                            <dt class="col-5 text-muted">DM con</dt>
+                            <dd class="col-7 mb-0">@(Model?.SubCategories?.Count ?? 0)</dd>
+                        </dl>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,363 @@
+@{
+    ViewData["Title"] = "Phân quyền – Permission Matrix";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+
+    var roleName      = ViewBag.RoleName           as string          ?? "";
+    var currentPerms  = ViewBag.CurrentPermissions as HashSet<string> ?? new HashSet<string>();
+    var grouped       = ViewBag.GroupedPermissions  as Dictionary<string, List<string>>
+                        ?? new Dictionary<string, List<string>>();
+
+    // Cột action chuẩn — thứ tự hiển thị trong matrix
+    var stdActions = new[] { "View", "Read", "Create", "Update", "Delete" };
+    // Action đặc biệt nằm ngoài 4 cột chuẩn
+    var extraActions = new[] { "Export" };
+}
+
+@section Styles {
+<style>
+    /* ── Matrix table ────────────────────────────────────────────────────── */
+    .matrix-table th,
+    .matrix-table td        { text-align: center; vertical-align: middle; }
+    .matrix-table th.module { text-align: left;   min-width: 140px; }
+    .matrix-table td.module { text-align: left; }
+
+    .matrix-cb              { width: 1.2rem; height: 1.2rem; cursor: pointer; }
+
+    /* Header gradient */
+    .matrix-table thead th  { background: #212529; color: #fff; font-weight: 600; }
+
+    /* Row zebra */
+    .matrix-table tbody tr:nth-child(even) { background: #f8f9fa; }
+    .matrix-table tbody tr:hover           { background: #e9f3ff; }
+
+    /* "Select-all" row */
+    tr.select-all-row       { background: #e8f0fe !important; font-weight: 600; }
+
+    /* Module icon */
+    .mod-icon               { width: 1.6rem; text-align: center; display: inline-block; }
+
+    /* Disabled cell */
+    td.cell-na              { background: #f0f0f0; color: #ccc; }
+
+    code.claim-hint { font-size: .75rem; background: #f1f3f5; padding: 1px 5px; border-radius: 4px; }
+</style>
+}
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- ── Header ───────────────────────────────────────────────────────── -->
+    <div class="mb-4">
+        <a href="@Url.Action("Index","Role",new{area="Admin"})"
+           class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-chevron-left me-1"></i> Quay lại danh sách Role
+        </a>
+        <h3 class="fw-bold mb-1">
+            <i class="fas fa-table text-primary me-2"></i>Permission Matrix
+        </h3>
+        <p class="text-muted mb-0">
+            Role: <strong class="text-primary">@roleName</strong> —
+            Lưu vào <code class="claim-hint">AspNetRoleClaims</code>
+            dạng <code class="claim-hint">Type="Permission", Value="Module.Action"</code>
+        </p>
+    </div>
+
+    <!-- ── Alerts ───────────────────────────────────────────────────────── -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle me-1"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-1"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ── Form ─────────────────────────────────────────────────────────── -->
+    <form asp-action="SavePermissions"
+          asp-controller="Role"
+          asp-area="Admin"
+          asp-route-roleCode="@roleName"
+          method="post">
+        @Html.AntiForgeryToken()
+
+        <!-- Toolbar -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">
+                Tick checkbox để cấp quyền. Mỗi ô = một Claim
+                <code class="claim-hint">Permission:Module.Action</code>
+            </small>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary"  onclick="setAll(true)">
+                    <i class="fas fa-check-double me-1"></i>Chọn tất cả
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setAll(false)">
+                    <i class="fas fa-times me-1"></i>Bỏ chọn tất cả
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Matrix table ─────────────────────────────────────────────── -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered matrix-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="module" style="width:180px">Module</th>
+                                @foreach (var act in stdActions)
+                                {
+                                    <th>
+                                        @{
+                                            var actIcon = act switch {
+                                                "View"   => "fa-desktop",
+                                                "Read"   => "fa-eye",
+                                                "Create" => "fa-plus-circle",
+                                                "Update" => "fa-pencil-alt",
+                                                "Delete" => "fa-trash-alt",
+                                                _        => "fa-circle"
+                                            };
+                                            var actColor = act switch {
+                                                "View"   => "#6610f2",
+                                                "Read"   => "#0dcaf0",
+                                                "Create" => "#198754",
+                                                "Update" => "#ffc107",
+                                                "Delete" => "#dc3545",
+                                                _        => "#adb5bd"
+                                            };
+                                        }
+                                        <i class="fas @actIcon me-1" style="color:@actColor"></i>@act
+                                    </th>
+                                }
+                                <!-- Extra columns: Export, etc. -->
+                                <th><i class="fas fa-file-export me-1" style="color:#6f42c1"></i>Export</th>
+                                <th style="min-width:80px">Tất cả</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Select-all row -->
+                            <tr class="select-all-row">
+                                <td class="module ps-3 text-primary">
+                                    <i class="fas fa-layer-group me-1"></i>Chọn theo cột
+                                </td>
+                                @foreach (var act in stdActions)
+                                {
+                                    <td>
+                                        <input type="checkbox"
+                                               class="matrix-cb col-all-cb"
+                                               data-action="@act"
+                                               title="Chọn tất cả @act"
+                                               onchange="toggleCol('@act', this.checked)" />
+                                    </td>
+                                }
+                                <td>
+                                    <input type="checkbox"
+                                           class="matrix-cb col-all-cb"
+                                           data-action="Export"
+                                           title="Chọn tất cả Export"
+                                           onchange="toggleCol('Export', this.checked)" />
+                                </td>
+                                <td>
+                                    <input type="checkbox"
+                                           class="matrix-cb"
+                                           title="Chọn/Bỏ tất cả"
+                                           onchange="setAll(this.checked)" />
+                                </td>
+                            </tr>
+
+                            @{
+                                var moduleIcons = new Dictionary<string, string>
+                                {
+                                    ["Product"]          = "fa-box",
+                                    ["Inventory"]        = "fa-warehouse",
+                                    ["Order"]            = "fa-shopping-cart",
+                                    ["Category"]         = "fa-tags",
+                                    ["Brand"]            = "fa-trademark",
+                                    ["Banner"]           = "fa-image",
+                                    ["Promotion"]        = "fa-percent",
+                                    ["Role"]             = "fa-user-shield",
+                                    ["Report"]           = "fa-chart-bar",
+                                    ["RevenueAnalytics"] = "fa-coins",
+                                    ["SystemLog"]        = "fa-scroll",
+                                    ["User"]             = "fa-users",
+                                };
+                            }
+
+                            @foreach (var group in grouped)
+                            {
+                                var mod           = group.Key;
+                                var modPerms      = group.Value;
+                                var icon          = moduleIcons.GetValueOrDefault(mod, "fa-circle");
+
+                                <tr>
+                                    <td class="module ps-3 fw-semibold">
+                                        <span class="mod-icon text-primary">
+                                            <i class="fas @icon"></i>
+                                        </span>
+                                        @mod
+                                    </td>
+
+                                    <!-- Standard action columns -->
+                                    @foreach (var act in stdActions)
+                                    {
+                                        var permKey = $"{mod}.{act}";
+                                        @if (modPerms.Contains(permKey))
+                                        {
+                                            var chkId   = $"perm-{mod}-{act}";
+                                            var isCheck = currentPerms.Contains(permKey);
+                                            <td>
+                                                <input type="checkbox"
+                                                       class="matrix-cb perm-cb"
+                                                       id="@chkId"
+                                                       name="permissions"
+                                                       value="@permKey"
+                                                       data-module="@mod"
+                                                       data-action="@act"
+                                                       title="@permKey"
+                                                       @(isCheck ? "checked" : "") />
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="cell-na" title="Không có quyền @permKey">—</td>
+                                        }
+                                    }
+
+                                    <!-- Export column -->
+                                    @{
+                                        var exportKey = $"{mod}.Export";
+                                        var hasExport = modPerms.Contains(exportKey);
+                                    }
+                                    @if (hasExport)
+                                    {
+                                        var chkId   = $"perm-{mod}-Export";
+                                        var isCheck = currentPerms.Contains(exportKey);
+                                        <td>
+                                            <input type="checkbox"
+                                                   class="matrix-cb perm-cb"
+                                                   id="@chkId"
+                                                   name="permissions"
+                                                   value="@exportKey"
+                                                   data-module="@mod"
+                                                   data-action="Export"
+                                                   title="@exportKey"
+                                                   @(isCheck ? "checked" : "") />
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td class="cell-na" title="Không có quyền @exportKey">—</td>
+                                    }
+
+                                    <!-- Row "Tất cả" toggle -->
+                                    <td>
+                                        <input type="checkbox"
+                                               class="matrix-cb row-all-cb"
+                                               data-module="@mod"
+                                               title="Chọn tất cả @mod"
+                                               onchange="toggleRow('@mod', this.checked)" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Legend ───────────────────────────────────────────────────── -->
+        <div class="d-flex gap-3 mt-2 mb-3 flex-wrap">
+            <small class="text-muted">
+                <span style="background:#6610f2" class="badge me-1">■</span>View = vào trang (vd Dashboard)
+            </small>
+            <small class="text-muted">
+                <span class="badge bg-primary me-1">■</span>Read = xem danh sách
+            </small>
+            <small class="text-muted">
+                <span class="badge bg-success me-1">■</span>Create = thêm mới
+            </small>
+            <small class="text-muted">
+                <span class="badge bg-warning text-dark me-1">■</span>Update = chỉnh sửa
+            </small>
+            <small class="text-muted">
+                <span class="badge bg-danger me-1">■</span>Delete = xoá
+            </small>
+            <small class="text-muted">
+                <span style="background:#6f42c1" class="badge me-1">■</span>Export = xuất file
+            </small>
+            <small class="text-muted">
+                <span class="badge bg-secondary me-1">—</span>Quyền này không áp dụng cho module
+            </small>
+        </div>
+
+        <!-- Save / Cancel -->
+        <div class="d-flex justify-content-end gap-2 pb-4">
+            <a href="@Url.Action("Index","Role",new{area="Admin"})"
+               class="btn btn-outline-secondary">Huỷ</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Lưu quyền
+            </button>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+<script>
+// ── Chọn / Bỏ tất cả ──────────────────────────────────────────────────────
+function setAll(checked) {
+    document.querySelectorAll('input.perm-cb').forEach(cb => cb.checked = checked);
+    syncAllHeaders();
+}
+
+// ── Toggle theo cột (Action) ──────────────────────────────────────────────
+function toggleCol(action, checked) {
+    document.querySelectorAll(`input.perm-cb[data-action="${action}"]`)
+            .forEach(cb => cb.checked = checked);
+    syncRowHeaders();
+}
+
+// ── Toggle theo hàng (Module) ─────────────────────────────────────────────
+function toggleRow(mod, checked) {
+    document.querySelectorAll(`input.perm-cb[data-module="${mod}"]`)
+            .forEach(cb => cb.checked = checked);
+    syncColHeaders();
+}
+
+// ── Đồng bộ checkbox "Tất cả" theo hàng ──────────────────────────────────
+function syncRowHeaders() {
+    document.querySelectorAll('input.row-all-cb').forEach(rowCb => {
+        const mod     = rowCb.dataset.module;
+        const allCbs  = document.querySelectorAll(`input.perm-cb[data-module="${mod}"]`);
+        const checked = document.querySelectorAll(`input.perm-cb[data-module="${mod}"]:checked`);
+        rowCb.checked       = allCbs.length > 0 && allCbs.length === checked.length;
+        rowCb.indeterminate = checked.length > 0 && checked.length < allCbs.length;
+    });
+}
+
+// ── Đồng bộ checkbox "Tất cả" theo cột ───────────────────────────────────
+function syncColHeaders() {
+    document.querySelectorAll('input.col-all-cb').forEach(colCb => {
+        const act     = colCb.dataset.action;
+        const allCbs  = document.querySelectorAll(`input.perm-cb[data-action="${act}"]`);
+        const checked = document.querySelectorAll(`input.perm-cb[data-action="${act}"]:checked`);
+        colCb.checked       = allCbs.length > 0 && allCbs.length === checked.length;
+        colCb.indeterminate = checked.length > 0 && checked.length < allCbs.length;
+    });
+}
+
+function syncAllHeaders() { syncRowHeaders(); syncColHeaders(); }
+
+// ── Lắng nghe từng checkbox ───────────────────────────────────────────────
+document.querySelectorAll('input.perm-cb').forEach(cb => {
+    cb.addEventListener('change', syncAllHeaders);
+});
+
+// ── Khởi tạo trạng thái ban đầu ──────────────────────────────────────────
+syncAllHeaders();
+</script>
+}

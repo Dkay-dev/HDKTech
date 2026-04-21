@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Chi tiết Thương Hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+    var brand = (HDKTech.Models.Brand)ViewBag.Brand;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/brand.css" asp-append-version="true" />
+}
+
+<!-- ========== PAGE HEADER ========== -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-building text-danger me-2"></i>@brand.Name</h1>
+        <p>Chi tiết và quản lý thương hiệu này</p>
+    </div>
+    <a href="@Url.Action("Index", "Brand", new { area = "Admin" })" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ========== MAIN CONTENT GRID ========== -->
+<div class="row g-4">
+
+    <!-- CỘT TRÁI: Thông tin chi tiết (8/12) -->
+    <div class="col-lg-8">
+
+        <!-- CARD: Thông tin thương hiệu -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Thông tin Thương Hiệu
+            </div>
+            <div class="card-body">
+
+                <!-- Brand Logo -->
+                <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                    @if (!string.IsNullOrEmpty(brand.LogoUrl))
+                    {
+                        <img src="@brand.LogoUrl" alt="@brand.Name"
+                             style="width: 96px; height: 96px; object-fit: contain; border: 1px solid #e9ecef; border-radius: 10px; padding: 8px; background: #fff;" />
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center justify-content-center"
+                             style="width: 96px; height: 96px; background: rgba(220,53,69,.08); color: #dc3545; border-radius: 10px; border: 1px dashed rgba(220,53,69,.3); font-size: 2rem;">
+                            <i class="bi bi-building"></i>
+                        </div>
+                    }
+                    <div>
+                        <div class="fw-bold fs-4 mb-1">@brand.Name</div>
+                        <div class="text-muted small">Mã #@brand.Id</div>
+                    </div>
+                </div>
+
+                <!-- Brand ID -->
+                <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                    <div class="hdk-preview-info-label">Mã Thương Hiệu</div>
+                    <div class="hdk-preview-info-value fw-bold">#@brand.Id</div>
+                </div>
+
+                <!-- Brand Name -->
+                <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                    <div class="hdk-preview-info-label">Tên Thương Hiệu</div>
+                    <div class="hdk-preview-info-value fw-bold">@brand.Name</div>
+                </div>
+
+                <!-- Description -->
+                @if (!string.IsNullOrEmpty(brand.Description))
+                {
+                    <div class="hdk-preview-info-row">
+                        <div class="hdk-preview-info-label">Mô Tả</div>
+                        <div class="hdk-preview-info-value">@brand.Description</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted small">Chưa có mô tả thương hiệu.</div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CỘT PHẢI: Sidebar (4/12) -->
+    <div class="col-lg-4">
+        <div class="hdk-preview-container">
+
+            <!-- Stats Card -->
+            <div class="hdk-preview-card mb-4">
+                <div class="hdk-preview-card-header">
+                    <i class="bi bi-graph-up me-1"></i>Thống kê
+                </div>
+                <div class="hdk-preview-info">
+
+                    <!-- Product Count -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Sản Phẩm</div>
+                        <div class="hdk-preview-info-value fw-bold" style="font-size: 1.5rem; color: #bc000c;">@(brand.Products?.Count ?? 0)</div>
+                    </div>
+
+                    <!-- Total Inventory -->
+                    <div class="hdk-preview-info-row mb-3 pb-3 border-bottom">
+                        <div class="hdk-preview-info-label">Tổng Kho</div>
+                        <div class="hdk-preview-info-value fw-bold" style="font-size: 1.5rem;">@(brand.Products?.Sum(p => p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0) ?? 0)</div>
+                    </div>
+
+                    <!-- Inventory Value -->
+                    <div class="hdk-preview-info-row">
+                        <div class="hdk-preview-info-label">Giá Trị Kho</div>
+                        <div class="hdk-preview-info-value fw-bold" style="font-size: 1.25rem; color: #c9a84c;">
+                            @{
+                                var inventory = brand.Products?.Sum(p => (p.DisplayPrice ?? 0m) * (p.Variants?.SelectMany(v => v.Inventories ?? Enumerable.Empty<HDKTech.Models.Inventory>()).Sum(k => k.Quantity) ?? 0)) ?? 0;
+                                @inventory.ToString("C0")
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="hdk-preview-card">
+                <div class="hdk-preview-card-header">
+                    <i class="bi bi-tools me-1"></i>Quản lý
+                </div>
+                <div class="card-body">
+
+                    <!-- Edit Button -->
+                    <a href="@Url.Action("Edit", "Brand", new { area = "Admin", id = brand.Id })" class="btn btn-save w-100 mb-2">
+                        <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa
+                    </a>
+
+                    <!-- Delete Button -->
+                    <button type="button" id="deleteBtn" class="btn btn-outline-danger w-100" title="Xóa thương hiệu">
+                        <i class="bi bi-trash3 me-2"></i>Xóa Thương Hiệu
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('deleteBtn').addEventListener('click', function() {
+            if (confirm('Bạn có chắc muốn xóa thương hiệu này? Thương hiệu phải không có sản phẩm.')) {
+                fetch('@Url.Action("Delete", "Brand", new { area = "Admin" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ brandId: @brand.Id })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '@Url.Action("Index", "Brand", new { area = "Admin" })';
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi');
+                });
+            }
+        });
+    </script>
+}

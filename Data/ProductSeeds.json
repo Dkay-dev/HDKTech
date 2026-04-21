@@ -1,0 +1,598 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Dell XPS 13 Plus - Intel Core i7",
+      "category": "Laptop",
+      "subcategory": "ASUS",
+      "price": 32000000,
+      "discount": 10,
+      "images": [
+        "laptops/dell-xps-13-silver-front.jpg",
+        "laptops/dell-xps-13-silver-side.jpg",
+        "laptops/dell-xps-13-silver-keyboard.jpg"
+      ],
+      "defaultImage": "laptops/dell-xps-13-silver-front.jpg"
+    },
+    {
+      "id": 2,
+      "name": "ASUS VivoBook 14X - AMD Ryzen 7",
+      "category": "Laptop",
+      "subcategory": "ASUS",
+      "price": 24500000,
+      "discount": 8,
+      "images": [
+        "laptops/asus-vivobook-14x-silver.jpg",
+        "laptops/asus-vivobook-14x-open.jpg"
+      ],
+      "defaultImage": "laptops/asus-vivobook-14x-silver.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Lenovo ThinkPad X1 Carbon - Intel Core i9",
+      "category": "Laptop",
+      "subcategory": "LENOVO",
+      "price": 42000000,
+      "discount": 12,
+      "images": [
+        "laptops/lenovo-thinkpad-x1-black.jpg",
+        "laptops/lenovo-thinkpad-x1-keyboard.jpg"
+      ],
+      "defaultImage": "laptops/lenovo-thinkpad-x1-black.jpg"
+    },
+    {
+      "id": 4,
+      "name": "MacBook Air M3 - 16GB RAM",
+      "category": "Laptop",
+      "subcategory": "Apple MacBook",
+      "price": 35000000,
+      "discount": 5,
+      "images": [
+        "laptops/macbook-air-m3-space-gray.jpg",
+        "laptops/macbook-air-m3-silver.jpg",
+        "laptops/macbook-air-m3-keyboard.jpg"
+      ],
+      "defaultImage": "laptops/macbook-air-m3-space-gray.jpg"
+    },
+    {
+      "id": 5,
+      "name": "HP Pavilion 15 - Intel Core i5",
+      "category": "Laptop",
+      "subcategory": "HP",
+      "price": 18900000,
+      "discount": 7,
+      "images": [
+        "laptops/hp-pavilion-15-blue.jpg",
+        "laptops/hp-pavilion-15-open.jpg"
+      ],
+      "defaultImage": "laptops/hp-pavilion-15-blue.jpg"
+    },
+    {
+      "id": 6,
+      "name": "Acer Aspire 5 - Ryzen 5 5500",
+      "category": "Laptop",
+      "subcategory": "ACER",
+      "price": 16500000,
+      "discount": 6,
+      "images": [
+        "laptops/acer-aspire-5-silver.jpg",
+        "laptops/acer-aspire-5-open.jpg"
+      ],
+      "defaultImage": "laptops/acer-aspire-5-silver.jpg"
+    },
+    {
+      "id": 7,
+      "name": "ASUS ROG Strix G16 - RTX 4070",
+      "category": "Laptop Gaming",
+      "subcategory": "ASUS ROG",
+      "price": 56000000,
+      "discount": 15,
+      "images": [
+        "laptops-gaming/asus-rog-strix-g16-black.jpg",
+        "laptops-gaming/asus-rog-strix-g16-open.jpg",
+        "laptops-gaming/asus-rog-strix-g16-rgb.jpg"
+      ],
+      "defaultImage": "laptops-gaming/asus-rog-strix-g16-black.jpg"
+    },
+    {
+      "id": 8,
+      "name": "MSI Katana 17 - RTX 4080",
+      "category": "Laptop Gaming",
+      "subcategory": "MSI Katana",
+      "price": 68000000,
+      "discount": 18,
+      "images": [
+        "laptops-gaming/msi-katana-17-black.jpg",
+        "laptops-gaming/msi-katana-17-open.jpg"
+      ],
+      "defaultImage": "laptops-gaming/msi-katana-17-black.jpg"
+    },
+    {
+      "id": 9,
+      "name": "Acer Predator Helios 18 - RTX 4090",
+      "category": "Laptop Gaming",
+      "subcategory": "Acer Predator",
+      "price": 89000000,
+      "discount": 20,
+      "images": [
+        "laptops-gaming/acer-predator-18-black.jpg",
+        "laptops-gaming/acer-predator-18-open.jpg",
+        "laptops-gaming/acer-predator-18-rgb.jpg"
+      ],
+      "defaultImage": "laptops-gaming/acer-predator-18-black.jpg"
+    },
+    {
+      "id": 10,
+      "name": "Lenovo Legion 9 Pro - RTX 4090",
+      "category": "Laptop Gaming",
+      "subcategory": "Lenovo Legion",
+      "price": 92000000,
+      "discount": 22,
+      "images": [
+        "laptops-gaming/lenovo-legion-9-pro-black.jpg",
+        "laptops-gaming/lenovo-legion-9-pro-open.jpg"
+      ],
+      "defaultImage": "laptops-gaming/lenovo-legion-9-pro-black.jpg"
+    },
+    {
+      "id": 11,
+      "name": "PC Gaming GVN - RTX 4060 - Mid Range",
+      "category": "PC GVN",
+      "subcategory": "PC RTX 4060",
+      "price": 28000000,
+      "discount": 10,
+      "images": [
+        "pc-builds/gaming-rtx-4060-front.jpg",
+        "pc-builds/gaming-rtx-4060-open.jpg",
+        "pc-builds/gaming-rtx-4060-interior.jpg"
+      ],
+      "defaultImage": "pc-builds/gaming-rtx-4060-front.jpg"
+    },
+    {
+      "id": 12,
+      "name": "PC Gaming GVN - RTX 5080 - High End",
+      "category": "PC GVN",
+      "subcategory": "PC RTX 5080",
+      "price": 65000000,
+      "discount": 12,
+      "images": [
+        "pc-builds/gaming-rtx-5080-front.jpg",
+        "pc-builds/gaming-rtx-5080-open.jpg",
+        "pc-builds/gaming-rtx-5080-interior.jpg"
+      ],
+      "defaultImage": "pc-builds/gaming-rtx-5080-front.jpg"
+    },
+    {
+      "id": 13,
+      "name": "PC Gaming GVN - RTX 5090 - Extreme",
+      "category": "PC GVN",
+      "subcategory": "PC RTX 5090",
+      "price": 150000000,
+      "discount": 15,
+      "images": [
+        "pc-builds/gaming-rtx-5090-front.jpg",
+        "pc-builds/gaming-rtx-5090-open.jpg",
+        "pc-builds/gaming-rtx-5090-interior.jpg"
+      ],
+      "defaultImage": "pc-builds/gaming-rtx-5090-front.jpg"
+    },
+    {
+      "id": 14,
+      "name": "ASUS ROG STRIX Z890-E - Mainboard",
+      "category": "Main, CPU, VGA",
+      "subcategory": "Bo mạch chủ Intel",
+      "price": 9500000,
+      "discount": 5,
+      "images": [
+        "components/mainboard-asus-rog-z890-front.jpg",
+        "components/mainboard-asus-rog-z890-back.jpg"
+      ],
+      "defaultImage": "components/mainboard-asus-rog-z890-front.jpg"
+    },
+    {
+      "id": 15,
+      "name": "Intel Core i9-14900K - CPU",
+      "category": "Main, CPU, VGA",
+      "subcategory": "CPU Intel Core",
+      "price": 12500000,
+      "discount": 8,
+      "images": [
+        "components/cpu-intel-i9-14900k-box.jpg",
+        "components/cpu-intel-i9-14900k-chip.jpg"
+      ],
+      "defaultImage": "components/cpu-intel-i9-14900k-box.jpg"
+    },
+    {
+      "id": 16,
+      "name": "NVIDIA RTX 5090 - Flagship GPU",
+      "category": "Main, CPU, VGA",
+      "subcategory": "VGA RTX 50 Series",
+      "price": 85000000,
+      "discount": 10,
+      "images": [
+        "components/gpu-rtx-5090-front.jpg",
+        "components/gpu-rtx-5090-side.jpg",
+        "components/gpu-rtx-5090-back.jpg"
+      ],
+      "defaultImage": "components/gpu-rtx-5090-front.jpg"
+    },
+    {
+      "id": 17,
+      "name": "NVIDIA RTX 5080 - Performance GPU",
+      "category": "Main, CPU, VGA",
+      "subcategory": "VGA RTX 50 Series",
+      "price": 45000000,
+      "discount": 8,
+      "images": [
+        "components/gpu-rtx-5080-front.jpg",
+        "components/gpu-rtx-5080-side.jpg"
+      ],
+      "defaultImage": "components/gpu-rtx-5080-front.jpg"
+    },
+    {
+      "id": 18,
+      "name": "Corsair Crystal 570X RGB - Case",
+      "category": "Case, Nguồn, Tản",
+      "subcategory": "Vỏ máy (Case)",
+      "price": 3200000,
+      "discount": 5,
+      "images": [
+        "accessories/case-corsair-570x-front.jpg",
+        "accessories/case-corsair-570x-open.jpg",
+        "accessories/case-corsair-570x-interior.jpg"
+      ],
+      "defaultImage": "accessories/case-corsair-570x-front.jpg"
+    },
+    {
+      "id": 19,
+      "name": "Lian Li LANCOOL 3 - Case",
+      "category": "Case, Nguồn, Tản",
+      "subcategory": "Vỏ máy (Case)",
+      "price": 2800000,
+      "discount": 4,
+      "images": [
+        "accessories/case-lian-li-lancool3-black.jpg",
+        "accessories/case-lian-li-lancool3-open.jpg"
+      ],
+      "defaultImage": "accessories/case-lian-li-lancool3-black.jpg"
+    },
+    {
+      "id": 20,
+      "name": "Corsair RM1000e - 1000W Power Supply",
+      "category": "Case, Nguồn, Tản",
+      "subcategory": "Nguồn máy tính",
+      "price": 4500000,
+      "discount": 6,
+      "images": [
+        "accessories/psu-corsair-rm1000e-front.jpg",
+        "accessories/psu-corsair-rm1000e-cable.jpg"
+      ],
+      "defaultImage": "accessories/psu-corsair-rm1000e-front.jpg"
+    },
+    {
+      "id": 21,
+      "name": "Corsair H150i Elite Capellix - AIO Cooler 360mm",
+      "category": "Case, Nguồn, Tản",
+      "subcategory": "Loại tản nhiệt",
+      "price": 6200000,
+      "discount": 8,
+      "images": [
+        "accessories/cooler-corsair-h150i-front.jpg",
+        "accessories/cooler-corsair-h150i-mounted.jpg",
+        "accessories/cooler-corsair-h150i-rad.jpg"
+      ],
+      "defaultImage": "accessories/cooler-corsair-h150i-front.jpg"
+    },
+    {
+      "id": 22,
+      "name": "Samsung 990 Pro 2TB - NVMe SSD",
+      "category": "Ổ cứng, RAM, Thẻ nhớ",
+      "subcategory": "Dung lượng SSD",
+      "price": 5200000,
+      "discount": 7,
+      "images": [
+        "storage/ssd-samsung-990-pro-box.jpg",
+        "storage/ssd-samsung-990-pro-drive.jpg"
+      ],
+      "defaultImage": "storage/ssd-samsung-990-pro-box.jpg"
+    },
+    {
+      "id": 23,
+      "name": "Corsair Dominator Platinum RGB 32GB DDR5 - 6000MHz",
+      "category": "Ổ cứng, RAM, Thẻ nhớ",
+      "subcategory": "Dung lượng RAM",
+      "price": 4800000,
+      "discount": 6,
+      "images": [
+        "storage/ram-corsair-dominator-box.jpg",
+        "storage/ram-corsair-dominator-stick.jpg"
+      ],
+      "defaultImage": "storage/ram-corsair-dominator-box.jpg"
+    },
+    {
+      "id": 24,
+      "name": "Kingston FURY Beast 64GB DDR5 - 5600MHz",
+      "category": "Ổ cứng, RAM, Thẻ nhớ",
+      "subcategory": "Dung lượng RAM",
+      "price": 8900000,
+      "discount": 5,
+      "images": [
+        "storage/ram-kingston-fury-box.jpg",
+        "storage/ram-kingston-fury-stick.jpg"
+      ],
+      "defaultImage": "storage/ram-kingston-fury-box.jpg"
+    },
+    {
+      "id": 25,
+      "name": "Edifier S1000DB - 2.0 Bookshelf Speaker",
+      "category": "Loa, Micro, Webcam",
+      "subcategory": "Thương hiệu loa",
+      "price": 8500000,
+      "discount": 10,
+      "images": [
+        "audio/speaker-edifier-s1000db-front.jpg",
+        "audio/speaker-edifier-s1000db-pair.jpg"
+      ],
+      "defaultImage": "audio/speaker-edifier-s1000db-front.jpg"
+    },
+    {
+      "id": 26,
+      "name": "Logitech Brio 4K - Webcam",
+      "category": "Loa, Micro, Webcam",
+      "subcategory": "Webcam",
+      "price": 3200000,
+      "discount": 5,
+      "images": [
+        "audio/webcam-logitech-brio-4k-front.jpg",
+        "audio/webcam-logitech-brio-4k-stand.jpg"
+      ],
+      "defaultImage": "audio/webcam-logitech-brio-4k-front.jpg"
+    },
+    {
+      "id": 27,
+      "name": "ASUS PA347CV - 34\" Ultrawide Monitor",
+      "category": "Màn hình",
+      "subcategory": "Độ phân giải",
+      "price": 18500000,
+      "discount": 8,
+      "images": [
+        "monitor/asus-pa347cv-front.jpg",
+        "monitor/asus-pa347cv-stand.jpg"
+      ],
+      "defaultImage": "monitor/asus-pa347cv-front.jpg"
+    },
+    {
+      "id": 28,
+      "name": "LG 27GP850 - 27\" 240Hz Gaming Monitor",
+      "category": "Màn hình",
+      "subcategory": "Tần số quét",
+      "price": 9200000,
+      "discount": 6,
+      "images": [
+        "monitor/lg-27gp850-front.jpg",
+        "monitor/lg-27gp850-stand.jpg"
+      ],
+      "defaultImage": "monitor/lg-27gp850-front.jpg"
+    },
+    {
+      "id": 29,
+      "name": "ASUS ProArt Display 32\" 4K",
+      "category": "Màn hình",
+      "subcategory": "Độ phân giải",
+      "price": 22000000,
+      "discount": 10,
+      "images": [
+        "monitor/asus-proart-32-front.jpg",
+        "monitor/asus-proart-32-stand.jpg"
+      ],
+      "defaultImage": "monitor/asus-proart-32-front.jpg"
+    },
+    {
+      "id": 30,
+      "name": "AKKO 3098B PRO - Mechanical Keyboard",
+      "category": "Bàn phím",
+      "subcategory": "Thương hiệu phím",
+      "price": 2800000,
+      "discount": 7,
+      "images": [
+        "peripherals/keyboard-akko-3098b-front.jpg",
+        "peripherals/keyboard-akko-3098b-switches.jpg",
+        "peripherals/keyboard-akko-3098b-keycaps.jpg"
+      ],
+      "defaultImage": "peripherals/keyboard-akko-3098b-front.jpg"
+    },
+    {
+      "id": 31,
+      "name": "Corsair K95 Platinum XT - Mechanical Keyboard",
+      "category": "Bàn phím",
+      "subcategory": "Thương hiệu phím",
+      "price": 5200000,
+      "discount": 8,
+      "images": [
+        "peripherals/keyboard-corsair-k95-front.jpg",
+        "peripherals/keyboard-corsair-k95-rgb.jpg"
+      ],
+      "defaultImage": "peripherals/keyboard-corsair-k95-front.jpg"
+    },
+    {
+      "id": 32,
+      "name": "Logitech MX Master 3S - Wireless Mouse",
+      "category": "Chuột + Lót chuột",
+      "subcategory": "Thương hiệu chuột",
+      "price": 3500000,
+      "discount": 6,
+      "images": [
+        "peripherals/mouse-logitech-mx-master-front.jpg",
+        "peripherals/mouse-logitech-mx-master-side.jpg"
+      ],
+      "defaultImage": "peripherals/mouse-logitech-mx-master-front.jpg"
+    },
+    {
+      "id": 33,
+      "name": "Razer DeathAdder V3 - Gaming Mouse",
+      "category": "Chuột + Lót chuột",
+      "subcategory": "Thương hiệu chuột",
+      "price": 2500000,
+      "discount": 5,
+      "images": [
+        "peripherals/mouse-razer-deathadder-v3-front.jpg",
+        "peripherals/mouse-razer-deathadder-v3-side.jpg"
+      ],
+      "defaultImage": "peripherals/mouse-razer-deathadder-v3-front.jpg"
+    },
+    {
+      "id": 34,
+      "name": "SteelSeries QcK Prism Cloth - Large Mousepad",
+      "category": "Chuột + Lót chuột",
+      "subcategory": "Lót chuột",
+      "price": 1200000,
+      "discount": 4,
+      "images": [
+        "peripherals/mousepad-steelseries-qck-front.jpg"
+      ],
+      "defaultImage": "peripherals/mousepad-steelseries-qck-front.jpg"
+    },
+    {
+      "id": 35,
+      "name": "HyperX Cloud II Wireless - Gaming Headset",
+      "category": "Tai nghe",
+      "subcategory": "Thương hiệu tai nghe",
+      "price": 4200000,
+      "discount": 8,
+      "images": [
+        "peripherals/headset-hyperx-cloud-front.jpg",
+        "peripherals/headset-hyperx-cloud-side.jpg"
+      ],
+      "defaultImage": "peripherals/headset-hyperx-cloud-front.jpg"
+    },
+    {
+      "id": 36,
+      "name": "Corsair Virtuoso RGB Wireless - Premium Headset",
+      "category": "Tai nghe",
+      "subcategory": "Thương hiệu tai nghe",
+      "price": 5800000,
+      "discount": 10,
+      "images": [
+        "peripherals/headset-corsair-virtuoso-front.jpg",
+        "peripherals/headset-corsair-virtuoso-side.jpg"
+      ],
+      "defaultImage": "peripherals/headset-corsair-virtuoso-front.jpg"
+    },
+    {
+      "id": 37,
+      "name": "Razer BlackShark V2 Pro - Gaming Headset",
+      "category": "Tai nghe",
+      "subcategory": "Thương hiệu tai nghe",
+      "price": 6500000,
+      "discount": 12,
+      "images": [
+        "peripherals/headset-razer-blackshark-front.jpg",
+        "peripherals/headset-razer-blackshark-side.jpg"
+      ],
+      "defaultImage": "peripherals/headset-razer-blackshark-front.jpg"
+    },
+    {
+      "id": 38,
+      "name": "Autonomous SmartDesk Pro 2 - Standing Desk",
+      "category": "Ghế - Bàn",
+      "subcategory": "Bàn Gaming",
+      "price": 18500000,
+      "discount": 15,
+      "images": [
+        "furniture/desk-autonomous-smartdesk-front.jpg",
+        "furniture/desk-autonomous-smartdesk-setup.jpg"
+      ],
+      "defaultImage": "furniture/desk-autonomous-smartdesk-front.jpg"
+    },
+    {
+      "id": 39,
+      "name": "Herman Miller Aeron - Ergonomic Chair",
+      "category": "Ghế - Bàn",
+      "subcategory": "Ghế Gaming",
+      "price": 32000000,
+      "discount": 18,
+      "images": [
+        "furniture/chair-herman-miller-aeron-front.jpg",
+        "furniture/chair-herman-miller-aeron-side.jpg"
+      ],
+      "defaultImage": "furniture/chair-herman-miller-aeron-front.jpg"
+    },
+    {
+      "id": 40,
+      "name": "Secretlab Titan Evo Pro - Gaming Chair",
+      "category": "Ghế - Bàn",
+      "subcategory": "Ghế Gaming",
+      "price": 25000000,
+      "discount": 12,
+      "images": [
+        "furniture/chair-secretlab-titan-front.jpg",
+        "furniture/chair-secretlab-titan-side.jpg",
+        "furniture/chair-secretlab-titan-recline.jpg"
+      ],
+      "defaultImage": "furniture/chair-secretlab-titan-front.jpg"
+    },
+    {
+      "id": 41,
+      "name": "ASUS ROG Ally X - Handheld Gaming PC",
+      "category": "Handheld, Console",
+      "subcategory": "Handheld PC",
+      "price": 15500000,
+      "discount": 8,
+      "images": [
+        "handheld/asus-rog-ally-x-front.jpg",
+        "handheld/asus-rog-ally-x-screen.jpg"
+      ],
+      "defaultImage": "handheld/asus-rog-ally-x-front.jpg"
+    },
+    {
+      "id": 42,
+      "name": "Sony PlayStation 5 Slim - Console",
+      "category": "Handheld, Console",
+      "subcategory": "Console",
+      "price": 12500000,
+      "discount": 5,
+      "images": [
+        "handheld/ps5-slim-front.jpg",
+        "handheld/ps5-slim-controller.jpg"
+      ],
+      "defaultImage": "handheld/ps5-slim-front.jpg"
+    },
+    {
+      "id": 43,
+      "name": "Nintendo Switch OLED - Console",
+      "category": "Handheld, Console",
+      "subcategory": "Console",
+      "price": 8900000,
+      "discount": 4,
+      "images": [
+        "handheld/switch-oled-front.jpg",
+        "handheld/switch-oled-dock.jpg"
+      ],
+      "defaultImage": "handheld/switch-oled-front.jpg"
+    },
+    {
+      "id": 44,
+      "name": "Dịch vụ Build PC Custom - Theo Yêu Cầu",
+      "category": "Dịch vụ và thông tin khác",
+      "subcategory": "Dịch vụ",
+      "price": 2000000,
+      "discount": 0,
+      "images": [
+        "services/service-build-pc-icon.jpg"
+      ],
+      "defaultImage": "services/service-build-pc-icon.jpg"
+    },
+    {
+      "id": 45,
+      "name": "Dịch vụ Sửa Chữa PC/Laptop - Bảo Hành",
+      "category": "Dịch vụ và thông tin khác",
+      "subcategory": "Dịch vụ",
+      "price": 1500000,
+      "discount": 0,
+      "images": [
+        "services/service-repair-icon.jpg"
+      ],
+      "defaultImage": "services/service-repair-icon.jpg"
+    }
+  ]
+}

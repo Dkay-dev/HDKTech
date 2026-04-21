@@ -1,0 +1,56 @@
+﻿@* ═══════════════════════════════════════════════════════════════════
+   Views/Shared/Components/Categories/Default.cshtml
+   ═══════════════════════════════════════════════════════════════════ *@
+@model IEnumerable<HDKTech.Models.Category>
+
+<div class="list-group list-group-flush sidebar-mega-menu">
+
+    @foreach (var parent in Model.Where(m => m.ParentCategoryId == null))
+    {
+        <div class="menu-item-container">
+            <a asp-area=""
+                   asp-controller="Category"
+                   asp-action="Index"
+                   asp-route-id="@parent.Id"
+                   class="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center">
+                <span>@parent.Name</span>
+                <i class="bi bi-chevron-right small"></i>
+            </a>
+
+            <div class="mega-menu-panel shadow-lg">
+                <div class="row g-4">
+                    @foreach (var group in Model.Where(m => m.ParentCategoryId == parent.Id))
+                    {
+                        <div class="col-md-4">
+                            <a href="/Product/Filter?categoryId=@group.Id"
+                                   class="text-danger fw-bold mb-3 text-uppercase d-block text-decoration-none">
+                                @group.Name
+                            </a>
+                            <ul class="list-unstyled">
+                                @foreach (var child in Model.Where(m => m.ParentCategoryId == group.Id))
+                                {
+                                    <li class="mb-1">
+                                        <a href="/Product/Filter?categoryId=@child.Id"
+                                               class="text-decoration-none small-link">
+                                            @child.Name
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+                <div class="mega-menu-footer text-center border-top pt-2 mt-2">
+                    <a asp-area=""
+                           asp-controller="Category"
+                           asp-action="Index"
+                           asp-route-id="@parent.Id"
+                           class="text-danger small fw-semibold text-decoration-none view-all-link">
+                        Xem tất cả @parent.Name
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

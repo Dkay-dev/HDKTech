@@ -1,0 +1,305 @@
+﻿@using HDKTech.Areas.Admin.Models
+@model Banner
+
+@{
+    ViewData["Title"] = $"Chỉnh sửa: {Model?.Title}";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+}
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-pencil-square me-2" style="color:var(--gold)"></i>Chỉnh sửa Banner</h1>
+        <p>Cập nhật thông tin banner: <strong>@Model?.Title</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Details", new { id = Model?.Id })" class="btn-banner-back">
+            <i class="bi bi-eye me-1"></i>Xem chi tiết
+        </a>
+        <a href="@Url.Action("Index")" class="btn-banner-back">
+            <i class="bi bi-arrow-left me-1"></i>Danh sách
+        </a>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN LAYOUT: 8 + 4 columns                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="row g-4">
+
+    <!-- ─────────── CỘT TRÁI: Form ─────────── -->
+    <div class="col-lg-8">
+        <form method="post"
+              enctype="multipart/form-data"
+              id="bannerEditForm"
+              novalidate
+              asp-action="Edit"
+              asp-controller="Banner"
+              asp-area="Admin"
+              asp-route-id="@Model?.Id">
+
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <!-- CARD 1: Thông tin cơ bản -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-info-circle me-2"></i>Thông tin cơ bản
+                </div>
+                <div class="banner-card-body">
+
+                    <!-- Tên Banner -->
+                    <div class="banner-field">
+                        <label asp-for="Title" class="banner-label">
+                            Tên Banner <span class="req">*</span>
+                        </label>
+                        <input asp-for="Title" class="banner-input" />
+                        <span asp-validation-for="Title" class="banner-error"></span>
+                    </div>
+
+                    <!-- Link URL — type="text" -->
+                    <div class="banner-field">
+                        <label asp-for="LinkUrl" class="banner-label">
+                            Link khi click Banner
+                            <span class="banner-hint-inline">(tự động chuyển thành đường dẫn tương đối)</span>
+                        </label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-link-45deg"></i></span>
+                            <input asp-for="LinkUrl"
+                                   type="text"
+                                   id="linkUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="/Category/Index/1  hoặc  https://..." />
+                        </div>
+                        <div class="banner-hint" id="linkPreview" style="display:none">
+                            → <span id="linkPreviewValue" class="text-success fw-semibold"></span>
+                        </div>
+                        <span asp-validation-for="LinkUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 2: Hình ảnh -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-image me-2"></i>Hình ảnh
+                </div>
+                <div class="banner-card-body">
+
+                    <!-- Ảnh hiện tại -->
+                    @if (!string.IsNullOrEmpty(Model?.ImageUrl))
+                    {
+                        <div class="current-image-wrap mb-3">
+                            <p class="banner-label mb-2">Ảnh hiện tại:</p>
+                            <div class="current-image-box">
+                                <img src="@Model.ImageUrl"
+                                     alt="@Model.Title"
+                                     class="current-image-img"
+                                     id="currentBannerImg"
+                                     onerror="this.style.display='none'" />
+                                <span class="current-image-badge">Đang dùng</span>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Dropzone để đổi ảnh mới -->
+                    <div class="banner-dropzone banner-dropzone-sm" id="imageDropZone">
+                        <div class="dropzone-inner">
+                            <i class="bi bi-arrow-repeat dropzone-icon" style="font-size:1.8rem"></i>
+                            <p class="dropzone-title">Click hoặc kéo thả để thay ảnh mới</p>
+                            <p class="dropzone-hint">Để trống nếu muốn giữ ảnh hiện tại</p>
+                        </div>
+                        <input type="file"
+                               id="imageFile"
+                               name="imageFile"
+                               class="d-none"
+                               accept=".jpg,.jpeg,.png,.webp,.gif" />
+                    </div>
+
+                    <!-- Preview ảnh mới chọn -->
+                    <div id="uploadPreviewWrap" class="upload-preview-wrap d-none mt-2">
+                        <img id="uploadPreviewImg" src="" alt="Preview mới" class="upload-preview-img" />
+                        <button type="button" class="upload-remove-btn" id="removeUpload" title="Huỷ ảnh mới">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="banner-field-divider"><span>hoặc nhập URL mới</span></div>
+
+                    <!-- URL thay thế -->
+                    <div class="banner-field">
+                        <label asp-for="ImageUrl" class="banner-label">URL hình ảnh mới</label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                            <input asp-for="ImageUrl"
+                                   id="imageUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="Để trống để giữ ảnh hiện tại" />
+                        </div>
+                        <span class="banner-hint">Để trống nếu không muốn thay đổi URL ảnh.</span>
+                        <span asp-validation-for="ImageUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 3: Cài đặt hiển thị -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-sliders me-2"></i>Cài đặt hiển thị
+                </div>
+                <div class="banner-card-body">
+                    <div class="row g-3">
+
+                        <div class="col-sm-6">
+                            <label asp-for="BannerType" class="banner-label">
+                                Loại Banner <span class="req">*</span>
+                            </label>
+                            <select asp-for="BannerType" class="banner-select">
+                                <option value="">— Chọn vị trí —</option>
+                                <option value="Main">Trang Chủ (Main)</option>
+                                <option value="Side">Sidebar (Side)</option>
+                                <option value="Bottom">Footer (Bottom)</option>
+                            </select>
+                            <span asp-validation-for="BannerType" class="banner-error"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="DisplayOrder" class="banner-label">Thứ tự hiển thị</label>
+                            <input asp-for="DisplayOrder" type="number" min="0" class="banner-input" />
+                            <span class="banner-hint">Số nhỏ hơn hiển thị trước.</span>
+                        </div>
+
+                        <!-- CategoryId — chỉ hiện khi chọn Side -->
+                        <div class="col-12" id="categoryFieldWrap" style="@(Model?.BannerType == "Side" ? "" : "display:none")">
+                            <label asp-for="CategoryId" class="banner-label">
+                                Gắn danh mục <span class="banner-hint-inline">(Side banner sẽ hiển thị bên cạnh danh mục này)</span>
+                            </label>
+                            <select asp-for="CategoryId"
+                                    asp-items="ViewBag.Categories"
+                                    class="banner-select">
+                                <option value="">— Chọn danh mục (tùy chọn) —</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="banner-toggle-row">
+                                <div>
+                                    <p class="banner-label mb-0">Trạng thái</p>
+                                    <span class="banner-hint">Bật để banner xuất hiện trên website</span>
+                                </div>
+                                <label class="banner-switch">
+                                    <input asp-for="IsActive" type="checkbox" />
+                                    <span class="banner-switch-track"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </form>
+        <!-- ↑ Form Edit kết thúc tại đây -->
+
+        <!-- ACTION BUTTONS — nằm ngoài form edit, dùng form="bannerEditForm" -->
+        <div class="d-flex gap-2 align-items-center mt-3">
+            <button type="submit" form="bannerEditForm" class="btn-banner-save" id="btnSubmit">
+                <i class="bi bi-floppy me-2"></i>Lưu thay đổi
+            </button>
+            <a href="@Url.Action("Index")" class="btn-banner-back">
+                <i class="bi bi-x me-1"></i>Huỷ
+            </a>
+            <!-- Form xóa độc lập (không còn lồng trong form edit) -->
+            <form id="deleteBannerForm"
+                  method="post"
+                  action="@Url.Action("Delete", new { id = Model?.Id })"
+                  class="ms-auto"
+                  onsubmit="return confirm('Xoá banner \'@Model?.Title\'? Không thể hoàn tác.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-banner-delete">
+                    <i class="bi bi-trash3 me-1"></i>Xoá
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ─────────── CỘT PHẢI: Preview ─────────── -->
+    <div class="col-lg-4">
+        <div class="banner-preview-card">
+            <div class="banner-card-header">
+                <i class="bi bi-eye me-2"></i>Xem trước
+            </div>
+            <div class="banner-card-body">
+
+                <!-- Hộp ảnh preview — hiện ảnh đang dùng ban đầu -->
+                <div class="preview-img-box mb-3" id="previewBox">
+                    @if (!string.IsNullOrEmpty(Model?.ImageUrl))
+                    {
+                        <img id="previewFinalImg"
+                             src="@Model.ImageUrl"
+                             alt="@Model.Title"
+                             class="preview-img" />
+                        <div id="previewEmpty" class="preview-empty d-none">
+                            <i class="bi bi-image"></i>
+                            <span>Chưa có ảnh</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <img id="previewFinalImg" src="" alt="Preview" class="preview-img d-none" />
+                        <div id="previewEmpty" class="preview-empty">
+                            <i class="bi bi-image"></i>
+                            <span>Chưa có ảnh</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Metadata -->
+                <div class="preview-meta">
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Tên:</span>
+                        <span id="pvName" class="preview-meta-val">@Model?.Title</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Loại:</span>
+                        <span id="pvType" class="preview-meta-val">@Model?.BannerType</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Link:</span>
+                        <span id="pvLink"
+                              class="preview-meta-val text-truncate"
+                              style="max-width:130px"
+                              title="@Model?.LinkUrl">
+                            @(string.IsNullOrEmpty(Model?.LinkUrl) ? "—" : Model.LinkUrl)
+                        </span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Ngày tạo:</span>
+                        <span class="preview-meta-val">@Model?.CreatedAt.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Cập nhật:</span>
+                        <span class="preview-meta-val">
+                            @(Model?.UpdatedAt?.ToString("dd/MM/yyyy") ?? "—")
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
+}

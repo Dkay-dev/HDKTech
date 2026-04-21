@@ -1,0 +1,283 @@
+﻿@using Microsoft.IdentityModel.Tokens
+@model HDKTech.Models.Order
+
+@{
+    ViewData["Title"] = $"Chi Tiết Đơn Hàng {Model?.OrderCode}";
+    bool canCancel = Model != null &&
+                     (Model.Status == HDKTech.Models.OrderStatus.Pending ||
+                      Model.Status == HDKTech.Models.OrderStatus.Confirmed);
+}
+
+@*───────────────────────────────────────────────────────────────
+ Details — MERGED Huy 3f92de9 → Khoa schema
+  • Eager-load: Items → Product → Images/Category (qua repository).
+  • Hiển thị ảnh thumbnail từ Product.Images[0].ImageUrl (fallback ImageHelper).
+  • Hiển thị SKU + Spec snapshot của variant (nếu có).
+  • ✅ LOGIC: Form HỦY ĐƠN nằm TRỰC TIẾP trong trang này, chỉ hiển thị
+    khi Status ∈ {Pending, Confirmed}. Đây là điểm duy nhất user có thể huỷ.
+  • Số tiền format "N0" — sạch, không cần Replace.
+───────────────────────────────────────────────────────────────*@
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <a asp-action="MyOrders" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Quay Lại
+            </a>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4 class="mb-0">
+                                <i class="bi bi-receipt"></i> Đơn Hàng #@Model.OrderCode
+                            </h4>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            @switch (Model.Status)
+                            {
+                                case HDKTech.Models.OrderStatus.Pending:
+                                    <span class="badge bg-warning text-dark fs-6">Chờ Xác Nhận</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Confirmed:
+                                    <span class="badge bg-info fs-6">Đã Xác Nhận</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Packing:
+                                    <span class="badge bg-info fs-6">Đang Đóng Gói</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Shipping:
+                                    <span class="badge bg-primary fs-6">Đang Giao</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Delivered:
+                                    <span class="badge bg-success fs-6">Đã Giao</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Cancelled:
+                                    <span class="badge bg-danger fs-6">Đã Hủy</span>
+                                    break;
+                                case HDKTech.Models.OrderStatus.Returned:
+                                    <span class="badge bg-dark fs-6">Trả Hàng</span>
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Thông tin đơn hàng -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-calendar3"></i> Thông Tin Đơn Hàng
+                            </h6>
+                            <p class="mb-2">
+                                <strong>Ngày Đặt:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                            <p class="mb-2">
+                                <strong>Tổng Tiền:</strong>
+                                <span class="text-danger fs-5">@Model.TotalAmount.ToString("N0")₫</span>
+                            </p>
+                            @if (Model.ShippingFee > 0)
+                            {
+                                <p class="mb-2">
+                                    <strong>Phí Vận Chuyển:</strong>
+                                    <span>@Model.ShippingFee.ToString("N0")₫</span>
+                                </p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.PaymentMethod))
+                            {
+                                <p class="mb-2">
+                                    <strong>Thanh Toán:</strong> @Model.PaymentMethod
+                                    @if (Model.PaymentStatus != null)
+                                    {
+                                        <span class="badge bg-secondary ms-1">@Model.PaymentStatus.ToString()</span>
+                                    }
+                                </p>
+                            }
+                            @if (Model.Status == HDKTech.Models.OrderStatus.Cancelled && !string.IsNullOrEmpty(Model.CancelReason))
+                            {
+                                <p class="mb-0">
+                                    <strong>Lý do huỷ:</strong>
+                                    <em class="text-muted">@Model.CancelReason</em>
+                                    @if (Model.CancelledAt.HasValue)
+                                    {
+                                        <span class="text-muted"> (@Model.CancelledAt.Value.ToString("dd/MM/yyyy HH:mm"))</span>
+                                    }
+                                </p>
+                            }
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-truck"></i> Thông Tin Giao Hàng
+                            </h6>
+                            <p class="mb-2">
+                                <strong>Người Nhận:</strong> @Model.RecipientName
+                            </p>
+                            <p class="mb-2">
+                                <strong>Số Điện Thoại:</strong> @Model.RecipientPhone
+                            </p>
+                            <p class="mb-0">
+                                <strong>Địa Chỉ:</strong> @(Model.ShippingAddressFull ?? Model.ShippingAddressLine)
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <!-- Danh sách sản phẩm -->
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-box-seam"></i> Chi Tiết Sản Phẩm
+                    </h6>
+
+                    @if (Model.Items != null && Model.Items.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:90px;">Ảnh</th>
+                                        <th>Sản Phẩm</th>
+                                        <th class="text-center">Số Lượng</th>
+                                        <th class="text-end">Đơn Giá</th>
+                                        <th class="text-end">Thành Tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        // Lấy ảnh đầu tiên (nếu Product còn tồn tại)
+                                        var firstImage = item.Product?.Images?
+                                        .OrderByDescending(im => im.IsDefault) // Ưu tiên ảnh mặc định
+                                        .Select(im => im.ImageUrl)
+                                        .FirstOrDefault();
+                                        var categoryName = item.Product?.Category?.Name ?? "";
+                                        var imgSrc = !string.IsNullOrEmpty(firstImage)
+                                                        ? firstImage
+                                                        : "/images/products/no-image.png";
+                                        <tr>
+                                            <td>
+                                                <img src="@imgSrc"
+                                                     data-category="@categoryName"
+                                                     onerror="handleCartImageError(this)"
+                                                     alt="@(item.ProductNameSnapshot ?? item.Product?.Name)"
+                                                     style="width:70px; height:70px; object-fit:cover; border-radius:6px;" />
+                                            </td>
+                                            <td>
+                                                @if (item.Product != null)
+                                                {
+                                                    <strong>@(item.ProductNameSnapshot ?? item.Product.Name)</strong>
+                                                }
+                                                else if (!string.IsNullOrEmpty(item.ProductNameSnapshot))
+                                                {
+                                                    <strong>@item.ProductNameSnapshot</strong>
+                                                    <br />
+                                                    <em class="text-muted small">(Sản phẩm không còn trên hệ thống)</em>
+                                                }
+                                                else
+                                                {
+                                                    <em class="text-muted">Sản phẩm không còn tồn tại</em>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.SkuSnapshot))
+                                                {
+                                                    <div class="small text-muted">SKU: @item.SkuSnapshot</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.SpecSnapshot))
+                                                {
+                                                    <div class="small text-muted">@item.SpecSnapshot</div>
+                                                }
+                                            </td>
+                                            <td class="text-center">@item.Quantity</td>
+                                            <td class="text-end">@item.UnitPrice.ToString("N0")₫</td>
+                                            <td class="text-end">
+                                                <strong>@item.LineTotal.ToString("N0")₫</strong>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Không có sản phẩm nào trong đơn hàng này.</p>
+                    }
+
+                    @*═══ CANCEL FORM ═══════════════════════════════════════════
+                       ✅ LOGIC: "Hủy đơn hàng phải đi kèm xem chi tiết"
+                       → Form này chỉ xuất hiện ở Details, chỉ khi Status ∈ {Pending, Confirmed}.
+                       Sau POST, controller redirect về chính trang Details này
+                       để user thấy trạng thái đã cập nhật.
+                    ═════════════════════════════════════════════════════════════*@
+                    @if (canCancel)
+                    {
+                        <hr />
+                        <div class="alert alert-warning mt-3">
+                            <h6 class="fw-bold mb-2">
+                                <i class="bi bi-x-octagon"></i> Huỷ Đơn Hàng
+                            </h6>
+                            <p class="small mb-3">
+                                Bạn có thể huỷ đơn này khi đơn chưa chuyển sang trạng thái
+                                <strong>Đóng Gói / Đang Giao</strong>.
+                                Khi đã huỷ, nếu đã thanh toán online chúng tôi sẽ hoàn tiền trong vòng 5-7 ngày.
+                            </p>
+                            <form asp-action="Cancel"
+                                  asp-route-maOrder="@Model.OrderCode"
+                                  method="post"
+                                  onsubmit="return confirm('Bạn chắc chắn muốn huỷ đơn hàng này?');">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-2">
+                                    <label for="cancelReason" class="form-label small">
+                                        Lý do huỷ (không bắt buộc):
+                                    </label>
+                                    <textarea id="cancelReason" name="cancelReason"
+                                              class="form-control form-control-sm"
+                                              rows="2"
+                                              maxlength="500"
+                                              placeholder="VD: Đặt nhầm, đổi ý, tìm được giá tốt hơn..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-x-circle"></i> Xác Nhận Huỷ Đơn
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+
+                <div class="card-footer bg-light">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-shop"></i> Tiếp Tục Mua Sắm
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a asp-action="MyOrders" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-list"></i> Xem Tất Cả Đơn Hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Reuse cart image fallback logic (handleCartImageError) *@
+    <script src="~/js/pages/cart-logic.js"></script>
+}

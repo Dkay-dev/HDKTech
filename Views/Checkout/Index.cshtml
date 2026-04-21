@@ -1,0 +1,237 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Thanh Toán";
+}
+
+<link rel="stylesheet" href="~/css/pages/checkout.css" />
+
+<div class="container">
+    <div class="checkout-container">
+        <div class="checkout-title">
+            <i class="bi bi-credit-card"></i>
+            Xác Nhận Thanh Toán
+        </div>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="error-message">
+                <i class="bi bi-exclamation-circle"></i>
+                @TempData["Error"]
+            </div>
+        }
+
+        <form method="post" action="/Checkout" id="checkoutForm" novalidate
+              data-total="@Model.TotalAmount" data-shipping="@Model.ShippingFee">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="TotalAmount" id="hiddenTotal" value="@Model.TotalAmount" />
+            <input type="hidden" name="ShippingFee" id="hiddenShipping" value="@Model.ShippingFee" />
+            <input type="hidden" name="SoProduct" value="@Model.SoProduct" />
+            <input type="hidden" name="CityName" id="hiddenCityName" value="" />
+            <input type="hidden" name="DistrictName" id="hiddenDistrictName" value="" />
+            <input type="hidden" name="WardName" id="hiddenWardName" value="" />
+
+            <div class="row">
+                <!-- ══ Left: Form ══ -->
+                <div class="col-lg-7">
+                    <div class="form-section">
+                        <h5>
+                            <i class="bi bi-person-check"></i>
+                            Thông Tin Người Nhận
+                        </h5>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-person"></i> Họ Tên
+                            </label>
+                            <input type="text"
+                                   class="form-control @(ViewData.ModelState["RecipientName"]?.Errors.Any() == true ? "is-invalid" : "")"
+                                   name="RecipientName" value="@Model.RecipientName" placeholder="Nhập họ tên">
+                            @if (ViewData.ModelState["RecipientName"]?.Errors.Any() == true)
+                            {
+                                <span class="invalid-feedback">@ViewData.ModelState["RecipientName"].Errors[0].ErrorMessage</span>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-envelope"></i> Email
+                            </label>
+                            <input type="email"
+                                   class="form-control @(ViewData.ModelState["Email"]?.Errors.Any() == true ? "is-invalid" : "")"
+                                   name="Email" value="@Model.Email" placeholder="Nhập email">
+                            @if (ViewData.ModelState["Email"]?.Errors.Any() == true)
+                            {
+                                <span class="invalid-feedback">@ViewData.ModelState["Email"].Errors[0].ErrorMessage</span>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-telephone"></i> Số Điện Thoại
+                            </label>
+                            <input type="tel"
+                                   class="form-control @(ViewData.ModelState["SoDienThoai"]?.Errors.Any() == true ? "is-invalid" : "")"
+                                   name="SoDienThoai" value="@Model.SoDienThoai" placeholder="Nhập số điện thoại">
+                            @if (ViewData.ModelState["SoDienThoai"]?.Errors.Any() == true)
+                            {
+                                <span class="invalid-feedback">@ViewData.ModelState["SoDienThoai"].Errors[0].ErrorMessage</span>
+                            }
+                        </div>
+
+                        <!-- ══ Shipping Address + Location Picker ══ -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-geo-alt"></i> Địa Chỉ Giao Hàng
+                            </label>
+                            <input type="text"
+                                   class="form-control @(ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true ? "is-invalid" : "")"
+                                   name="ShippingAddress" id="shippingAddress"
+                                   value="@Model.ShippingAddress"
+                                   placeholder="Số nhà, tên đường...">
+                            @if (ViewData.ModelState["ShippingAddress"]?.Errors.Any() == true)
+                            {
+                                <span class="invalid-feedback">@ViewData.ModelState["ShippingAddress"].Errors[0].ErrorMessage</span>
+                            }
+
+                            <!-- Dropdown chọn Tỉnh / Quận / Phường -->
+                            <div class="shipping-location-card mt-2">
+                                <div class="location-row">
+                                    <select id="tinh" name="tinh" title="Chọn Tỉnh Thành">
+                                        <option value="0">🏙️ Tỉnh / Thành phố</option>
+                                    </select>
+                                    <select id="quan" name="quan" title="Chọn Quận Huyện" disabled>
+                                        <option value="0">🏘️ Quận / Huyện</option>
+                                    </select>
+                                    <select id="phuong" name="phuong" title="Chọn Phường Xã" disabled>
+                                        <option value="0">📍 Phường / Xã</option>
+                                    </select>
+                                </div>
+
+                                <!-- Kết quả phí ship -->
+                                <div id="shipping-fee-result">
+                                    <span class="fee-icon">🚚</span>
+                                    <span id="fee-label">Phí vận chuyển:</span>
+                                    <span class="fee-amount" id="fee-value"></span>
+                                    <span id="fee-note" style="margin-left:6px; font-size:.82rem; opacity:.75;"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Ghi Chú
+                            </label>
+                            <textarea class="form-control" name="GhiChu" rows="3"
+                                      placeholder="Nhập ghi chú (tùy chọn)">@Model.GhiChu</textarea>
+                        </div>
+                    </div>
+
+                    <!-- ══ Phương Thức Thanh Toán ══ -->
+                    <div class="form-section">
+                        <h5>
+                            <i class="bi bi-wallet2"></i>
+                            Phương Thức Thanh Toán
+                        </h5>
+
+                        <div class="payment-method active" id="pm-cod">
+                            <input type="radio" id="cod" name="PaymentMethod" value="COD" checked>
+                            <label for="cod" style="margin:0;cursor:pointer;flex:1;">
+                                <i class="bi bi-truck"></i>
+                                <strong>Thanh Toán Khi Nhận Hàng (COD)</strong><br>
+                                <small style="color:#666;">Không phí, giao hàng nhanh</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-vnpay">
+                            <input type="radio" id="vnpay" name="PaymentMethod" value="VNPAY">
+                            <label for="vnpay" style="margin:0;cursor:pointer;flex:1;">
+                                <img src="~/images/payment/vnpay-logo.png" alt="VNPay" height="22"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-credit-card-2-front" style="display:none;"></i>
+                                <strong>Thanh Toán Qua VNPay</strong><br>
+                                <small style="color:#666;">ATM, Visa, Mastercard, QR Code</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-momo">
+                            <input type="radio" id="momo" name="PaymentMethod" value="Momo">
+                            <label for="momo" style="margin:0;cursor:pointer;flex:1;">
+                                <img src="~/images/payment/momo-logo.png" alt="MoMo" height="22"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" />
+                                <i class="bi bi-wallet2" style="display:none;"></i>
+                                <strong>Thanh Toán Qua MoMo</strong><br>
+                                <small style="color:#666;">Ví MoMo, QR Code</small>
+                            </label>
+                        </div>
+
+                        <div class="payment-method" id="pm-bank">
+                            <input type="radio" id="bank" name="PaymentMethod" value="BANK" disabled>
+                            <label for="bank" style="margin:0;cursor:not-allowed;flex:1;color:#999;">
+                                <i class="bi bi-bank"></i>
+                                <strong>Chuyển Khoản Ngân Hàng</strong><br>
+                                <small>(Đang phát triển)</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ Right: Order Summary ══ -->
+                <div class="col-lg-5">
+                    <div class="order-summary">
+                        <h5>
+                            <i class="bi bi-receipt"></i>
+                            Tóm Tắt Đơn Hàng
+                        </h5>
+
+                        @if (Model.Items != null && Model.Items.Any())
+                        {
+                            @foreach (var item in Model.Items)
+                            {
+                                <div class="summary-item">
+                                    <div class="summary-item-name">@item.ProductName</div>
+                                    <div class="summary-item-qty">×@item.Quantity</div>
+                                    <div class="summary-item-price">@((item.Price * item.Quantity).ToString("N0"))₫</div>
+                                </div>
+                            }
+                        }
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-item">
+                            <span>Tổng Tiền Hàng:</span>
+                            <span style="font-weight:600;color:var(--hdk-dark);">@Model.TotalAmount.ToString("N0")₫</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span>Phí Vận Chuyển:</span>
+                            <span id="summary-shipping-fee" style="font-weight:600;color:var(--hdk-dark);">
+                                @(Model.ShippingFee == 0 ? "Chưa chọn địa chỉ" : (Model.ShippingFee.ToString("N0") + "₫"))
+                            </span>
+                        </div>
+
+                        <div class="summary-total">
+                            <span>Tổng Cộng:</span>
+                            <span id="summary-total-amount">@((Model.TotalAmount + Model.ShippingFee).ToString("N0"))₫</span>
+                        </div>
+
+                        <button type="submit" id="btnSubmit" class="btn-checkout">
+                            <i class="bi bi-check-circle" id="btnIcon"></i>
+                            <span id="btnText">XÁC NHẬN ĐẶT HÀNG</span>
+                        </button>
+
+                        <a href="/Cart" class="btn btn-outline-secondary w-100 mt-2">
+                            <i class="bi bi-arrow-left"></i>
+                            Quay Lại Giỏ Hàng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://esgoo.net/scripts/jquery.js"></script>
+    <script src="~/js/pages/checkout.js"></script>
+}

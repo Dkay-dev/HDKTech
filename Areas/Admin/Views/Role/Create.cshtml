@@ -1,0 +1,98 @@
+﻿@{
+    ViewData["Title"] = "Tạo Vai Trò Mới";
+}
+
+<!-- Header -->
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a asp-area="Admin" asp-controller="Role" asp-action="Index"
+       class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-chevron-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-0 ms-2"><i class="bi bi-shield-plus me-2 text-primary"></i>Tạo Vai Trò Mới</h4>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="bi bi-shield-lock me-2"></i>Thông tin vai trò
+                </h5>
+            </div>
+            <div class="card-body p-4">
+
+                <form method="post"
+                      asp-area="Admin"
+                      asp-controller="Role"
+                      asp-action="Create">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Tên vai trò -->
+                    <div class="mb-4">
+                        <label for="roleName" class="form-label fw-semibold">
+                            Tên vai trò <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               id="roleName"
+                               name="roleName"
+                               class="form-control form-control-lg"
+                               placeholder="Ví dụ: ContentEditor, SupportStaff..."
+                               maxlength="256"
+                               required
+                               autofocus />
+                        <div class="form-text text-muted mt-1">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Tên vai trò phải là duy nhất. Ví dụ: <code>ContentEditor</code>, <code>SupportStaff</code>
+                        </div>
+                        @if (ViewData.ModelState.ContainsKey("roleName") &&
+                             ViewData.ModelState["roleName"]!.Errors.Any())
+                        {
+                            <div class="text-danger small mt-1">
+                                @ViewData.ModelState["roleName"]!.Errors.First().ErrorMessage
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Info box -->
+                    <div class="alert alert-info py-2 small">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Sau khi tạo, bạn sẽ được chuyển thẳng đến trang <strong>Phân quyền</strong> để gán quyền hạn cho vai trò này.
+                    </div>
+
+                    <!-- Buttons — bên trong form -->
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a asp-area="Admin" asp-controller="Role" asp-action="Index"
+                           class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x-lg me-1"></i>Hủy
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i>Tạo vai trò
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Lưu ý -->
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body py-3">
+                <h6 class="fw-semibold mb-2"><i class="bi bi-shield-exclamation me-1 text-warning"></i>Lưu ý</h6>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li>Vai trò hệ thống (<code>Admin</code>, <code>Manager</code>, <code>Staff</code>, <code>Customer</code>) không thể xoá.</li>
+                    <li>Sau khi tạo, hãy vào <strong>Phân quyền</strong> để cấp claim cho vai trò mới.</li>
+                    <li>Chỉ người dùng có role <strong>Admin</strong> mới truy cập được trang này.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

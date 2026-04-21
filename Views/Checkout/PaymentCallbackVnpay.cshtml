@@ -1,0 +1,191 @@
+﻿@model HDKTech.Models.Vnpay.PaymentResponseModel
+@{
+    ViewData["Title"] = "Kết Quả Thanh Toán";
+    var isSuccess = Model?.Success == true && Model?.VnPayResponseCode == "00";
+}
+
+<style>
+    .callback-wrapper {
+        max-width: 520px;
+        margin: 60px auto;
+        padding: 0 16px;
+        text-align: center;
+    }
+
+    .result-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+    }
+
+        .result-icon.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .result-icon.fail {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+    .result-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+        .result-title.success {
+            color: #2e7d32;
+        }
+
+        .result-title.fail {
+            color: #c62828;
+        }
+
+    .result-subtitle {
+        color: #666;
+        font-size: 15px;
+        margin-bottom: 28px;
+    }
+
+    .info-card {
+        background: #fff;
+        border: 1px solid #e8e8e8;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        text-align: left;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 0;
+        font-size: 14px;
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-row .label {
+            color: #888;
+        }
+
+        .info-row .value {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+
+    .btn-hdk {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        margin: 4px;
+        transition: opacity 0.2s;
+    }
+
+        .btn-hdk:hover {
+            opacity: 0.85;
+            text-decoration: none;
+        }
+
+        .btn-hdk.primary {
+            background: #e53935;
+            color: #fff;
+        }
+
+        .btn-hdk.outline {
+            background: #fff;
+            color: #e53935;
+            border: 1.5px solid #e53935;
+        }
+</style>
+
+<div class="callback-wrapper">
+
+    @if (isSuccess)
+    {
+        <div class="result-icon success">
+            <i class="bi bi-check-lg"></i>
+        </div>
+        <div class="result-title success">Thanh Toán Thành Công!</div>
+        <div class="result-subtitle">Giao dịch VNPay của bạn đã được xác nhận.</div>
+
+        <div class="info-card">
+            <div class="info-row">
+                <span class="label">Phương thức</span>
+                <span class="value">VNPay</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mã giao dịch</span>
+                <span class="value">@Model.TransactionId</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mã thanh toán</span>
+                <span class="value">@Model.PaymentId</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mô tả</span>
+                <span class="value">@Model.OrderDescription</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Trạng thái</span>
+                <span class="value" style="color: #2e7d32;">
+                    <i class="bi bi-check-circle-fill"></i> Thành công
+                </span>
+            </div>
+        </div>
+
+        <a href="/Order/MyOrders" class="btn-hdk outline">
+            <i class="bi bi-list-ul"></i> Xem Đơn Hàng
+        </a>
+        <a href="/" class="btn-hdk primary">
+            <i class="bi bi-house"></i> Về Trang Chủ
+        </a>
+    }
+    else
+    {
+        <div class="result-icon fail">
+            <i class="bi bi-x-lg"></i>
+        </div>
+        <div class="result-title fail">Thanh Toán Thất Bại</div>
+        <div class="result-subtitle">Giao dịch không thành công hoặc đã bị huỷ.</div>
+
+        <div class="info-card">
+            <div class="info-row">
+                <span class="label">Mã lỗi</span>
+                <span class="value" style="color: #c62828;">@Model?.VnPayResponseCode</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mô tả</span>
+                <span class="value">@(Model?.OrderDescription ?? "Không có thông tin")</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Trạng thái</span>
+                <span class="value" style="color: #c62828;">
+                    <i class="bi bi-x-circle-fill"></i> Thất bại
+                </span>
+            </div>
+        </div>
+
+        <a href="/Checkout" class="btn-hdk outline">
+            <i class="bi bi-arrow-counterclockwise"></i> Thử Lại
+        </a>
+        <a href="/" class="btn-hdk primary">
+            <i class="bi bi-house"></i> Về Trang Chủ
+        </a>
+    }
+
+</div>

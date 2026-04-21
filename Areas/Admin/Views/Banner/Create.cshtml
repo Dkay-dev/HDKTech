@@ -1,0 +1,266 @@
+@using HDKTech.Areas.Admin.Models
+@model Banner
+
+@{
+    ViewData["Title"] = "Tạo Banner Mới";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/admin/css/banner.css" asp-append-version="true" />
+}
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="hdk-page-header">
+    <div>
+        <h1><i class="bi bi-image-fill me-2" style="color:var(--gold)"></i>Tạo Banner Mới</h1>
+        <p>Thêm banner quảng cáo mới hiển thị trên website HDKTech</p>
+    </div>
+    <a href="@Url.Action("Index")" class="btn-banner-back">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN LAYOUT: 8 + 4 columns                                         -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="row g-4">
+
+    <!-- ─────────── CỘT TRÁI: Form ─────────── -->
+    <div class="col-lg-8">
+        <form method="post"
+              enctype="multipart/form-data"
+              id="bannerCreateForm"
+              novalidate
+              asp-action="Create"
+              asp-controller="Banner"
+              asp-area="Admin">
+
+            @Html.AntiForgeryToken()
+
+            <!-- CARD 1: Thông tin cơ bản -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-info-circle me-2"></i>Thông tin cơ bản
+                </div>
+                <div class="banner-card-body">
+
+                    <!-- Tên Banner -->
+                    <div class="banner-field">
+                        <label asp-for="Title" class="banner-label">
+                            Tên Banner <span class="req">*</span>
+                        </label>
+                        <input asp-for="Title"
+                               class="banner-input"
+                               placeholder="Ví dụ: Flash Sale Cuối Tuần — Giảm đến 40%" />
+                        <span asp-validation-for="Title" class="banner-error"></span>
+                    </div>
+
+                    <!-- Link URL — type="text" để NormalizeToRelativePath xử lý -->
+                    <div class="banner-field">
+                        <label asp-for="LinkUrl" class="banner-label">
+                            Link khi click Banner
+                            <span class="banner-hint-inline">
+                                (tự động chuyển thành đường dẫn tương đối)
+                            </span>
+                        </label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-link-45deg"></i></span>
+                            <input asp-for="LinkUrl"
+                                   type="text"
+                                   id="linkUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="/Category/Index/1  hoặc  https://..." />
+                        </div>
+                        <div class="banner-hint" id="linkPreview" style="display:none">
+                            → <span id="linkPreviewValue" class="text-success fw-semibold"></span>
+                        </div>
+                        <span asp-validation-for="LinkUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 2: Hình ảnh -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-image me-2"></i>Hình ảnh
+                </div>
+                <div class="banner-card-body">
+
+                    <!-- Dropzone -->
+                    <div class="banner-dropzone" id="imageDropZone">
+                        <div class="dropzone-inner">
+                            <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                            <p class="dropzone-title">Kéo thả hoặc click để chọn ảnh</p>
+                            <p class="dropzone-hint">JPG · PNG · WebP · GIF · Tối đa 10 MB</p>
+                            <p class="dropzone-hint">Khuyến nghị: 1200×400 px cho Main Banner</p>
+                        </div>
+                        <input type="file"
+                               id="imageFile"
+                               name="imageFile"
+                               class="d-none"
+                               accept=".jpg,.jpeg,.png,.webp,.gif" />
+                    </div>
+
+                    <!-- Preview ảnh upload -->
+                    <div id="uploadPreviewWrap" class="upload-preview-wrap d-none">
+                        <img id="uploadPreviewImg" src="" alt="Preview" class="upload-preview-img" />
+                        <button type="button" class="upload-remove-btn" id="removeUpload" title="Xoá ảnh đã chọn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="banner-field-divider"><span>hoặc nhập URL</span></div>
+
+                    <!-- URL nhập tay -->
+                    <div class="banner-field">
+                        <label asp-for="ImageUrl" class="banner-label">URL hình ảnh</label>
+                        <div class="banner-input-group">
+                            <span class="banner-input-prefix"><i class="bi bi-globe"></i></span>
+                            <input asp-for="ImageUrl"
+                                   id="imageUrlInput"
+                                   class="banner-input banner-input-icon"
+                                   placeholder="https://cdn.example.com/banner.jpg" />
+                        </div>
+                        <span asp-validation-for="ImageUrl" class="banner-error"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CARD 3: Cài đặt hiển thị -->
+            <div class="banner-card mb-4">
+                <div class="banner-card-header">
+                    <i class="bi bi-sliders me-2"></i>Cài đặt hiển thị
+                </div>
+                <div class="banner-card-body">
+                    <div class="row g-3">
+
+                        <div class="col-sm-6">
+                            <label asp-for="BannerType" class="banner-label">
+                                Loại Banner <span class="req">*</span>
+                            </label>
+                            <select asp-for="BannerType" class="banner-select">
+                                <option value="">— Chọn vị trí —</option>
+                                <option value="Main">Trang Chủ (Main)</option>
+                                <option value="Side">Sidebar (Side)</option>
+                                <option value="Bottom">Footer (Bottom)</option>
+                            </select>
+                            <span asp-validation-for="BannerType" class="banner-error"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="DisplayOrder" class="banner-label">Thứ tự hiển thị</label>
+                            <input asp-for="DisplayOrder"
+                                   type="number"
+                                   min="0"
+                                   class="banner-input"
+                                   placeholder="0" />
+                            <span class="banner-hint">Số nhỏ hơn hiển thị trước.</span>
+                        </div>
+
+                        <!-- CategoryId — chỉ hiện khi chọn Side -->
+                        <div class="col-12" id="categoryFieldWrap" style="display:none">
+                            <label asp-for="CategoryId" class="banner-label">
+                                Gắn danh mục <span class="banner-hint-inline">(Side banner sẽ hiển thị bên cạnh danh mục này)</span>
+                            </label>
+                            <select asp-for="CategoryId"
+                                    asp-items="ViewBag.Categories"
+                                    class="banner-select">
+                                <option value="">— Chọn danh mục (tùy chọn) —</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="banner-toggle-row">
+                                <div>
+                                    <p class="banner-label mb-0">Trạng thái</p>
+                                    <span class="banner-hint">Bật để hiển thị ngay sau khi tạo</span>
+                                </div>
+                                <label class="banner-switch">
+                                    <input asp-for="IsActive" type="checkbox" checked />
+                                    <span class="banner-switch-track"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS — hàng ngang, không đè nhau -->
+            <div class="d-flex gap-2 align-items-center">
+                <button type="submit" class="btn-banner-save" id="btnSubmit">
+                    <i class="bi bi-check-circle me-2"></i>Tạo Banner
+                </button>
+                <a href="@Url.Action("Index")" class="btn-banner-back">
+                    <i class="bi bi-x me-1"></i>Huỷ
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- ─────────── CỘT PHẢI: Preview ─────────── -->
+    <div class="col-lg-4">
+        <div class="banner-preview-card">
+            <div class="banner-card-header">
+                <i class="bi bi-eye me-2"></i>Xem trước
+            </div>
+            <div class="banner-card-body">
+
+                <!-- Hộp ảnh preview -->
+                <div class="preview-img-box mb-3" id="previewBox">
+                    <img id="previewFinalImg"
+                         src=""
+                         alt="Preview"
+                         class="preview-img d-none" />
+                    <div id="previewEmpty" class="preview-empty">
+                        <i class="bi bi-image"></i>
+                        <span>Chưa có ảnh</span>
+                    </div>
+                </div>
+
+                <!-- Thông tin preview -->
+                <div class="preview-meta">
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Tên:</span>
+                        <span id="pvName" class="preview-meta-val">—</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Loại:</span>
+                        <span id="pvType" class="preview-meta-val">—</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Link:</span>
+                        <span id="pvLink" class="preview-meta-val text-truncate" style="max-width:130px">—</span>
+                    </div>
+                    <div class="preview-meta-row">
+                        <span class="preview-meta-label">Trạng thái:</span>
+                        <span id="pvStatus" class="preview-meta-val preview-status-active">Kích hoạt</span>
+                    </div>
+                </div>
+
+                <!-- Ghi chú kích thước -->
+                <div class="preview-size-guide">
+                    <p class="banner-hint mb-1"><strong>Kích thước khuyến nghị:</strong></p>
+                    <ul class="banner-hint mb-0 ps-3">
+                        <li>Main: 1200 × 400 px (3:1)</li>
+                        <li>Side: 300 × 600 px (1:2)</li>
+                        <li>Bottom: 1200 × 200 px (6:1)</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/admin/js/banner-form.js" asp-append-version="true"></script>
+}

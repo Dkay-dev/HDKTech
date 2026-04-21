@@ -1,0 +1,329 @@
+﻿@{
+    ViewData["Title"] = "Liên Hệ & Hotline - HDKTech";
+}
+
+<style>
+    :root { --hdk-red: #ef4444; --hdk-dark: #212529; --hdk-gray: #f8f9fa; --hdk-blue: #05b6d4; }
+
+    /* --- Hero Banner Combined (Đồng bộ với các trang khác) --- */
+    .contact-hero-combined {
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%), url('/images/banners/contact-hero-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 100px 0 200px 0 !important; /* Tạo không gian cho dải hotline ở đáy */
+        position: relative;
+        overflow: hidden;
+        border-bottom: 4px solid var(--hdk-red);
+    }
+
+    .banner-overlay-dark { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); z-index: 1; }
+    .banner-main-content { position: relative; z-index: 2; text-align: center; }
+
+    /* --- Dải Hotline bám đáy Banner --- */
+    .hotline-in-banner {
+        position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 3; width: 100%; max-width: 1200px;
+    }
+
+    .hotline-orange-box {
+        background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        padding: 35px 20px; border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 40px rgba(239, 68, 68, 0.3);
+    }
+
+    /* --- Contact Cards & Info --- */
+    .info-item {
+        background: white; padding: 25px; border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: 0.3s;
+        border: 1px solid #f0f0f0; height: 100%;
+    }
+    .info-item:hover { transform: translateY(-5px); border-color: var(--hdk-red); }
+
+    .contact-form-card {
+        background: white; padding: 40px; border-radius: 20px;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.07);
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px; padding: 12px 18px; border: 1px solid #e5e7eb;
+    }
+    .form-control:focus { border-color: var(--hdk-red); box-shadow: 0 0 0 0.25rem rgba(239, 68, 68, 0.1); }
+
+    .btn-submit {
+        background: linear-gradient(45deg, #ef4444, #dc2626);
+        color: white; font-weight: 700; padding: 15px; border-radius: 50px;
+        border: none; width: 100%; transition: 0.3s;
+    }
+    .btn-submit:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
+
+    /* --- Map & Social --- */
+    .map-container { border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+    
+    /* --- Social Pilling & Branding Colors --- */
+    .social-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 25px;
+        background: white;
+        border-radius: 50px;
+        text-decoration: none;
+        color: #444;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #eee;
+    }
+
+    .social-pill:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        color: white !important;
+    }
+
+    /* Màu thương hiệu khi hover */
+    .sp-fb:hover { background: #1877F2; border-color: #1877F2; }
+    .sp-yt:hover { background: #FF0000; border-color: #FF0000; }
+    .sp-ins:hover { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-color: transparent; }
+    .sp-zalo:hover { background: #0068FF; border-color: #0068FF; }
+
+    /* Màu icon ban đầu */
+    .text-fb { color: #1877F2; }
+    .text-yt { color: #FF0000; }
+    .text-ins { color: #E1306C; }
+    .text-zalo { color: #0068FF; }
+    
+    /* Ép icon chuyển trắng khi hover pill */
+    .social-pill:hover i { color: white !important; }
+    /* Đảm bảo Form và Map cân bằng nhau */
+    .contact-row-equal {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .contact-form-card, .map-container-full {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .map-container-full iframe {
+        flex-grow: 1; /* Cho phép bản đồ chiếm hết chiều cao còn lại */
+        min-height: 400px;
+    }
+
+    /* Hệ thống cửa hàng */
+    .branch-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: 0.3s;
+        height: 100%;
+        border: 1px solid #f0f0f0;
+    }
+    .branch-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+    
+    .branch-image {
+        height: 200px;
+        position: relative;
+        overflow: hidden;
+    }
+    .branch-image img { width: 100%; height: 100%; object-fit: cover; }
+    .branch-name-overlay {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        padding: 20px;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        color: white;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+    .branch-info { padding: 25px; }
+    .branch-info p { font-size: 0.9rem; color: #666; margin-bottom: 10px; display: flex; gap: 10px; }
+    .branch-info i { color: var(--hdk-red); }
+</style>
+
+<div class="contact-hero-combined">
+    <div class="banner-overlay-dark"></div>
+    <div class="container banner-main-content text-white">
+        <h1 class="display-3 fw-bold mb-3"><i class="bi bi-headset text-danger me-2"></i> TRUNG TÂM HỖ TRỢ</h1>
+        <p class="lead opacity-75 mx-auto" style="max-width: 700px;">Đội ngũ chuyên Price HDKTech luôn sẵn sàng lắng nghe và giải quyết mọi yêu cầu của bạn 24/7.</p>
+    </div>
+
+    <div class="hotline-in-banner container">
+        <div class="hotline-orange-box">
+            <div class="row g-4 text-center text-white">
+                <div class="col-md-4 border-end border-white border-opacity-25">
+                    <div class="small text-uppercase opacity-75 fw-bold mb-1">Tư vấn bán hàng</div>
+                    <a href="tel:19008899" class="h4 fw-bold text-white text-decoration-none">1900.8899</a>
+                </div>
+                <div class="col-md-4 border-end border-white border-opacity-25">
+                    <div class="small text-uppercase opacity-75 fw-bold mb-1">Hỗ trợ kỹ thuật</div>
+                    <a href="tel:19008800" class="h4 fw-bold text-white text-decoration-none">1900.8800</a>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-uppercase opacity-75 fw-bold mb-1">CSKH & Khiếu nại</div>
+                    <a href="mailto:cskh@hdktech.vn" class="h4 fw-bold text-white text-decoration-none">cskh@hdktech.vn</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5 mt-4">
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="info-item">
+                <div class="text-danger mb-3 fs-3"><i class="bi bi-geo-alt-fill"></i></div>
+                <h6 class="fw-bold text-uppercase small">Văn phòng chính</h6>
+                <p class="mb-0 text-muted small">Tầng 3, 123 Đường Láng, Đống Đa, Hà Nội</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-item">
+                <div class="text-danger mb-3 fs-3"><i class="bi bi-clock-fill"></i></div>
+                <h6 class="fw-bold text-uppercase small">Giờ làm việc</h6>
+                <p class="mb-0 text-muted small">08:00 - 21:00 (Cả Thứ 7 & Chủ Nhật)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-item">
+                <div class="text-danger mb-3 fs-3"><i class="bi bi-envelope-check-fill"></i></div>
+                <h6 class="fw-bold text-uppercase small">Email hỗ trợ</h6>
+                <p class="mb-0 text-muted small">info@hdktech.vn (Phản hồi trong 2h)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+    <div class="info-item">
+        <div class="text-danger mb-3 fs-3"><i class="bi bi-chat-heart-fill"></i></div>
+        <h6 class="fw-bold text-uppercase small">Mạng xã hội</h6>
+        <div class="d-flex gap-3 mt-1">
+            <a href="#" class="text-fb" title="Facebook"><i class="bi bi-facebook fs-5"></i></a>
+            <a href="#" class="text-yt" title="Youtube"><i class="bi bi-youtube fs-5"></i></a>
+            <a href="#" class="text-ins" title="Instagram"><i class="bi bi-instagram fs-5"></i></a>
+            <a href="#" class="text-zalo" title="Zalo OA"><i class="bi bi-chat-dots-fill fs-5"></i></a>
+        </div>
+    </div>
+</div>
+    </div>
+
+  <div class="container py-5">
+    <div class="row g-4 contact-row-equal mb-5">
+        <div class="col-lg-7">
+            <div class="contact-form-card p-4 shadow-sm bg-white rounded-4 border">
+                <h3 class="fw-bold mb-4"><i class="bi bi-envelope-paper-fill text-danger me-2"></i>Gửi tin nhắn hỗ trợ</h3>
+                <form id="contactForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Họ và tên *</label>
+                            <input type="text" class="form-control" placeholder="Nguyễn Văn A" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Số điện thoại *</label>
+                            <input type="tel" class="form-control" placeholder="0901xxxxxx" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Địa chỉ Email *</label>
+                            <input type="email" class="form-control" placeholder="name@example.com" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Nội dung chi tiết *</label>
+                            <textarea class="form-control" rows="6" placeholder="Bạn cần HDKTech giúp gì cho bạn?"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn-submit mt-2">GỬI YÊU CẦU NGAY</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="d-flex flex-column h-100">
+                <div class="map-container-full mb-4 flex-grow-1">
+                    <div class="rounded-4 overflow-hidden border h-100 shadow-sm">
+                        <iframe class="w-100 h-100" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.712613098522!2d105.816654!3d21.004149!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ac8404a3770f%3A0xf6f693245f7823f6!2zMTIzIMSQxrDhu51uZyBMw6FuZywgxJDhu5FuZyDEkGEsIEjDoCBO4buZaSwgVmnhu4d0IE5hbQ!5e0!3m2!1svi!2s!4v1712470000000!5m2!1svi!2s" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-4 text-center border shadow-sm">
+    <h6 class="fw-bold mb-4 text-uppercase" style="letter-spacing: 1px;">Kết nối với HDKTech</h6>
+    <div class="d-flex flex-wrap gap-3 justify-content-center">
+        <a href="https://facebook.com/hdktech" target="_blank" class="social-pill sp-fb">
+            <i class="bi bi-facebook text-fb"></i> Facebook
+        </a>
+        <a href="https://youtube.com/hdktech" target="_blank" class="social-pill sp-yt">
+            <i class="bi bi-youtube text-yt"></i> YouTube
+        </a>
+        <a href="https://instagram.com/hdktech" target="_blank" class="social-pill sp-ins">
+            <i class="bi bi-instagram text-ins"></i> Instagram
+        </a>
+        <a href="https://zalo.me/hdktech" target="_blank" class="social-pill sp-zalo">
+            <i class="bi bi-chat-dots-fill text-zalo"></i> Zalo OA
+        </a>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5 pt-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-uppercase">Hệ Thống Cửa Hàng</h2>
+            <p class="text-muted">Ghé thăm showroom của chúng tôi để trải nghiệm sản phẩm tốt nhất</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="branch-card">
+                    <div class="branch-image">
+                        <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800" alt="Showroom Đà Nẵng">
+                        <div class="branch-name-overlay">Chi nhánh Đà Nẵng</div>
+                    </div>
+                    <div class="branch-info">
+                        <p><i class="bi bi-geo-alt-fill"></i> 123 Đường ABC, Q. Hải Châu, TP. Đà Nẵng</p>
+                        <p><i class="bi bi-telephone-fill"></i> 0236.123.4567</p>
+                        <p><i class="bi bi-clock-fill"></i> 08:00 - 21:00</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="branch-card">
+                    <div class="branch-image">
+                        <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800" alt="Showroom Hà Nội">
+                        <div class="branch-name-overlay">Chi nhánh Hà Nội</div>
+                    </div>
+                    <div class="branch-info">
+                        <p><i class="bi bi-geo-alt-fill"></i> 456 Đường XYZ, Q. Đống Đa, Hà Nội</p>
+                        <p><i class="bi bi-telephone-fill"></i> 024.8765.4321</p>
+                        <p><i class="bi bi-clock-fill"></i> 08:00 - 21:00</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="branch-card">
+                    <div class="branch-image">
+                        <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800" alt="Showroom HCM">
+                        <div class="branch-name-overlay">Chi nhánh TP. HCM</div>
+                    </div>
+                    <div class="branch-info">
+                        <p><i class="bi bi-geo-alt-fill"></i> 789 Đường DEF, Quận 1, TP. HCM</p>
+                        <p><i class="bi bi-telephone-fill"></i> 028.1234.5678</p>
+                        <p><i class="bi bi-clock-fill"></i> 08:00 - 21:00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Cảm ơn bạn! Yêu cầu hỗ trợ đã được gửi tới hệ thống HDKTech. Chúng tôi sẽ phản hồi trong vòng 15-30 phút.');
+        this.reset();
+    });
+</script>
+

@@ -1,0 +1,505 @@
+﻿@model IEnumerable<HDKTech.Models.Product>
+@{
+    ViewData["Title"] = "Danh mục - HDKTech";
+    var categoryId         = ViewBag.CategoryId    as int?;
+    var brands             = ViewBag.Brands        as List<string> ?? new List<string>();
+    var cpuLines           = ViewBag.CpuLines      as List<string> ?? new List<string>();
+    var currentSort        = ViewBag.CurrentSort   as string ?? "featured";
+    var selectedBrandNames = ViewBag.SelectedBrandNames as List<string> ?? new List<string>();
+    var minPrice           = ViewBag.MinPrice      as decimal?;
+    var maxPrice           = ViewBag.MaxPrice      as decimal?;
+    var activeCpuLine      = ViewBag.CpuLine       as string ?? "";
+    var activeVgaLine      = ViewBag.VgaLine       as string ?? "";
+    var activeRamType      = ViewBag.RamType       as string ?? "";
+    var brandNamesRaw      = ViewBag.BrandNames    as string ?? "";
+    var totalProducts      = (int)(ViewBag.TotalProducts ?? 0);
+    var currentPage        = (int)(ViewBag.CurrentPage   ?? 1);
+    var totalPages         = (int)(ViewBag.TotalPages     ?? 1);
+}
+
+<link rel="stylesheet" href="~/css/pages/category.css" />
+
+<div class="container-fluid my-4 px-3 px-lg-4">
+
+    <!-- ══ FILTER BAR ══════════════════════════════════════════════════════ -->
+    <div class="hdk-filter-bar bg-white p-3 rounded-3 shadow-sm mb-4">
+
+        <!-- Breadcrumb + result count -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <nav aria-label="breadcrumb" class="mb-0">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="/" class="text-decoration-none text-muted small">
+                            <i class="bi bi-house-fill me-1"></i>Trang chủ
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active small">@(ViewBag.CategoryName ?? "Danh mục")</li>
+                </ol>
+            </nav>
+            <span class="text-muted small">
+                <strong>@totalProducts</strong> sản phẩm
+            </span>
+        </div>
+
+        <!-- Active filter tags -->
+        <div id="activeFilterTags" class="d-flex flex-wrap gap-1 mb-2" style="@(selectedBrandNames.Any() || minPrice.HasValue || maxPrice.HasValue || !string.IsNullOrEmpty(activeCpuLine) || !string.IsNullOrEmpty(activeVgaLine) || !string.IsNullOrEmpty(activeRamType) ? "" : "display:none!important")">
+            @foreach (var b in selectedBrandNames)
+            {
+                <span class="hdk-filter-tag">
+                    @b
+                    <button type="button" onclick="removeBrand('@b')" title="Xóa">×</button>
+                </span>
+            }
+            @if (minPrice.HasValue || maxPrice.HasValue)
+            {
+                <span class="hdk-filter-tag">
+                    💰 @(minPrice.HasValue ? (minPrice.Value/1000000).ToString("0.#")+"tr" : "0") – @(maxPrice.HasValue ? (maxPrice.Value/1000000).ToString("0.#")+"tr" : "∞")
+                    <button type="button" onclick="removePrice()" title="Xóa">×</button>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(activeCpuLine))
+            {
+                <span class="hdk-filter-tag">
+                    CPU: @activeCpuLine
+                    <button type="button" onclick="removeSpec('cpuLine')" title="Xóa">×</button>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(activeVgaLine))
+            {
+                <span class="hdk-filter-tag">
+                    VGA: @activeVgaLine
+                    <button type="button" onclick="removeSpec('vgaLine')" title="Xóa">×</button>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(activeRamType))
+            {
+                <span class="hdk-filter-tag">
+                    RAM: @activeRamType
+                    <button type="button" onclick="removeSpec('ramType')" title="Xóa">×</button>
+                </span>
+            }
+            <button type="button" class="hdk-clear-all-btn" onclick="clearAllFilters()">
+                <i class="bi bi-x-circle me-1"></i>Xóa tất cả
+            </button>
+        </div>
+
+        <!-- Filter controls row -->
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+
+            <!-- Brand multi-select dropdown -->
+            @if (brands.Any())
+            {
+                <div class="dropdown hdk-filter-dropdown">
+                    <button class="hdk-filter-btn dropdown-toggle @(selectedBrandNames.Any()?"active":"")"
+                            type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                        <i class="bi bi-building me-1"></i>
+                        Hãng
+                        @if (selectedBrandNames.Any())
+                        {
+                            <span class="hdk-filter-count">@selectedBrandNames.Count</span>
+                        }
+                    </button>
+                    <div class="dropdown-menu hdk-brand-menu p-2">
+                        <div class="hdk-brand-search mb-2">
+                            <input type="text" class="form-control form-control-sm" placeholder="Tìm hãng..."
+                                   oninput="filterBrandSearch(this.value)" />
+                        </div>
+                        <div id="brandCheckboxList">
+                            @foreach (var brand in brands)
+                            {
+                                <label class="hdk-brand-row @(selectedBrandNames.Contains(brand)?"selected":"")">
+                                    <input type="checkbox"
+                                           class="hdk-brand-cb"
+                                           value="@brand"
+                                           @(selectedBrandNames.Contains(brand) ? "checked" : "")
+                                           onchange="toggleBrand(this)" />
+                                    <span>@brand</span>
+                                </label>
+                            }
+                        </div>
+                        <div class="d-flex gap-2 mt-2 pt-2 border-top">
+                            <button type="button" class="btn btn-danger btn-sm flex-fill"
+                                    onclick="applyBrands()">Áp dụng</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="clearBrands()">Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Price dropdown -->
+            <div class="dropdown hdk-filter-dropdown">
+                <button class="hdk-filter-btn dropdown-toggle @(minPrice.HasValue||maxPrice.HasValue?"active":"")"
+                        type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                    <i class="bi bi-tag me-1"></i>Giá
+                </button>
+                <div class="dropdown-menu hdk-price-menu p-3" style="min-width:240px">
+                    <div class="hdk-price-presets d-flex flex-wrap gap-1 mb-3">
+                        <button type="button" class="hdk-price-preset"
+                                onclick="applyPrice(0,5000000)">Dưới 5tr</button>
+                        <button type="button" class="hdk-price-preset"
+                                onclick="applyPrice(5000000,10000000)">5–10tr</button>
+                        <button type="button" class="hdk-price-preset"
+                                onclick="applyPrice(10000000,20000000)">10–20tr</button>
+                        <button type="button" class="hdk-price-preset"
+                                onclick="applyPrice(20000000,null)">Trên 20tr</button>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" id="priceMin" class="form-control form-control-sm"
+                               placeholder="Từ" min="0" step="500000"
+                               value="@(minPrice.HasValue ? minPrice.Value.ToString("0") : "")" />
+                        <span class="text-muted">–</span>
+                        <input type="number" id="priceMax" class="form-control form-control-sm"
+                               placeholder="Đến" min="0" step="500000"
+                               value="@(maxPrice.HasValue ? maxPrice.Value.ToString("0") : "")" />
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-danger btn-sm flex-fill"
+                                onclick="applyCustomPrice()">Áp dụng</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="clearPrice()">Xóa</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU -->
+            @if (cpuLines.Any())
+            {
+                <div class="dropdown hdk-filter-dropdown">
+                    <button class="hdk-filter-btn dropdown-toggle @(!string.IsNullOrEmpty(activeCpuLine)?"active":"")"
+                            type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-cpu me-1"></i>CPU
+                        @if (!string.IsNullOrEmpty(activeCpuLine))
+                        {
+                            <span class="hdk-filter-count">1</span>
+                        }
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach (var cpu in cpuLines)
+                        {
+                            <li>
+                                <button type="button"
+                                        class="dropdown-item @(activeCpuLine==cpu?"active":"")"
+                                        onclick="toggleSpec('cpuLine','@cpu')">@cpu</button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <!-- VGA -->
+            <div class="dropdown hdk-filter-dropdown">
+                <button class="hdk-filter-btn dropdown-toggle @(!string.IsNullOrEmpty(activeVgaLine)?"active":"")"
+                        type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-gpu-card me-1"></i>VGA
+                    @if (!string.IsNullOrEmpty(activeVgaLine))
+                    {
+                        <span class="hdk-filter-count">1</span>
+                    }
+                </button>
+                <ul class="dropdown-menu">
+                    @foreach (var vga in new[]{"RTX 4050","RTX 4060","RTX 4070","RTX 4080","RTX 4090"})
+                    {
+                        <li>
+                            <button type="button"
+                                    class="dropdown-item @(activeVgaLine==vga?"active":"")"
+                                    onclick="toggleSpec('vgaLine','@vga')">@vga</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <!-- RAM -->
+            <div class="dropdown hdk-filter-dropdown">
+                <button class="hdk-filter-btn dropdown-toggle @(!string.IsNullOrEmpty(activeRamType)?"active":"")"
+                        type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-memory me-1"></i>RAM
+                    @if (!string.IsNullOrEmpty(activeRamType))
+                    {
+                        <span class="hdk-filter-count">1</span>
+                    }
+                </button>
+                <ul class="dropdown-menu">
+                    @foreach (var ram in new[]{"DDR4","DDR5"})
+                    {
+                        <li>
+                            <button type="button"
+                                    class="dropdown-item @(activeRamType==ram?"active":"")"
+                                    onclick="toggleSpec('ramType','@ram')">@ram</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <!-- Sort — right-aligned -->
+            <div class="ms-auto">
+                <div class="hdk-sort-wrap">
+                    <i class="bi bi-sort-down text-muted me-1 small"></i>
+                    <select class="hdk-sort-select" onchange="applySort(this.value)">
+                       <option value="featured" selected="@(currentSort == "featured")">Nổi bật</option>
+                        <option value="new" selected="@(currentSort == "new")">Mới nhất</option>
+                        <option value="price_asc" selected="@(currentSort == "price_asc")">Giá tăng dần</option>
+                        <option value="price_desc" selected="@(currentSort == "price_desc")">Giá giảm dần</option>
+                        <option value="name_asc" selected="@(currentSort == "name_asc")">Tên A→Z</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ══ END FILTER BAR ════════════════════════════════════════════════ -->
+
+    <!-- Product grid -->
+    <div class="pc-grid">
+        @foreach (var item in Model)
+        {
+            @await Html.PartialAsync("_ProductCard", item,
+                new ViewDataDictionary(ViewData) { { "ShowCompare", true } })
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="d-flex justify-content-center mt-5 mb-4">
+            <ul class="pagination">
+                <li class="page-item @(currentPage<=1?"disabled":"")">
+                    <a class="page-link" href="@BuildPageUrl(currentPage-1)">
+                        <i class="bi bi-chevron-left"></i> Trang Trước
+                    </a>
+                </li>
+                @{
+                    int startP = Math.Max(1, currentPage-2);
+                    int endP   = Math.Min(totalPages, currentPage+2);
+                }
+                @for (int p = startP; p <= endP; p++)
+                {
+                    <li class="page-item @(p==currentPage?"active":"")">
+                        <a class="page-link" href="@BuildPageUrl(p)">@p</a>
+                    </li>
+                }
+                <li class="page-item @(currentPage>=totalPages?"disabled":"")">
+                    <a class="page-link" href="@BuildPageUrl(currentPage+1)">
+                        Trang Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="text-center text-muted small mb-5">
+            Trang <strong>@currentPage</strong> / <strong>@totalPages</strong>
+            &nbsp;·&nbsp; <strong>@totalProducts</strong> sản phẩm
+        </div>
+    }
+</div>
+
+<!-- ══ STYLES ══════════════════════════════════════════════════════════════ -->
+<style>
+.hdk-filter-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+}
+.hdk-filter-btn:hover { border-color: #ef4444; color: #ef4444; }
+.hdk-filter-btn.active {
+    background: #fef2f2; border-color: #ef4444; color: #ef4444; font-weight: 600;
+}
+.hdk-filter-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    background: #ef4444; color: #fff;
+    border-radius: 50%; font-size: 0.65rem; font-weight: 700;
+    margin-left: 1px;
+}
+/* Active filter tags */
+.hdk-filter-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 12px; font-size: 0.73rem; color: #dc2626; font-weight: 600;
+}
+.hdk-filter-tag button {
+    background: none; border: none; color: #dc2626;
+    cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0;
+}
+.hdk-clear-all-btn {
+    padding: 2px 10px; background: #f3f4f6; border: 1px solid #e5e7eb;
+    border-radius: 12px; font-size: 0.73rem; color: #6b7280; cursor: pointer;
+    transition: all .15s;
+}
+.hdk-clear-all-btn:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+/* Brand dropdown */
+.hdk-brand-menu { min-width: 200px; max-height: 320px; overflow-y: auto; }
+.hdk-brand-row {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 6px; border-radius: 5px; cursor: pointer;
+    font-size: 0.82rem; color: #374151; transition: background .1s;
+}
+.hdk-brand-row:hover { background: #f9fafb; }
+.hdk-brand-row.selected { color: #ef4444; font-weight: 600; }
+.hdk-brand-row input[type=checkbox] { accent-color: #ef4444; }
+/* Price presets */
+.hdk-price-preset {
+    padding: 2px 8px; border: 1px solid #e5e7eb; border-radius: 12px;
+    font-size: 0.72rem; background: #f9fafb; color: #6b7280; cursor: pointer;
+    transition: all .15s;
+}
+.hdk-price-preset:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+/* Sort */
+.hdk-sort-wrap {
+    display: flex; align-items: center;
+    border: 1.5px solid #e5e7eb; border-radius: 20px;
+    padding: 4px 12px; background: #fff;
+}
+.hdk-sort-select {
+    border: none; background: transparent; font-size: 0.8rem;
+    font-weight: 600; color: #374151; cursor: pointer; outline: none;
+}
+/* Dropdown item active */
+.dropdown-item.active { background: #fef2f2 !important; color: #ef4444 !important; font-weight: 600; }
+</style>
+
+<!-- ══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    // ── State (mirrors current URL params) ───────────────────────────────
+    const state = {
+        categoryId  : '@(categoryId?.ToString() ?? "")',
+        brandNames  : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedBrandNames)),
+        minPrice    : '@(minPrice.HasValue ? minPrice.Value.ToString("0") : "")',
+        maxPrice    : '@(maxPrice.HasValue ? maxPrice.Value.ToString("0") : "")',
+        sortBy      : '@currentSort',
+        cpuLine     : '@activeCpuLine',
+        vgaLine     : '@activeVgaLine',
+        ramType     : '@activeRamType',
+    };
+
+    // pending brand checkboxes (before Apply is clicked)
+    let pendingBrands = [...state.brandNames];
+
+    // ── URL builder ──────────────────────────────────────────────────────
+    function navigate(overrides) {
+        const s = Object.assign({}, state, overrides);
+        const p = new URLSearchParams();
+        if (s.categoryId) p.set('id', s.categoryId);   // CategoryController uses 'id'
+        if (s.brandNames && s.brandNames.length)
+            p.set('brandNames', s.brandNames.join(','));
+        if (s.minPrice) p.set('minPrice', s.minPrice);
+        if (s.maxPrice) p.set('maxPrice', s.maxPrice);
+        if (s.sortBy && s.sortBy !== 'featured') p.set('sortBy', s.sortBy);
+        if (s.cpuLine)  p.set('cpuLine',  s.cpuLine);
+        if (s.vgaLine)  p.set('vgaLine',  s.vgaLine);
+        if (s.ramType)  p.set('ramType',  s.ramType);
+        const qs = p.toString();
+        window.location.href = '/Category/Index/' + (s.categoryId || '') + (qs ? '?' + qs : '');
+    }
+
+    // ── Brand checkbox: just toggle the pending list ─────────────────────
+    window.toggleBrand = function (cb) {
+        const val = cb.value;
+        if (cb.checked) {
+            if (!pendingBrands.includes(val)) pendingBrands.push(val);
+            cb.closest('label').classList.add('selected');
+        } else {
+            pendingBrands = pendingBrands.filter(b => b !== val);
+            cb.closest('label').classList.remove('selected');
+        }
+    };
+
+    // ── Apply brand selection ────────────────────────────────────────────
+    window.applyBrands = function () {
+        navigate({ brandNames: pendingBrands });
+    };
+
+    // ── Clear brand selection ────────────────────────────────────────────
+    window.clearBrands = function () {
+        pendingBrands = [];
+        document.querySelectorAll('.hdk-brand-cb').forEach(cb => {
+            cb.checked = false;
+            cb.closest('label').classList.remove('selected');
+        });
+    };
+
+    // ── Remove single brand tag ──────────────────────────────────────────
+    window.removeBrand = function (name) {
+        navigate({ brandNames: state.brandNames.filter(b => b !== name) });
+    };
+
+    // ── Price presets ────────────────────────────────────────────────────
+    window.applyPrice = function (min, max) {
+        navigate({ minPrice: min ? String(min) : '', maxPrice: max ? String(max) : '' });
+    };
+
+    window.applyCustomPrice = function () {
+        const min = document.getElementById('priceMin')?.value || '';
+        const max = document.getElementById('priceMax')?.value || '';
+        navigate({ minPrice: min, maxPrice: max });
+    };
+
+    window.clearPrice  = function () { navigate({ minPrice: '', maxPrice: '' }); };
+    window.removePrice = function () { navigate({ minPrice: '', maxPrice: '' }); };
+
+    // ── Spec chips (CPU / VGA / RAM) — toggle: click active → deselect ──
+    window.toggleSpec = function (param, value) {
+        const override = {};
+        override[param] = (state[param] === value) ? '' : value;
+        navigate(override);
+    };
+
+    window.removeSpec = function (param) {
+        const o = {}; o[param] = ''; navigate(o);
+    };
+
+    // ── Sort ─────────────────────────────────────────────────────────────
+    window.applySort = function (value) {
+        navigate({ sortBy: value });
+    };
+
+    // ── Clear all ────────────────────────────────────────────────────────
+    window.clearAllFilters = function () {
+        navigate({
+            brandNames: [], minPrice: '', maxPrice: '',
+            cpuLine: '', vgaLine: '', ramType: '', sortBy: 'featured'
+        });
+    };
+
+    // ── Brand search filter (client-side) ────────────────────────────────
+    window.filterBrandSearch = function (q) {
+        const rows = document.querySelectorAll('#brandCheckboxList .hdk-brand-row');
+        const lq   = q.toLowerCase();
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(lq) ? '' : 'none';
+        });
+    };
+})();
+</script>
+
+@functions {
+    string BuildPageUrl(int page)
+    {
+        var qs = new System.Text.StringBuilder();
+        var bn = ViewBag.BrandNames as string;
+        if (!string.IsNullOrWhiteSpace(bn)) qs.Append($"&brandNames={Uri.EscapeDataString(bn)}");
+        if (ViewBag.MinPrice is decimal mn)  qs.Append($"&minPrice={mn}");
+        if (ViewBag.MaxPrice is decimal mx)  qs.Append($"&maxPrice={mx}");
+        var sort = ViewBag.CurrentSort as string;
+        if (!string.IsNullOrWhiteSpace(sort) && sort != "featured") qs.Append($"&sortBy={Uri.EscapeDataString(sort)}");
+        var cpu = ViewBag.CpuLine as string;
+        if (!string.IsNullOrWhiteSpace(cpu)) qs.Append($"&cpuLine={Uri.EscapeDataString(cpu)}");
+        var vga = ViewBag.VgaLine as string;
+        if (!string.IsNullOrWhiteSpace(vga)) qs.Append($"&vgaLine={Uri.EscapeDataString(vga)}");
+        var ram = ViewBag.RamType as string;
+        if (!string.IsNullOrWhiteSpace(ram)) qs.Append($"&ramType={Uri.EscapeDataString(ram)}");
+        if (page > 1) qs.Append($"&page={page}");
+        var s = qs.ToString().TrimStart('&');
+        var catId = ViewBag.CategoryId as int?;
+        return $"/Category/Index/{catId}" + (s.Length > 0 ? "?" + s : "");
+    }
+}
